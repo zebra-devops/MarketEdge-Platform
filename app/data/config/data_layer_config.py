@@ -49,7 +49,7 @@ class DataLayerSettings(BaseSettings):
     """Main data layer configuration settings"""
     
     # Data source configurations
-    supabase: SupabaseConfig
+    supabase: Optional[SupabaseConfig] = None
     redis: RedisConfig = Field(default_factory=RedisConfig)
     database: Optional[DatabaseConfig] = None
     databricks: Optional[DatabricksConfig] = None
@@ -73,14 +73,39 @@ class DataLayerSettings(BaseSettings):
 def create_data_layer_config() -> Dict[str, Any]:
     """Create data layer configuration from environment variables"""
     try:
-        # Create settings from environment
-        settings = DataLayerSettings(
-            supabase=SupabaseConfig(
-                url=os.getenv("DATA_LAYER_SUPABASE__URL", ""),
-                key=os.getenv("DATA_LAYER_SUPABASE__KEY", ""),
+        # Check if data layer should be enabled
+        data_layer_enabled = os.getenv("DATA_LAYER_ENABLED", "false").lower() == "true"
+        
+        if not data_layer_enabled:
+            # Return minimal configuration for disabled data layer
+            return {
+                "enabled": False,
+                "sources": {},
+                "cache": {"enabled": False},
+                "routing": {"default_source": None, "enable_fallback": False},
+                "performance": {"query_timeout": 30, "max_concurrent_queries": 10},
+                "logging": {"log_queries": False, "log_performance": False}
+            }
+        
+        # Check if Supabase configuration is available
+        supabase_url = os.getenv("DATA_LAYER_SUPABASE__URL", "")
+        supabase_key = os.getenv("DATA_LAYER_SUPABASE__KEY", "")
+        
+        # Create settings - only create Supabase config if credentials are available
+        supabase_config = None
+        if supabase_url and supabase_key:
+            supabase_config = SupabaseConfig(
+                url=supabase_url,
+                key=supabase_key,
                 schema=os.getenv("DATA_LAYER_SUPABASE__SCHEMA", "public")
             )
-        )
+        
+        # Create settings with optional Supabase
+        if supabase_config:
+            settings = DataLayerSettings(supabase=supabase_config)
+        else:
+            # Data layer enabled but no Supabase - use fallback configuration
+            return get_fallback_config()
         
         # Build configuration dictionary
         config = {
@@ -135,6 +160,33 @@ def create_data_layer_config() -> Dict[str, Any]:
         
     except Exception as e:
         raise ValueError(f"Failed to create data layer configuration: {e}")
+
+
+def get_fallback_config() -> Dict[str, Any]:
+    """Get fallback configuration when data layer is enabled but Supabase is not configured"""
+    return {
+        "enabled": True,
+        "sources": {},  # No sources available
+        "cache": {
+            "enabled": True,
+            "redis_url": os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+            "default_ttl": 3600,
+            "key_prefix": "data_layer:"
+        },
+        "routing": {
+            "default_source": None,
+            "enable_fallback": False,
+            "health_check_interval": 60
+        },
+        "performance": {
+            "query_timeout": 30,
+            "max_concurrent_queries": 10
+        },
+        "logging": {
+            "log_queries": True,
+            "log_performance": True
+        }
+    }
 
 
 def get_default_config() -> Dict[str, Any]:

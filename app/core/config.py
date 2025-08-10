@@ -52,7 +52,33 @@ class Settings(BaseSettings):
         URL: str
         KEY: str
 
-    DATA_LAYER_SUPABASE: SupabaseConfig
+    # Data Layer Configuration - Optional
+    DATA_LAYER_ENABLED: bool = False
+    DATA_LAYER_SUPABASE: Optional[SupabaseConfig] = None
+    
+    @field_validator("DATA_LAYER_SUPABASE", mode="before")
+    @classmethod
+    def validate_supabase_config(cls, v, info):
+        """Validate Supabase configuration - only required if DATA_LAYER_ENABLED is True"""
+        # Get DATA_LAYER_ENABLED value from the same model
+        data_layer_enabled = info.data.get("DATA_LAYER_ENABLED", False)
+        
+        if not data_layer_enabled:
+            # If data layer is disabled, Supabase config is not required
+            return None
+        
+        # If data layer is enabled, try to build Supabase config from environment
+        if v is None:
+            supabase_url = os.getenv("DATA_LAYER_SUPABASE__URL")
+            supabase_key = os.getenv("DATA_LAYER_SUPABASE__KEY")
+            
+            if supabase_url and supabase_key:
+                return cls.SupabaseConfig(URL=supabase_url, KEY=supabase_key)
+            else:
+                # Data layer enabled but no Supabase config - this is okay, will use fallback
+                return None
+        
+        return v
     
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
