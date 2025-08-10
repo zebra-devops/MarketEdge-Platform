@@ -1,0 +1,20 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+startCommand = "./start.sh"
+
+[env]
+ENVIRONMENT = "production"
+DEBUG = "false"
+LOG_LEVEL = "INFO"
+PORT = "8000"
+
+# These will be automatically populated by Railway services
+# DATABASE_URL will reference Postgres service
+# REDIS_URL will reference Redis service
