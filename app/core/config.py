@@ -1,5 +1,5 @@
-from typing import List, Optional
-from pydantic import validator
+from typing import List, Optional, Union
+from pydantic import field_validator, Field
 from pydantic_settings import BaseSettings
 import os
 from pydantic import BaseModel
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     LOG_LEVEL: str = "INFO"
     
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001"]
+    CORS_ORIGINS: Union[str, List[str]] = Field(default=["http://localhost:3000", "http://localhost:3001"])
     
     # Rate Limiting Configuration
     RATE_LIMIT_ENABLED: bool = True
@@ -54,9 +54,15 @@ class Settings(BaseSettings):
 
     DATA_LAYER_SUPABASE: SupabaseConfig
     
-    @validator("CORS_ORIGINS", pre=True)
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v):
+        """Parse CORS_ORIGINS from various formats: JSON array, comma-separated string, or single URL"""
         if isinstance(v, str):
+            # Handle empty or whitespace-only strings
+            if not v.strip():
+                return ["http://localhost:3000"]
+                
             if v.startswith("[") and v.endswith("]"):
                 # Handle JSON-like format: ["url1","url2"]
                 import json
@@ -65,18 +71,19 @@ class Settings(BaseSettings):
                 except json.JSONDecodeError:
                     # Fall back to comma-separated parsing
                     v = v.strip("[]").replace('"', '').replace("'", "")
-                    return [i.strip() for i in v.split(",")]
+                    return [i.strip() for i in v.split(",") if i.strip()]
             else:
-                # Handle comma-separated format: url1,url2
-                return [i.strip() for i in v.split(",")]
+                # Handle comma-separated format: url1,url2 or single URL
+                return [i.strip() for i in v.split(",") if i.strip()]
         elif isinstance(v, list):
             return v
-        raise ValueError(v)
+        # Return default if we can't parse
+        return ["http://localhost:3000"]
     
     model_config = {
         "env_file": ".env",
         "env_nested_delimiter": "__",
-        "case_sensitive": True
+        "case_sensitive": True,
     }
 
 
