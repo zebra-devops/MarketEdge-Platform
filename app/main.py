@@ -24,7 +24,7 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.DEBUG else None,
     docs_url=f"{settings.API_V1_STR}/docs" if settings.DEBUG else None,
     redoc_url=f"{settings.API_V1_STR}/redoc" if settings.DEBUG else None,
-    root_path="/api/v1" if not settings.DEBUG else "",
+    root_path="",
 )
 
 print(f"CORS Origins: {settings.CORS_ORIGINS}")
