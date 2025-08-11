@@ -567,6 +567,12 @@ async def cleanup_rate_limiting():
     """Cleanup rate limiting resources."""
     pass
 
+
+def get_rate_limiting_service():
+    """Get the rate limiting service instance."""
+    from ..services.rate_limiting_service import RateLimitingService
+    return RateLimitingService()
+
 # Utility functions for manual rate limit checking in endpoints
 async def check_endpoint_rate_limit(
     request: Request,

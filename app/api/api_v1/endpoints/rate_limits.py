@@ -23,7 +23,7 @@ router = APIRouter()
 # Pydantic models for request/response
 class TenantRateLimitCreate(BaseModel):
     tenant_id: uuid.UUID
-    tier: str = Field(..., regex="^(standard|premium|enterprise)$")
+    tier: str = Field(..., pattern="^(standard|premium|enterprise)$")
     requests_per_hour: int = Field(..., gt=0, le=100000)
     burst_size: int = Field(default=100, gt=0, le=1000)
     endpoint_overrides: Optional[Dict[str, int]] = None
@@ -32,7 +32,7 @@ class TenantRateLimitCreate(BaseModel):
 
 
 class TenantRateLimitUpdate(BaseModel):
-    tier: Optional[str] = Field(None, regex="^(standard|premium|enterprise)$")
+    tier: Optional[str] = Field(None, pattern="^(standard|premium|enterprise)$")
     requests_per_hour: Optional[int] = Field(None, gt=0, le=100000)
     burst_size: Optional[int] = Field(None, gt=0, le=1000)
     endpoint_overrides: Optional[Dict[str, int]] = None
@@ -337,7 +337,7 @@ async def list_rate_limit_violations(
 @router.get("/rate-limits/metrics", response_model=List[RateLimitMetricsResponse])
 async def get_rate_limit_metrics(
     tenant_id: Optional[uuid.UUID] = Query(None),
-    period: str = Query("hour", regex="^(hour|day|week|month)$"),
+    period: str = Query("hour", pattern="^(hour|day|week|month)$"),
     periods_back: int = Query(24, ge=1, le=168),
     current_admin: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)

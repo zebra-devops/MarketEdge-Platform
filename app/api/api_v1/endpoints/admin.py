@@ -79,7 +79,7 @@ class RateLimitUpdateRequest(BaseModel):
 
 
 class BulkRateLimitUpdateRequest(BaseModel):
-    subscription_plan: str = Field(..., regex="^(basic|professional|enterprise)$")
+    subscription_plan: str = Field(..., pattern="^(basic|professional|enterprise)$")
     rate_limit_per_hour: int = Field(..., ge=100, le=50000)
     burst_limit: int = Field(..., ge=10, le=1000)
 

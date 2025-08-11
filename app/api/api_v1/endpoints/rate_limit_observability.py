@@ -147,7 +147,7 @@ async def get_system_health(
 
 @router.get("/rate-limits/dashboard", response_model=RateLimitDashboardData)
 async def get_dashboard_data(
-    time_range: str = Query("24h", regex="^(1h|6h|24h|7d|30d)$"),
+    time_range: str = Query("24h", pattern="^(1h|6h|24h|7d|30d)$"),
     current_admin: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
@@ -348,7 +348,7 @@ async def get_performance_metrics(
 
 @router.get("/rate-limits/alerts")
 async def get_active_alerts(
-    severity: Optional[str] = Query(None, regex="^(low|medium|high|critical)$"),
+    severity: Optional[str] = Query(None, pattern="^(low|medium|high|critical)$"),
     current_admin: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db)
 ):
