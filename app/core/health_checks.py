@@ -7,7 +7,7 @@ import asyncio
 import logging
 from typing import Dict, Any
 import asyncpg
-import aioredis
+import redis.asyncio as redis
 from datetime import datetime
 import time
 from .config import settings
@@ -105,7 +105,7 @@ class HealthChecker:
         
         try:
             # Create Redis client with Railway-appropriate settings
-            client = aioredis.from_url(
+            client = redis.from_url(
                 redis_url,
                 socket_timeout=5.0,
                 socket_connect_timeout=10.0,

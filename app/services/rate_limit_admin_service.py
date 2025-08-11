@@ -137,13 +137,13 @@ class RateLimitAdminService:
     async def get_rate_limit_violations(limit: int = 100) -> List[Dict[str, Any]]:
         """Get recent rate limit violations from Redis."""
         try:
-            import aioredis
+            import redis.asyncio as redis
             from ..core.config import settings
             import json
             
-            redis = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
+            redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
             
-            violations = await redis.lrange("rate_limit_violations", 0, limit - 1)
+            violations = await redis_client.lrange("rate_limit_violations", 0, limit - 1)
             
             parsed_violations = []
             for violation in violations:
@@ -152,7 +152,7 @@ class RateLimitAdminService:
                 except json.JSONDecodeError:
                     continue
             
-            await redis.close()
+            await redis_client.close()
             return parsed_violations
             
         except Exception as e:
