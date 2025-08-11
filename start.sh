@@ -13,6 +13,6 @@ echo "Starting FastAPI application..."
 exec uvicorn app.main:app \
     --host 0.0.0.0 \
     --port ${PORT:-8000} \
-    --log-level ${LOG_LEVEL:-info} \
+    --log-level $(echo "${LOG_LEVEL:-info}" | tr '[:upper:]' '[:lower:]') \
     --access-log \
     --use-colors

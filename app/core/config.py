@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
-    LOG_LEVEL: str = "INFO"
+    LOG_LEVEL: str = "info"
     
     CORS_ORIGINS: Union[str, List[str]] = Field(default=["http://localhost:3000", "http://localhost:3001"])
     
