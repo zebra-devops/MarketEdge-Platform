@@ -48,6 +48,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         concurrent_keys = []
         
         try:
+            # Check if rate limiting is enabled globally
+            from ..core.config import settings
+            if not settings.RATE_LIMIT_ENABLED:
+                return await call_next(request)
+            
             # Skip rate limiting for excluded routes
             if self._should_skip_rate_limiting(request):
                 return await call_next(request)
