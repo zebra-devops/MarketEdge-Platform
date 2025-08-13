@@ -46,12 +46,12 @@ class TestSupabaseDataSource:
         """Test successful initialization"""
         mock_client, mock_table = mock_supabase_client
         
-        # Mock health check response
-        mock_table.select.return_value.limit.return_value.execute.return_value = {
-            "data": [{"table_name": "test"}],
-            "count": 1,
-            "error": None
-        }
+        # Mock health check response with proper .data attribute
+        mock_health_response = Mock()
+        mock_health_response.data = [{"table_name": "test"}]
+        mock_health_response.count = 1
+        mock_health_response.error = None
+        mock_table.select.return_value.limit.return_value.execute.return_value = mock_health_response
         
         source = SupabaseDataSource(supabase_config)
         await source.initialize()
@@ -73,12 +73,12 @@ class TestSupabaseDataSource:
         """Test successful health check"""
         mock_client, mock_table = mock_supabase_client
         
-        # Mock successful health check
-        mock_table.select.return_value.limit.return_value.execute.return_value = {
-            "data": [{"table_name": "test"}],
-            "count": 1,
-            "error": None
-        }
+        # Mock successful health check with proper .data attribute
+        mock_health_response = Mock()
+        mock_health_response.data = [{"table_name": "test"}]
+        mock_health_response.count = 1
+        mock_health_response.error = None
+        mock_table.select.return_value.limit.return_value.execute.return_value = mock_health_response
         
         source = SupabaseDataSource(supabase_config)
         source.client = mock_client
@@ -128,22 +128,22 @@ class TestSupabaseDataSource:
         mock_query.limit.return_value = mock_query
         mock_query.offset.return_value = mock_query
         
-        # Mock response
-        mock_query.execute.return_value = {
-            "data": [
-                {
-                    "id": 1,
-                    "org_id": "test-org",
-                    "market": "manchester",
-                    "competitor_name": "vue",
-                    "date": "2024-01-15",
-                    "price": 12.50,
-                    "availability": True
-                }
-            ],
-            "count": 1,
-            "error": None
-        }
+        # Create a proper mock response object with .data attribute
+        mock_response = Mock()
+        mock_response.data = [
+            {
+                "id": 1,
+                "org_id": "test-org",
+                "market": "manchester",
+                "competitor_name": "vue",
+                "date": "2024-01-15",
+                "price": 12.50,
+                "availability": True
+            }
+        ]
+        mock_response.count = 1
+        mock_response.error = None
+        mock_query.execute.return_value = mock_response
         
         source = SupabaseDataSource(supabase_config)
         source.client = mock_client
@@ -158,7 +158,7 @@ class TestSupabaseDataSource:
                 }
             },
             limit=10,
-            offset=0,
+            offset=5,  # Use non-zero offset to test the functionality
             order_by=["-date", "competitor_name"]
         )
         
@@ -181,7 +181,7 @@ class TestSupabaseDataSource:
         mock_query.order.assert_any_call("date", desc=True)
         mock_query.order.assert_any_call("competitor_name")
         mock_query.limit.assert_called_once_with(10)
-        mock_query.offset.assert_called_once_with(0)
+        mock_query.offset.assert_called_once_with(5)
     
     @pytest.mark.asyncio
     async def test_get_competitive_data_with_error(self, supabase_config, mock_supabase_client):
@@ -213,15 +213,15 @@ class TestSupabaseDataSource:
         mock_query.order.return_value = mock_query
         mock_query.limit.return_value = mock_query
         
-        # Mock response
-        mock_query.execute.return_value = {
-            "data": [
-                {"id": 1, "name": "manchester", "region": "north-west"},
-                {"id": 2, "name": "london", "region": "south-east"}
-            ],
-            "count": 2,
-            "error": None
-        }
+        # Create mock response with .data attribute
+        mock_response = Mock()
+        mock_response.data = [
+            {"id": 1, "name": "manchester", "region": "north-west"},
+            {"id": 2, "name": "london", "region": "south-east"}
+        ]
+        mock_response.count = 2
+        mock_response.error = None
+        mock_query.execute.return_value = mock_response
         
         source = SupabaseDataSource(supabase_config)
         source.client = mock_client
@@ -256,12 +256,12 @@ class TestSupabaseDataSource:
         mock_query = mock_table.select.return_value
         mock_query.order.return_value = mock_query
         
-        # Mock response
-        mock_query.execute.return_value = {
-            "data": [{"id": 1, "name": "test"}],
-            "count": 1,
-            "error": None
-        }
+        # Create mock response with .data attribute
+        mock_response = Mock()
+        mock_response.data = [{"id": 1, "name": "test"}]
+        mock_response.count = 1
+        mock_response.error = None
+        mock_query.execute.return_value = mock_response
         
         source = SupabaseDataSource(supabase_config)
         source.client = mock_client
@@ -285,19 +285,19 @@ class TestSupabaseDataSource:
         mock_query.eq.return_value = mock_query
         mock_query.order.return_value = mock_query
         
-        # Mock response
-        mock_query.execute.return_value = {
-            "data": [
-                {
-                    "market": "manchester",
-                    "date": "2024-01-15",
-                    "revenue": 1000.50,
-                    "transactions": 150
-                }
-            ],
-            "count": 1,
-            "error": None
-        }
+        # Create mock response with .data attribute
+        mock_response = Mock()
+        mock_response.data = [
+            {
+                "market": "manchester",
+                "date": "2024-01-15",
+                "revenue": 1000.50,
+                "transactions": 150
+            }
+        ]
+        mock_response.count = 1
+        mock_response.error = None
+        mock_query.execute.return_value = mock_response
         
         source = SupabaseDataSource(supabase_config)
         source.client = mock_client
@@ -335,12 +335,12 @@ class TestSupabaseDataSource:
         mock_query.eq.return_value = mock_query
         mock_query.limit.return_value = mock_query
         
-        # Mock response
-        mock_query.execute.return_value = {
-            "data": [{"custom_result": "test_data"}],
-            "count": 1,
-            "error": None
-        }
+        # Create mock response with .data attribute
+        mock_response = Mock()
+        mock_response.data = [{"custom_result": "test_data"}]
+        mock_response.count = 1
+        mock_response.error = None
+        mock_query.execute.return_value = mock_response
         
         source = SupabaseDataSource(supabase_config)
         source.client = mock_client
@@ -433,12 +433,12 @@ class TestSupabaseDataSource:
         mock_query.limit.return_value = mock_query
         mock_query.offset.return_value = mock_query
         
-        # Mock response
-        mock_query.execute.return_value = {
-            "data": [],
-            "count": 0,
-            "error": None
-        }
+        # Create mock response with .data attribute
+        mock_response = Mock()
+        mock_response.data = []
+        mock_response.count = 0
+        mock_response.error = None
+        mock_query.execute.return_value = mock_response
         
         source = SupabaseDataSource(supabase_config)
         source.client = mock_client

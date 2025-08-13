@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any, List
 from sqlalchemy import Column, String, Boolean, Integer, DateTime, Text, ForeignKey, JSON
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from .database_types import CompatibleJSON, CompatibleUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 import uuid
@@ -35,11 +35,11 @@ class SICCode(Base):
     
     # Market Edge specific configuration
     is_supported: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    competitive_factors: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
-    default_metrics: Mapped[List[str]] = mapped_column(JSONB, nullable=False, default=list)
+    competitive_factors: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON, nullable=False, default=dict)
+    default_metrics: Mapped[List[str]] = mapped_column(CompatibleJSON, nullable=False, default=list)
     
     # Analytics configuration
-    analytics_config: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    analytics_config: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON, nullable=False, default=dict)
     
     # Audit fields
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -70,7 +70,7 @@ class SectorModule(Base):
     """
     __tablename__ = "sector_modules"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # References
     sic_code: Mapped[str] = mapped_column(String(10), ForeignKey("sic_codes.code"), nullable=False)
@@ -79,13 +79,13 @@ class SectorModule(Base):
     # Configuration
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    configuration: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    configuration: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON, nullable=False, default=dict)
     
     # Priority for display order
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     
     # Audit fields
-    created_by: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=False)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -105,7 +105,7 @@ class CompetitiveFactorTemplate(Base):
     """
     __tablename__ = "competitive_factor_templates"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # References
     sic_code: Mapped[str] = mapped_column(String(10), ForeignKey("sic_codes.code"), nullable=False)
@@ -121,14 +121,14 @@ class CompetitiveFactorTemplate(Base):
     weight: Mapped[float] = mapped_column(Integer, default=1.0, nullable=False)  # Importance weight
     
     # Validation rules
-    validation_rules: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    validation_rules: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON, nullable=False, default=dict)
     
     # Display configuration
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_visible: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     
     # Audit fields
-    created_by: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=False)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

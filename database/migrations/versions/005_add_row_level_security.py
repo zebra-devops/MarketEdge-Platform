@@ -41,16 +41,17 @@ def upgrade():
         op.execute(text(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY"))
         
         # Create policy for regular users - they can only access their organisation's data
+        # Use public role for compatibility with both Supabase and standard PostgreSQL
         op.execute(text(f"""
             CREATE POLICY tenant_isolation_{table_name} ON {table_name}
-                FOR ALL TO authenticated
+                FOR ALL TO public
                 USING (organisation_id = current_setting('app.current_tenant_id')::uuid)
         """))
         
         # Create policy for super admins - they can access all data when explicitly allowed
         op.execute(text(f"""
             CREATE POLICY super_admin_access_{table_name} ON {table_name}
-                FOR ALL TO authenticated
+                FOR ALL TO public
                 USING (
                     current_setting('app.current_user_role', true) = 'super_admin'
                     AND current_setting('app.allow_cross_tenant', true) = 'true'
@@ -79,7 +80,7 @@ def upgrade():
                 raise ValueError(f"Invalid index name format: {index_name}")
                 
             op.execute(text(f"""
-                CREATE INDEX CONCURRENTLY IF NOT EXISTS {index_name} 
+                CREATE INDEX IF NOT EXISTS {index_name} 
                 ON {table_name} (organisation_id)
             """))
         except Exception:
@@ -92,7 +93,7 @@ def upgrade():
             tenant_id uuid,
             user_role text DEFAULT 'viewer',
             allow_cross_tenant boolean DEFAULT false
-        ) RETURNS void AS $$
+        ) RETURNS void AS $function$
         BEGIN
             -- Validate user role to prevent injection
             IF user_role NOT IN ('admin', 'analyst', 'viewer') THEN
@@ -103,18 +104,18 @@ def upgrade():
             PERFORM set_config('app.current_user_role', user_role, true);
             PERFORM set_config('app.allow_cross_tenant', allow_cross_tenant::text, true);
         END;
-        $$ LANGUAGE plpgsql SECURITY DEFINER
+        $function$ LANGUAGE plpgsql SECURITY DEFINER
     """))
 
     # Create helper function to clear tenant context
     op.execute(text("""
-        CREATE OR REPLACE FUNCTION clear_tenant_context() RETURNS void AS $$
+        CREATE OR REPLACE FUNCTION clear_tenant_context() RETURNS void AS $function$
         BEGIN
             PERFORM set_config('app.current_tenant_id', null, true);
             PERFORM set_config('app.current_user_role', null, true);
             PERFORM set_config('app.allow_cross_tenant', null, true);
         END;
-        $$ LANGUAGE plpgsql SECURITY DEFINER
+        $function$ LANGUAGE plpgsql SECURITY DEFINER
     """))
 
 

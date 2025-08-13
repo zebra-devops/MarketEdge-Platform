@@ -3,10 +3,30 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from typing import Generator, AsyncGenerator
 import redis
+import os
+import sys
 from .config import settings
 
+def get_database_url() -> str:
+    """Get appropriate database URL based on environment"""
+    # Check if we're running tests using multiple indicators
+    test_indicators = [
+        os.getenv("PYTEST_CURRENT_TEST"),  # Set by pytest
+        os.getenv("TESTING"),  # Custom environment variable
+        "pytest" in os.getenv("_", "").lower(),  # Command line indicator
+        any("pytest" in arg for arg in sys.argv),  # Command line args
+    ]
+    
+    if any(test_indicators):
+        return settings.get_test_database_url()
+    
+    # Use environment-aware database URL resolution
+    return settings.get_database_url_for_environment()
+
+database_url = get_database_url()
+
 engine = create_engine(
-    settings.DATABASE_URL,
+    database_url,
     pool_pre_ping=True,
     pool_recycle=300,
     pool_size=10,
@@ -19,8 +39,10 @@ engine = create_engine(
     }
 )
 
+async_database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
+
 async_engine = create_async_engine(
-    settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://"),
+    async_database_url,
     pool_pre_ping=True,
     pool_recycle=300,
     pool_size=10,

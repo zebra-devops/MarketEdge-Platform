@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any
 from sqlalchemy import Column, String, Integer, Boolean, ForeignKey, JSON, Float
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from .database_types import CompatibleUUID, CompatibleJSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 import uuid
@@ -33,7 +33,7 @@ class RateLimitRule(Base):
     """
     __tablename__ = "rate_limit_rules"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Rule identification
     rule_name: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
@@ -57,11 +57,11 @@ class RateLimitRule(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     
     # Additional configuration
-    config: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    config: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
     
     # Relationships for foreign keys
-    organisation_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("organisations.id"), nullable=True)
-    user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    organisation_id: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("organisations.id"), nullable=True)
+    user_id: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=True)
     
     # Relationships
     organisation = relationship("Organisation", foreign_keys=[organisation_id])
@@ -95,12 +95,12 @@ class RateLimitUsage(Base):
     """
     __tablename__ = "rate_limit_usage"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Usage identification
-    rule_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("rate_limit_rules.id"), nullable=False, index=True)
-    tenant_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("organisations.id"), nullable=False, index=True)
-    user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True, index=True)
+    rule_id: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("rate_limit_rules.id"), nullable=False, index=True)
+    tenant_id: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("organisations.id"), nullable=False, index=True)
+    user_id: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=True, index=True)
     
     # Request details
     endpoint: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -117,7 +117,7 @@ class RateLimitUsage(Base):
     processing_time_ms: Mapped[float] = mapped_column(Float, nullable=False)
     
     # Additional context
-    metadata: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    metadata: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
 
     # Relationships
     rule = relationship("RateLimitRule")
@@ -135,7 +135,7 @@ class SICRateLimitConfig(Base):
     """
     __tablename__ = "sic_rate_limit_configs"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # SIC code reference
     sic_code: Mapped[str] = mapped_column(String(10), ForeignKey("sic_codes.code"), nullable=False, index=True)
@@ -146,14 +146,14 @@ class SICRateLimitConfig(Base):
     base_requests_per_day: Mapped[int] = mapped_column(Integer, default=10000, nullable=False)
     
     # Endpoint-specific multipliers
-    endpoint_multipliers: Mapped[Dict[str, float]] = mapped_column(JSONB, nullable=False, default=dict)
+    endpoint_multipliers: Mapped[Dict[str, float]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
     
     # Industry characteristics affecting limits
     data_intensity_factor: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)  # Higher for data-heavy industries
     real_time_factor: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)     # Higher for real-time industries
     
     # Special configurations
-    special_config: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    special_config: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
     
     # Status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

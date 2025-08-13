@@ -4,9 +4,9 @@ Rate Limit Models
 Database models for storing and managing tenant-specific rate limiting configurations.
 """
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID, JSON
 from sqlalchemy.sql import func
 from .base import Base
+from .database_types import CompatibleUUID, CompatibleJSON
 import uuid
 
 
@@ -18,8 +18,8 @@ class TenantRateLimit(Base):
     """
     __tablename__ = "tenant_rate_limits"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    tenant_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    id = Column(CompatibleUUID(), primary_key=True, default=uuid.uuid4)
+    tenant_id = Column(CompatibleUUID(), nullable=False, index=True)
     
     # Rate limit configuration
     tier = Column(String(50), nullable=False, default="standard")  # standard, premium, enterprise
@@ -27,7 +27,7 @@ class TenantRateLimit(Base):
     burst_size = Column(Integer, nullable=False, default=100)  # Burst allowance
     
     # Endpoint-specific overrides (JSON format)
-    endpoint_overrides = Column(JSON, nullable=True)
+    endpoint_overrides = Column(CompatibleJSON(), nullable=True)
     
     # Time-based restrictions
     enabled = Column(Boolean, nullable=False, default=True)
@@ -42,8 +42,8 @@ class TenantRateLimit(Base):
     # Audit fields
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    created_by = Column(UUID(as_uuid=True), nullable=True)
-    updated_by = Column(UUID(as_uuid=True), nullable=True)
+    created_by = Column(CompatibleUUID(), nullable=True)
+    updated_by = Column(CompatibleUUID(), nullable=True)
     
     # Ensure one rate limit config per tenant
     __table_args__ = (
@@ -57,11 +57,11 @@ class RateLimitViolation(Base):
     """
     __tablename__ = "rate_limit_violations"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(CompatibleUUID(), primary_key=True, default=uuid.uuid4)
     
     # Request context
-    tenant_id = Column(UUID(as_uuid=True), nullable=False, index=True)
-    user_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    tenant_id = Column(CompatibleUUID(), nullable=False, index=True)
+    user_id = Column(CompatibleUUID(), nullable=True, index=True)
     
     # Violation details
     endpoint = Column(String(500), nullable=False)
@@ -72,7 +72,7 @@ class RateLimitViolation(Base):
     # Request metadata
     client_ip = Column(String(45), nullable=True)  # IPv4/IPv6 address
     user_agent = Column(Text, nullable=True)
-    headers = Column(JSON, nullable=True)  # Selected request headers
+    headers = Column(CompatibleJSON(), nullable=True)  # Selected request headers
     
     # Timing
     violation_time = Column(DateTime(timezone=True), server_default=func.now(), index=True)
@@ -99,10 +99,10 @@ class RateLimitMetrics(Base):
     """
     __tablename__ = "rate_limit_metrics"
     
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(CompatibleUUID(), primary_key=True, default=uuid.uuid4)
     
     # Aggregation context
-    tenant_id = Column(UUID(as_uuid=True), nullable=True, index=True)  # Null for system-wide metrics
+    tenant_id = Column(CompatibleUUID(), nullable=True, index=True)  # Null for system-wide metrics
     aggregation_period = Column(String(10), nullable=False)  # hour, day, week, month
     period_start = Column(DateTime(timezone=True), nullable=False, index=True)
     period_end = Column(DateTime(timezone=True), nullable=False)
@@ -119,8 +119,8 @@ class RateLimitMetrics(Base):
     rate_limit_overhead_ms = Column(Integer, nullable=True)
     
     # Top endpoints (JSON format)
-    top_endpoints = Column(JSON, nullable=True)
-    top_violating_ips = Column(JSON, nullable=True)
+    top_endpoints = Column(CompatibleJSON(), nullable=True)
+    top_violating_ips = Column(CompatibleJSON(), nullable=True)
     
     # System health
     redis_errors = Column(Integer, nullable=False, default=0)

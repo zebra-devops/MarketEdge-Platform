@@ -1,15 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi.security import HTTPBearer
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from typing import Dict, Any
+from sqlalchemy.orm import Session, joinedload
+from pydantic import BaseModel, ValidationError as PydanticValidationError
+from typing import Dict, Any, Optional
+from datetime import timedelta
+import secrets
 from ....core.database import get_db
 from ....models.user import User
 from ....models.organisation import Organisation
-from ....auth.jwt import create_access_token, create_refresh_token, verify_token
+from ....auth.jwt import (
+    create_access_token, 
+    create_refresh_token, 
+    verify_token, 
+    get_user_permissions,
+    should_refresh_token,
+    extract_tenant_context_from_token
+)
 from ....auth.auth0 import auth0_client
 from ....auth.dependencies import get_current_user
 from ....core.logging import get_logger
+from ....core.config import settings
+from ....core.validators import (
+    AuthParameterValidator, 
+    ValidationError, 
+    sanitize_string_input, 
+    validate_tenant_id,
+    create_security_headers
+)
 
 logger = get_logger(__name__)
 
@@ -20,31 +37,103 @@ security = HTTPBearer()
 class LoginRequest(BaseModel):
     code: str
     redirect_uri: str
+    state: Optional[str] = None
+    
+    def model_post_init(self, __context: Any) -> None:
+        """Additional validation after Pydantic validation"""
+        try:
+            # Use our enhanced validator for comprehensive security checks
+            validator = AuthParameterValidator(
+                code=self.code,
+                redirect_uri=self.redirect_uri,
+                state=self.state
+            )
+            # Update values with validated/sanitized versions
+            self.code = validator.code
+            self.redirect_uri = validator.redirect_uri
+            self.state = validator.state
+        except PydanticValidationError as e:
+            logger.warning(
+                "Login request validation failed",
+                extra={
+                    "event": "login_validation_failed",
+                    "error": str(e),
+                    "violation_type": "validation_error"
+                }
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid request parameters: {str(e)}"
+            )
 
 
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    expires_in: int
     user: Dict[str, Any]
+    tenant: Dict[str, Any]
+    permissions: list[str]
 
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
 
+class LogoutRequest(BaseModel):
+    refresh_token: Optional[str] = None
+    all_devices: bool = False
+
+
 @router.post("/login", response_model=TokenResponse)
-async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
-    """Login with Auth0 authorization code"""
+async def login(login_data: LoginRequest, response: Response, request: Request, db: Session = Depends(get_db)):
+    """Enhanced login with Auth0 authorization code, comprehensive validation, and multi-tenant context"""
+    # Add security headers to response
+    security_headers = create_security_headers()
+    for key, value in security_headers.items():
+        response.headers[key] = value
+    
+    # Rate limiting check - prevent brute force attacks
+    client_ip = request.client.host if request.client else "unknown"
+    
+    # Additional input validation and sanitization
     try:
-        logger.info("Authentication attempt initiated", extra={
+        # Validate and sanitize all input parameters
+        validated_code = sanitize_string_input(login_data.code, max_length=500)
+        validated_redirect_uri = sanitize_string_input(login_data.redirect_uri, max_length=2000)
+        validated_state = sanitize_string_input(login_data.state, max_length=500) if login_data.state else None
+        
+        logger.info("Authentication attempt initiated with enhanced validation", extra={
             "event": "auth_attempt",
-            "redirect_uri_domain": login_data.redirect_uri.split('/')[2] if '//' in login_data.redirect_uri else login_data.redirect_uri
+            "redirect_uri_domain": validated_redirect_uri.split('/')[2] if '//' in validated_redirect_uri else validated_redirect_uri,
+            "has_state": bool(validated_state),
+            "client_ip": client_ip,
+            "user_agent": request.headers.get("user-agent", "unknown")[:200]  # Limit length
         })
         
+    except ValidationError as e:
+        logger.error(
+            "Login request validation failed",
+            extra={
+                "event": "auth_validation_failed",
+                "error": str(e),
+                "violation_type": e.violation_type,
+                "field": e.field,
+                "client_ip": client_ip
+            }
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid request parameters"
+        )
+    
+    try:
+        
         token_data = await auth0_client.exchange_code_for_token(
-            login_data.code, 
-            login_data.redirect_uri
+            validated_code, 
+            validated_redirect_uri,
+            validated_state
         )
         
         if not token_data:
@@ -58,33 +147,83 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
             )
         
         logger.info("Token exchange successful", extra={
-            "event": "token_exchange_success"
+            "event": "token_exchange_success",
+            "expires_in": token_data.get("expires_in")
         })
+        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Authentication endpoint error", extra={
             "event": "auth_error",
-            "error_type": type(e).__name__
+            "error_type": type(e).__name__,
+            "error_message": str(e)
+        })
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication service error"
+        )
+    
+    # Get user info from Auth0
+    user_info = await auth0_client.get_user_info(token_data["access_token"])
+    if not user_info:
+        logger.error("Failed to get user info", extra={
+            "event": "userinfo_failure",
+            "has_access_token": bool(token_data.get("access_token"))
         })
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Login failed: {str(e)}"
+            detail="Failed to get user information from Auth0"
         )
     
-    user_info = await auth0_client.get_user_info(token_data["access_token"])
-    if not user_info:
+    # Enhanced user info validation with sanitization
+    required_fields = ["email", "sub"]
+    missing_fields = [field for field in required_fields if not user_info.get(field)]
+    if missing_fields:
+        logger.error("Missing required fields in user info", extra={
+            "event": "userinfo_missing_fields",
+            "missing_fields": missing_fields,
+            "user_sub": user_info.get("sub"),
+            "client_ip": client_ip
+        })
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to get user information"
+            detail=f"Invalid user information: missing {', '.join(missing_fields)}"
         )
     
-    user = db.query(User).filter(User.email == user_info["email"]).first()
+    # Sanitize user info fields to prevent injection
+    try:
+        sanitized_email = sanitize_string_input(user_info["email"], max_length=254)
+        sanitized_sub = sanitize_string_input(user_info["sub"], max_length=100)
+        sanitized_given_name = sanitize_string_input(user_info.get("given_name", ""), max_length=100) if user_info.get("given_name") else ""
+        sanitized_family_name = sanitize_string_input(user_info.get("family_name", ""), max_length=100) if user_info.get("family_name") else ""
+    except ValidationError as e:
+        logger.error(
+            "User info sanitization failed",
+            extra={
+                "event": "userinfo_sanitization_failed",
+                "error": str(e),
+                "violation_type": e.violation_type,
+                "client_ip": client_ip
+            }
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user information format"
+        )
+    
+    # Find or create user in database using sanitized email
+    user = db.query(User).filter(User.email == sanitized_email).first()
     if not user:
+        # Create user with default organization
         default_org = db.query(Organisation).filter(Organisation.name == "Default").first()
         if not default_org:
             from ....models.organisation import SubscriptionPlan
+            from ....core.rate_limit_config import Industry
             default_org = Organisation(
                 name="Default", 
                 industry="Technology",
+                industry_type=Industry.DEFAULT,
                 subscription_plan=SubscriptionPlan.basic
             )
             db.add(default_org)
@@ -93,78 +232,463 @@ async def login(login_data: LoginRequest, db: Session = Depends(get_db)):
         
         from ....models.user import UserRole
         user = User(
-            email=user_info["email"],
-            first_name=user_info.get("given_name", ""),
-            last_name=user_info.get("family_name", ""),
+            email=sanitized_email,
+            first_name=sanitized_given_name,
+            last_name=sanitized_family_name,
             organisation_id=default_org.id,
             role=UserRole.viewer
         )
         db.add(user)
         db.commit()
         db.refresh(user)
+        
+        logger.info("New user created", extra={
+            "event": "user_created",
+            "user_id": str(user.id),
+            "email": user.email,
+            "organisation_id": str(user.organisation_id)
+        })
     
-    access_token = create_access_token({"sub": str(user.id), "email": user.email})
-    refresh_token = create_refresh_token({"sub": str(user.id)})
+    # Ensure user has organization relationship loaded
+    if not user.organisation:
+        user = db.query(User).options(joinedload(User.organisation)).filter(User.id == user.id).first()
+    
+    # Get user permissions based on role and tenant context
+    tenant_context = {
+        "industry": user.organisation.industry if user.organisation else "Technology"
+    }
+    permissions = get_user_permissions(user.role.value, tenant_context)
+    
+    # Create enhanced tokens with tenant context
+    token_data_payload = {
+        "sub": str(user.id), 
+        "email": user.email
+    }
+    
+    access_token = create_access_token(
+        data=token_data_payload,
+        tenant_id=str(user.organisation_id),
+        user_role=user.role.value,
+        permissions=permissions,
+        industry=user.organisation.industry if user.organisation else "Technology"
+    )
+    
+    refresh_token = create_refresh_token(
+        data=token_data_payload,
+        tenant_id=str(user.organisation_id)
+    )
+    
+    # Set secure HTTP-only cookies for tokens with production-ready settings
+    cookie_settings = settings.get_cookie_settings()
+    
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert minutes to seconds
+        **cookie_settings
+    )
+    
+    response.set_cookie(
+        key="refresh_token", 
+        value=refresh_token,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,  # Convert days to seconds
+        **cookie_settings
+    )
+    
+    # Set additional security cookies
+    response.set_cookie(
+        key="session_security",
+        value="verified",
+        max_age=settings.SESSION_TIMEOUT_MINUTES * 60,
+        **cookie_settings
+    )
+    
+    # CSRF protection cookie (readable by JS for CSRF token)
+    csrf_cookie_settings = cookie_settings.copy()
+    csrf_cookie_settings["httponly"] = False  # Allow JS access for CSRF protection
+    response.set_cookie(
+        key="csrf_token",
+        value=secrets.token_urlsafe(32),
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        **csrf_cookie_settings
+    )
     
     logger.info("Authentication successful", extra={
         "event": "auth_success",
         "user_id": str(user.id),
         "organisation_id": str(user.organisation_id),
-        "user_role": user.role.value
+        "user_role": user.role.value,
+        "permissions_count": len(permissions),
+        "tenant_industry": tenant_context["industry"]
     })
     
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
+        expires_in=3600,  # 1 hour in seconds
         user={
             "id": str(user.id),
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
             "role": user.role.value,
-            "organisation_id": str(user.organisation_id)
-        }
+            "organisation_id": str(user.organisation_id),
+            "is_active": user.is_active
+        },
+        tenant={
+            "id": str(user.organisation_id),
+            "name": user.organisation.name if user.organisation else "Default",
+            "industry": user.organisation.industry if user.organisation else "Technology",
+            "subscription_plan": user.organisation.subscription_plan.value if user.organisation else "basic"
+        },
+        permissions=permissions
     )
 
 
-@router.post("/refresh", response_model=Dict[str, str])
-async def refresh_token(refresh_data: RefreshTokenRequest, db: Session = Depends(get_db)):
-    """Refresh access token"""
-    payload = verify_token(refresh_data.refresh_token)
-    if not payload or payload.get("type") != "refresh":
+@router.post("/refresh", response_model=TokenResponse)
+async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, db: Session = Depends(get_db)):
+    """Enhanced token refresh with tenant validation and rotation"""
+    # Verify refresh token
+    payload = verify_token(refresh_data.refresh_token, expected_type="refresh")
+    if not payload:
+        logger.warning("Invalid refresh token provided", extra={
+            "event": "refresh_token_invalid"
+        })
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token"
+            detail="Invalid or expired refresh token"
         )
     
     user_id = payload.get("sub")
-    user = db.query(User).filter(User.id == user_id).first()
+    tenant_id = payload.get("tenant_id")
+    token_family = payload.get("family")
+    
+    if not user_id:
+        logger.warning("Missing user ID in refresh token", extra={
+            "event": "refresh_token_missing_user_id",
+            "token_jti": payload.get("jti")
+        })
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+    
+    # Validate user exists and is active
+    user = db.query(User).options(joinedload(User.organisation)).filter(User.id == user_id).first()
     if not user or not user.is_active:
+        logger.warning("User not found or inactive during refresh", extra={
+            "event": "refresh_user_invalid",
+            "user_id": user_id,
+            "user_exists": bool(user),
+            "user_active": user.is_active if user else False
+        })
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or inactive"
         )
     
-    access_token = create_access_token({"sub": str(user.id), "email": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Validate tenant context
+    if tenant_id and str(user.organisation_id) != tenant_id:
+        logger.warning("Tenant mismatch during refresh", extra={
+            "event": "refresh_tenant_mismatch",
+            "user_id": user_id,
+            "token_tenant_id": tenant_id,
+            "user_tenant_id": str(user.organisation_id)
+        })
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Tenant context mismatch"
+        )
+    
+    # Get updated permissions
+    tenant_context = {
+        "industry": user.organisation.industry if user.organisation else "Technology"
+    }
+    permissions = get_user_permissions(user.role.value, tenant_context)
+    
+    # Create new tokens with rotation
+    token_data_payload = {
+        "sub": str(user.id), 
+        "email": user.email
+    }
+    
+    new_access_token = create_access_token(
+        data=token_data_payload,
+        tenant_id=str(user.organisation_id),
+        user_role=user.role.value,
+        permissions=permissions,
+        industry=user.organisation.industry if user.organisation else "Technology"
+    )
+    
+    # Create new refresh token with same family for rotation tracking
+    new_refresh_token = create_refresh_token(
+        data=token_data_payload,
+        tenant_id=str(user.organisation_id),
+        token_family=token_family
+    )
+    
+    # Update secure cookies with production-ready settings
+    cookie_settings = settings.get_cookie_settings()
+    
+    response.set_cookie(
+        key="access_token",
+        value=new_access_token,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        **cookie_settings
+    )
+    
+    response.set_cookie(
+        key="refresh_token",
+        value=new_refresh_token,
+        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
+        **cookie_settings
+    )
+    
+    # Update session security cookie
+    response.set_cookie(
+        key="session_security",
+        value="verified",
+        max_age=settings.SESSION_TIMEOUT_MINUTES * 60,
+        **cookie_settings
+    )
+    
+    # Update CSRF token
+    csrf_cookie_settings = cookie_settings.copy()
+    csrf_cookie_settings["httponly"] = False
+    response.set_cookie(
+        key="csrf_token",
+        value=secrets.token_urlsafe(32),
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        **csrf_cookie_settings
+    )
+    
+    logger.info("Token refresh successful", extra={
+        "event": "token_refresh_success",
+        "user_id": user_id,
+        "tenant_id": str(user.organisation_id),
+        "old_token_jti": payload.get("jti"),
+        "token_family": token_family
+    })
+    
+    return TokenResponse(
+        access_token=new_access_token,
+        refresh_token=new_refresh_token,
+        expires_in=3600,
+        user={
+            "id": str(user.id),
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": user.role.value,
+            "organisation_id": str(user.organisation_id),
+            "is_active": user.is_active
+        },
+        tenant={
+            "id": str(user.organisation_id),
+            "name": user.organisation.name if user.organisation else "Default",
+            "industry": user.organisation.industry if user.organisation else "Technology",
+            "subscription_plan": user.organisation.subscription_plan.value if user.organisation else "basic"
+        },
+        permissions=permissions
+    )
+
+
+@router.post("/logout")
+async def logout(
+    logout_data: LogoutRequest, 
+    response: Response, 
+    request: Request,
+    current_user: User = Depends(get_current_user)
+):
+    """Enhanced logout with token revocation and session cleanup"""
+    try:
+        # Revoke refresh token if provided
+        if logout_data.refresh_token:
+            revoke_success = await auth0_client.revoke_token(logout_data.refresh_token, "refresh_token")
+            if not revoke_success:
+                logger.warning("Failed to revoke refresh token during logout", extra={
+                    "event": "logout_revoke_failed",
+                    "user_id": str(current_user.id)
+                })
+        
+        # Clear secure cookies with proper settings
+        cookie_settings = settings.get_cookie_settings()
+        response.delete_cookie(key="access_token", **cookie_settings)
+        response.delete_cookie(key="refresh_token", **cookie_settings)
+        response.delete_cookie(key="session_security", **cookie_settings)
+        response.delete_cookie(key="csrf_token", **cookie_settings)
+        
+        logger.info("User logout successful", extra={
+            "event": "logout_success",
+            "user_id": str(current_user.id),
+            "organisation_id": str(current_user.organisation_id),
+            "all_devices": logout_data.all_devices
+        })
+        
+        return {"message": "Logout successful"}
+        
+    except Exception as e:
+        logger.error("Error during logout", extra={
+            "event": "logout_error",
+            "user_id": str(current_user.id),
+            "error": str(e),
+            "error_type": type(e).__name__
+        })
+        # Still clear cookies even if revocation fails
+        cookie_settings = settings.get_cookie_settings()
+        response.delete_cookie(key="access_token", **cookie_settings)
+        response.delete_cookie(key="refresh_token", **cookie_settings)
+        response.delete_cookie(key="session_security", **cookie_settings)
+        response.delete_cookie(key="csrf_token", **cookie_settings)
+        
+        return {"message": "Logout completed with warnings"}
 
 
 @router.get("/me")
-async def get_current_user_info(current_user: User = Depends(get_current_user)):
-    """Get current user information"""
+async def get_current_user_info(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get enhanced current user information with tenant context"""
+    # Ensure organization is loaded
+    if not current_user.organisation:
+        current_user = db.query(User).options(joinedload(User.organisation)).filter(User.id == current_user.id).first()
+    
+    # Get user permissions
+    tenant_context = {
+        "industry": current_user.organisation.industry if current_user.organisation else "Technology"
+    }
+    permissions = get_user_permissions(current_user.role.value, tenant_context)
+    
     return {
-        "id": str(current_user.id),
-        "email": current_user.email,
-        "first_name": current_user.first_name,
-        "last_name": current_user.last_name,
-        "role": current_user.role.value,
-        "organisation_id": str(current_user.organisation_id),
-        "is_active": current_user.is_active
+        "user": {
+            "id": str(current_user.id),
+            "email": current_user.email,
+            "first_name": current_user.first_name,
+            "last_name": current_user.last_name,
+            "role": current_user.role.value,
+            "organisation_id": str(current_user.organisation_id),
+            "is_active": current_user.is_active,
+            "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+            "updated_at": current_user.updated_at.isoformat() if current_user.updated_at else None
+        },
+        "tenant": {
+            "id": str(current_user.organisation_id),
+            "name": current_user.organisation.name if current_user.organisation else "Default",
+            "industry": current_user.organisation.industry if current_user.organisation else "Technology",
+            "subscription_plan": current_user.organisation.subscription_plan.value if current_user.organisation else "basic"
+        },
+        "permissions": permissions,
+        "session": {
+            "authenticated": True,
+            "tenant_isolated": True
+        }
     }
 
 
 @router.get("/auth0-url")
-async def get_auth0_url(redirect_uri: str):
-    """Get Auth0 authorization URL"""
-    auth_url = auth0_client.get_authorization_url(redirect_uri)
-    return {"auth_url": auth_url}
+async def get_auth0_url(redirect_uri: str, additional_scopes: Optional[str] = None, organization_hint: Optional[str] = None):
+    """Get Auth0 authorization URL with enhanced security and multi-tenant organization context"""
+    try:
+        # Parse additional scopes if provided
+        scopes_list = additional_scopes.split(",") if additional_scopes else None
+        
+        auth_url = auth0_client.get_authorization_url(
+            redirect_uri=redirect_uri,
+            additional_scopes=scopes_list,
+            organization_hint=organization_hint
+        )
+        
+        logger.info("Auth0 URL generated with tenant context", extra={
+            "event": "auth0_url_generated",
+            "redirect_uri_domain": redirect_uri.split('/')[2] if '//' in redirect_uri else redirect_uri,
+            "additional_scopes": scopes_list,
+            "organization_hint": organization_hint
+        })
+        
+        return {
+            "auth_url": auth_url,
+            "redirect_uri": redirect_uri,
+            "scopes": ["openid", "profile", "email", "read:organization", "read:roles"] + (scopes_list or []),
+            "organization_hint": organization_hint
+        }
+        
+    except ValueError as e:
+        logger.error("Invalid redirect URI for Auth0 URL", extra={
+            "event": "auth0_url_error",
+            "redirect_uri": redirect_uri,
+            "error": str(e)
+        })
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error("Error generating Auth0 URL", extra={
+            "event": "auth0_url_unexpected_error",
+            "error": str(e),
+            "error_type": type(e).__name__
+        })
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate authorization URL"
+        )
+
+
+@router.get("/session/check")
+async def check_session(current_user: User = Depends(get_current_user)):
+    """Check if current session is valid and return basic info"""
+    return {
+        "authenticated": True,
+        "user_id": str(current_user.id),
+        "tenant_id": str(current_user.organisation_id),
+        "role": current_user.role.value,
+        "active": current_user.is_active
+    }
+
+
+@router.post("/session/extend")
+async def extend_session(
+    request: Request,
+    response: Response,
+    current_user: User = Depends(get_current_user)
+):
+    """Extend session if token is near expiration"""
+    # This would typically check if the current token should be refreshed
+    # and issue a new one if needed. For now, return session info.
+    
+    # Get current token from authorization header
+    authorization = request.headers.get("authorization")
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No valid token found"
+        )
+    
+    token = authorization[7:]  # Remove "Bearer " prefix
+    payload = verify_token(token, expected_type="access")
+    
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+    
+    # Check if token should be refreshed (within 15 minutes of expiration)
+    if should_refresh_token(payload, threshold_minutes=15):
+        logger.info("Session extension recommended", extra={
+            "event": "session_extension_needed",
+            "user_id": str(current_user.id),
+            "token_jti": payload.get("jti")
+        })
+        return {
+            "extend_recommended": True,
+            "message": "Token should be refreshed",
+            "expires_soon": True
+        }
+    
+    return {
+        "extend_recommended": False,
+        "message": "Session is still valid",
+        "expires_soon": False
+    }

@@ -33,13 +33,11 @@ from app.auth.jwt import create_access_token
 @pytest.fixture(scope="session")
 def postgresql_engine():
     """Create PostgreSQL test engine with RLS support."""
-    # Use environment variables for test database connection
-    import os
+    # Use settings to get proper test database URL
+    from app.core.config import settings
     
-    db_url = os.getenv(
-        "TEST_DATABASE_URL", 
-        "postgresql://test_user:test_pass@localhost:5432/test_tenant_security"
-    )
+    # Get test database URL with proper service references
+    db_url = settings.get_test_database_url()
     
     engine = create_engine(db_url, echo=False)
     
@@ -130,7 +128,7 @@ def test_organisations_rls(postgresql_session):
         id=uuid.uuid4(),
         name="RLS Test Org 2", 
         industry="Finance",
-        subscription_plan=SubscriptionPlan.premium
+        subscription_plan=SubscriptionPlan.professional
     )
     
     postgresql_session.add(org1)
@@ -557,13 +555,25 @@ class TestSecurityValidation:
         # Mock database session that tracks close() calls
         mock_db = Mock()
         close_call_count = 0
+        execute_call_count = 0
         
         def track_close():
             nonlocal close_call_count
             close_call_count += 1
             
+        def track_execute(*args, **kwargs):
+            nonlocal execute_call_count
+            execute_call_count += 1
+            return Mock()  # Mock result
+            
         mock_db.close.side_effect = track_close
-        mock_get_db.return_value = iter([mock_db])
+        mock_db.execute.side_effect = track_execute
+        mock_db.commit.return_value = None
+        # Create a generator function that always yields the same mock_db
+        def mock_db_generator():
+            while True:  # Allow multiple next() calls
+                yield mock_db
+        mock_get_db.return_value = mock_db_generator()
         
         middleware = TenantContextMiddleware(app)
         

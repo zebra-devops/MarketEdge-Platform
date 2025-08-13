@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship, Mapped, mapped_column
 from typing import List, Optional
 from .base import Base
 import enum
+from ..core.rate_limit_config import Industry
 
 
 class SubscriptionPlan(str, enum.Enum):
@@ -15,9 +16,10 @@ class Organisation(Base):
     __tablename__ = "organisations"
     
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    industry: Mapped[Optional[str]] = mapped_column(String(100))
-    subscription_plan: Mapped[SubscriptionPlan] = mapped_column(Enum(SubscriptionPlan), default=SubscriptionPlan.basic)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    industry: Mapped[Optional[str]] = mapped_column(String(100))  # Legacy field - to be deprecated
+    industry_type: Mapped[Industry] = mapped_column(Enum(Industry), default=Industry.DEFAULT, nullable=False, server_default='default')
+    subscription_plan: Mapped[SubscriptionPlan] = mapped_column(Enum(SubscriptionPlan), default=SubscriptionPlan.basic, server_default=SubscriptionPlan.basic.value)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, server_default='true')
     
     # Rate limiting configuration
     rate_limit_per_hour: Mapped[int] = mapped_column(Integer, default=1000, nullable=False)

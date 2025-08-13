@@ -11,11 +11,21 @@ from ...core.logging import logger
 class DataSourceRouter(IDataSourceRouter):
     """Routes queries to appropriate data sources with caching and failover"""
     
-    def __init__(self, cache_manager: Optional[ICacheManager] = None):
+    def __init__(self, cache_manager: Optional[ICacheManager] = None, config: Optional[Dict[str, Any]] = None):
         self.sources: Dict[DataSourceType, AbstractDataSource] = {}
         self.cache_manager = cache_manager
         self.fallback_order: Dict[str, List[DataSourceType]] = {}
         self.query_routing_rules: Dict[str, DataSourceType] = {}
+        
+        # Configuration attributes
+        if config:
+            self.default_source = config.get('default_source', 'supabase')
+            self.enable_fallback = config.get('enable_fallback', True)
+            self.health_check_interval = config.get('health_check_interval', 60)
+        else:
+            self.default_source = 'supabase'
+            self.enable_fallback = True
+            self.health_check_interval = 60
         
         # Default routing rules
         self._setup_default_routing()
@@ -68,7 +78,7 @@ class DataSourceRouter(IDataSourceRouter):
                 method="get_competitive_data",
                 org_id=org_id,
                 market=market,
-                **params.dict(exclude_none=True)
+                **(params.model_dump(exclude_none=True) if hasattr(params, 'model_dump') else params.dict(exclude_none=True))
             )
             
             # Try to get from cache first
@@ -92,7 +102,7 @@ class DataSourceRouter(IDataSourceRouter):
             cache_ttl = timedelta(minutes=30)  # Cache competitive data for 30 minutes
             await self.cache_manager.set(
                 cache_key, 
-                result.dict(), 
+                (result.model_dump() if hasattr(result, 'model_dump') else result.dict()), 
                 ttl=cache_ttl
             )
             result.cache_ttl = int(cache_ttl.total_seconds())
@@ -110,7 +120,7 @@ class DataSourceRouter(IDataSourceRouter):
         # Generate cache key
         cache_key = None
         if self.cache_manager:
-            cache_params = params.dict(exclude_none=True) if params else {}
+            cache_params = (params.model_dump(exclude_none=True) if hasattr(params, 'model_dump') else params.dict(exclude_none=True)) if params else {}
             cache_key = self.cache_manager.generate_cache_key(
                 source=query_type,
                 method="get_reference_data",
@@ -138,7 +148,7 @@ class DataSourceRouter(IDataSourceRouter):
             cache_ttl = timedelta(hours=4)  # Cache reference data for 4 hours
             await self.cache_manager.set(
                 cache_key, 
-                result.dict(), 
+                (result.model_dump() if hasattr(result, 'model_dump') else result.dict()), 
                 ttl=cache_ttl
             )
             result.cache_ttl = int(cache_ttl.total_seconds())
@@ -160,7 +170,7 @@ class DataSourceRouter(IDataSourceRouter):
                 source=query_type,
                 method="get_analytics_data",
                 org_id=org_id,
-                **params.dict(exclude_none=True)
+                **(params.model_dump(exclude_none=True) if hasattr(params, 'model_dump') else params.dict(exclude_none=True))
             )
             
             # Try to get from cache first
@@ -183,7 +193,7 @@ class DataSourceRouter(IDataSourceRouter):
             cache_ttl = timedelta(minutes=15)  # Cache analytics data for 15 minutes
             await self.cache_manager.set(
                 cache_key, 
-                result.dict(), 
+                (result.model_dump() if hasattr(result, 'model_dump') else result.dict()), 
                 ttl=cache_ttl
             )
             result.cache_ttl = int(cache_ttl.total_seconds())
@@ -322,3 +332,16 @@ class DataSourceRouter(IDataSourceRouter):
         
         pattern = f"*:*:*{market}*"
         return await self.cache_manager.clear_pattern(pattern)
+    
+    def _get_cache_key(self, query_type: str, org_id: str, market: str, params: QueryParams) -> str:
+        """Generate cache key for data queries"""
+        if not self.cache_manager:
+            return ""
+        
+        # Generate cache key manually since the cache manager method might be async
+        params_dict = params.model_dump(exclude_none=True) if hasattr(params, 'model_dump') else params.dict(exclude_none=True)
+        key_parts = [query_type, "query", org_id or "none", market or "none"]
+        for key, value in params_dict.items():
+            key_parts.append(f"{key}:{value}")
+        
+        return ":".join(key_parts)

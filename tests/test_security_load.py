@@ -30,7 +30,7 @@ class TestSecurityLoadPerformance:
             id=uuid.uuid4(),
             name="Load Test Org 1",
             industry="Technology", 
-            subscription_plan=SubscriptionPlan.premium
+            subscription_plan=SubscriptionPlan.professional
         )
         
         user1 = User(

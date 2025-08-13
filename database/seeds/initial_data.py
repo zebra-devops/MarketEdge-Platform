@@ -8,6 +8,7 @@ from app.models.organisation import Organisation, SubscriptionPlan
 from app.models.user import User, UserRole
 from app.models.tool import Tool
 from app.models.organisation_tool_access import OrganisationToolAccess
+from app.core.rate_limit_config import Industry
 
 
 def seed_database():
@@ -18,21 +19,24 @@ def seed_database():
         org1 = Organisation(
             name="TechCorp Inc",
             industry="Technology",
-            subscription_plan=SubscriptionPlan.ENTERPRISE,
+            industry_type=Industry.B2B,
+            subscription_plan=SubscriptionPlan.enterprise,
             is_active=True
         )
         
         org2 = Organisation(
             name="Marketing Solutions Ltd",
             industry="Marketing",
-            subscription_plan=SubscriptionPlan.PROFESSIONAL,
+            industry_type=Industry.B2B,
+            subscription_plan=SubscriptionPlan.professional,
             is_active=True
         )
         
         org3 = Organisation(
             name="Default",
             industry="General",
-            subscription_plan=SubscriptionPlan.BASIC,
+            industry_type=Industry.DEFAULT,
+            subscription_plan=SubscriptionPlan.basic,
             is_active=True
         )
         

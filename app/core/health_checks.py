@@ -80,12 +80,12 @@ class HealthChecker:
     
     async def check_redis_connection(self) -> Dict[str, Any]:
         """
-        Test Redis connection over Railway's private network.
+        Test Redis connection using environment-aware configuration.
         Tests both main Redis and rate limiting Redis connections.
         """
         results = {
-            "main_redis": await self._test_redis_url(settings.REDIS_URL, "main"),
-            "rate_limit_redis": await self._test_redis_url(settings.RATE_LIMIT_STORAGE_URL, "rate_limit")
+            "main_redis": await self._test_redis_url(settings.get_redis_url_for_environment(), "main"),
+            "rate_limit_redis": await self._test_redis_url(settings.get_rate_limit_redis_url_for_environment(), "rate_limit")
         }
         
         # Overall status
@@ -104,15 +104,11 @@ class HealthChecker:
         client = None
         
         try:
-            # Create Redis client with Railway-appropriate settings
+            # Create Redis client with environment-appropriate settings
+            conn_config = settings.get_redis_connection_config()
             client = redis.from_url(
                 redis_url,
-                socket_timeout=5.0,
-                socket_connect_timeout=10.0,
-                retry_on_timeout=True,
-                health_check_interval=30,
-                encoding="utf-8",
-                decode_responses=True
+                **conn_config
             )
             
             # Test basic operations

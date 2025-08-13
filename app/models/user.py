@@ -1,8 +1,9 @@
 from sqlalchemy import String, Boolean, ForeignKey, Enum
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from .base import Base
+from .database_types import CompatibleUUID
 import enum
+import uuid
 
 
 class UserRole(str, enum.Enum):
@@ -17,7 +18,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    organisation_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organisations.id"), nullable=False)
+    organisation_id: Mapped[uuid.UUID] = mapped_column(CompatibleUUID(), ForeignKey("organisations.id"), nullable=False)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.viewer, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     

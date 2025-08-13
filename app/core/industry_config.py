@@ -43,6 +43,7 @@ class IndustryMapper:
         """Initialize SIC code to industry mappings."""
         return {
             # Cinema / Entertainment
+            "59140": Industry.CINEMA,  # Cinema exhibition and operation
             "7832": Industry.CINEMA,  # Motion picture theaters, except drive-in
             "7833": Industry.CINEMA,  # Drive-in motion picture theaters
             "7841": Industry.CINEMA,  # Video tape rental
@@ -89,7 +90,7 @@ class IndustryMapper:
                 industry=Industry.CINEMA,
                 display_name="Cinema & Entertainment",
                 description="Movie theaters, entertainment venues, and related services",
-                sic_codes=["7832", "7833", "7841", "5735"],
+                sic_codes=["59140", "7832", "7833", "7841", "5735"],
                 typical_usage_patterns={
                     "peak_hours": ["18:00-23:00", "12:00-14:00"],
                     "seasonal_peaks": ["summer", "holiday_season"],

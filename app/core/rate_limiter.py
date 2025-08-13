@@ -34,27 +34,21 @@ class RateLimiterCore:
         self._connection_pool = None
         
     async def initialize(self) -> None:
-        """Initialize Redis connection with security and performance optimizations."""
+        """Initialize Redis connection with environment-aware configuration and security optimizations."""
         try:
-            # Parse Redis URL for security configuration
-            redis_config = self._parse_redis_config(self.redis_url)
+            # Use environment-aware Redis URL resolution
+            resolved_redis_url = settings.get_rate_limit_redis_url_for_environment()
+            
+            # Get connection configuration from settings
+            conn_config = settings.get_redis_connection_config()
+            
+            # Override decode_responses for rate limiter compatibility
+            conn_config["decode_responses"] = False
             
             # Create secure Redis client
-            self.redis_client = redis.Redis(
-                host=redis_config['host'],
-                port=redis_config['port'],
-                password=redis_config.get('password'),
-                ssl=redis_config.get('ssl', False),
-                ssl_cert_reqs=redis_config.get('ssl_cert_reqs'),
-                ssl_ca_certs=redis_config.get('ssl_ca_certs'),
-                encoding="utf-8",
-                decode_responses=False,
-                socket_connect_timeout=5,
-                socket_timeout=2,
-                retry_on_timeout=True,
-                health_check_interval=30,
-                max_connections=50,  # Connection pooling
-                connection_pool=self._connection_pool
+            self.redis_client = redis.from_url(
+                resolved_redis_url,
+                **conn_config
             )
             
             # Test connection

@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict, Any
 from pydantic import field_validator, Field
 from pydantic_settings import BaseSettings
 import os
@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     
     DATABASE_URL: str
     DATABASE_URL_TEST: Optional[str] = None
+    TEST_DATABASE_URL: Optional[str] = None
     REDIS_URL: str = "redis://localhost:6379"
     
     JWT_SECRET_KEY: str
@@ -27,6 +28,24 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     LOG_LEVEL: str = "info"
+    
+    # Production Cookie Security Settings
+    COOKIE_SECURE: bool = True  # Force HTTPS in production
+    COOKIE_SAMESITE: str = "lax"  # Options: strict, lax, none
+    COOKIE_HTTPONLY: bool = True  # Prevent XSS
+    COOKIE_DOMAIN: Optional[str] = None  # Set for production domain
+    COOKIE_PATH: str = "/"
+    
+    # Session Security Settings
+    SESSION_TIMEOUT_MINUTES: int = 30
+    SESSION_ABSOLUTE_TIMEOUT_HOURS: int = 8
+    SESSION_RENEWAL_THRESHOLD_MINUTES: int = 15
+    
+    # Security Headers Configuration
+    SECURITY_HEADERS_ENABLED: bool = True
+    CSP_ENABLED: bool = True
+    HSTS_MAX_AGE: int = 31536000  # 1 year
+    HSTS_INCLUDE_SUBDOMAINS: bool = True
     
     CORS_ORIGINS: Union[str, List[str]] = Field(default=["http://localhost:3000", "http://localhost:3001"])
     
@@ -47,6 +66,8 @@ class Settings(BaseSettings):
     REDIS_HEALTH_CHECK_INTERVAL: int = 30
     REDIS_SOCKET_CONNECT_TIMEOUT: int = 5
     REDIS_SOCKET_TIMEOUT: int = 2
+    REDIS_RETRY_ON_TIMEOUT: bool = True
+    REDIS_MAX_CONNECTIONS: int = 50
 
     class SupabaseConfig(BaseModel):
         URL: str
@@ -105,6 +126,173 @@ class Settings(BaseSettings):
             return v
         # Return default if we can't parse
         return ["http://localhost:3000"]
+    
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production environment"""
+        return self.ENVIRONMENT.lower() == "production"
+    
+    @property
+    def cookie_secure(self) -> bool:
+        """Determine if cookies should be secure based on environment"""
+        if self.is_production:
+            return True
+        return self.COOKIE_SECURE
+    
+    @property
+    def cookie_samesite(self) -> str:
+        """Get appropriate SameSite setting for environment"""
+        if self.is_production:
+            return "strict"  # Strict in production for maximum security
+        return self.COOKIE_SAMESITE
+    
+    def get_cookie_settings(self) -> Dict[str, Any]:
+        """Get complete cookie configuration for current environment"""
+        settings = {
+            "secure": self.cookie_secure,
+            "httponly": self.COOKIE_HTTPONLY,
+            "samesite": self.cookie_samesite,
+            "path": self.COOKIE_PATH
+        }
+        
+        if self.COOKIE_DOMAIN:
+            settings["domain"] = self.COOKIE_DOMAIN
+            
+        return settings
+    
+    def get_test_database_url(self) -> str:
+        """Get appropriate database URL for testing environment with proper isolation"""
+        if self.TEST_DATABASE_URL:
+            return self.TEST_DATABASE_URL
+        elif self.DATABASE_URL_TEST:
+            # Fix Docker hostname resolution in test URL
+            test_url = self.DATABASE_URL_TEST
+            docker_hosts = ["db", "postgres", "postgresql"]
+            for host in docker_hosts:
+                if f"@{host}:" in test_url and "localhost" not in test_url:
+                    test_url = test_url.replace(f"@{host}:", "@localhost:")
+                    break
+            return test_url
+        else:
+            # Environment-aware test database configuration
+            if self.ENVIRONMENT == "test" or os.getenv("PYTEST_CURRENT_TEST"):
+                # Use unique SQLite database per test run for complete isolation
+                import uuid
+                unique_id = str(uuid.uuid4())[:8]
+                return f"sqlite:///./test_tenant_security_{unique_id}.db"
+            elif "railway.internal" in self.DATABASE_URL or self.ENVIRONMENT == "production":
+                # Use Railway's internal PostgreSQL service for tests
+                return self.DATABASE_URL.replace("/railway", "/test_database")
+            else:
+                # Local development - convert any docker hostnames to localhost
+                base_url = self.DATABASE_URL
+                # Replace common docker hostnames with localhost for local testing
+                docker_hosts = ["db", "postgres", "postgresql"]
+                for host in docker_hosts:
+                    if f"@{host}:" in base_url:
+                        base_url = base_url.replace(f"@{host}:", "@localhost:")
+                        break
+                
+                # Change database name for testing
+                if base_url.endswith("/platform_wrapper"):
+                    return base_url.replace("/platform_wrapper", "/test_tenant_security")
+                else:
+                    return "postgresql://test_user:test_pass@localhost:5432/test_tenant_security"
+    
+    def get_database_url_for_environment(self) -> str:
+        """Get database URL based on current environment with hostname resolution"""
+        base_url = self.DATABASE_URL
+        
+        # Environment-specific hostname resolution
+        if self.ENVIRONMENT == "development":
+            # Development: Convert docker hostnames to localhost if needed
+            docker_hosts = ["db", "postgres", "postgresql"] 
+            for host in docker_hosts:
+                if f"@{host}:" in base_url and "localhost" not in base_url:
+                    # Check if we can connect to localhost instead
+                    base_url = base_url.replace(f"@{host}:", "@localhost:")
+                    break
+        elif self.ENVIRONMENT == "production":
+            # Production: Should already have correct Railway internal hostnames
+            pass
+        
+        return base_url
+    
+    def get_redis_url_for_environment(self) -> str:
+        """Get Redis URL based on current environment with hostname resolution"""
+        base_url = self.REDIS_URL
+        
+        # Environment-specific hostname resolution for Redis
+        if self.ENVIRONMENT == "development":
+            # Development: Convert docker hostnames to localhost if needed
+            docker_hosts = ["redis", "redis-server"]
+            for host in docker_hosts:
+                if f"//{host}:" in base_url and "localhost" not in base_url:
+                    # Check if we can connect to localhost instead
+                    base_url = base_url.replace(f"//{host}:", "//localhost:")
+                    break
+        elif self.ENVIRONMENT == "production":
+            # Production: Should already have correct Railway internal hostnames
+            pass
+        elif self.ENVIRONMENT == "test":
+            # Test: Use localhost for Redis tests
+            docker_hosts = ["redis", "redis-server"]
+            for host in docker_hosts:
+                if f"//{host}:" in base_url:
+                    base_url = base_url.replace(f"//{host}:", "//localhost:")
+                    break
+        
+        return base_url
+    
+    def get_rate_limit_redis_url_for_environment(self) -> str:
+        """Get rate limit Redis URL based on current environment with hostname resolution"""
+        base_url = self.RATE_LIMIT_STORAGE_URL
+        
+        # Environment-specific hostname resolution for rate limit Redis
+        if self.ENVIRONMENT == "development":
+            # Development: Convert docker hostnames to localhost if needed
+            docker_hosts = ["redis", "redis-server"]
+            for host in docker_hosts:
+                if f"//{host}:" in base_url and "localhost" not in base_url:
+                    base_url = base_url.replace(f"//{host}:", "//localhost:")
+                    break
+        elif self.ENVIRONMENT == "production":
+            # Production: Should already have correct Railway internal hostnames
+            pass
+        elif self.ENVIRONMENT == "test":
+            # Test: Use localhost for Redis tests
+            docker_hosts = ["redis", "redis-server"]
+            for host in docker_hosts:
+                if f"//{host}:" in base_url:
+                    base_url = base_url.replace(f"//{host}:", "//localhost:")
+                    break
+        
+        return base_url
+    
+    def get_redis_connection_config(self) -> Dict[str, Any]:
+        """Get Redis connection configuration for the current environment"""
+        config = {
+            "encoding": "utf-8",
+            "decode_responses": True,
+            "socket_connect_timeout": self.REDIS_SOCKET_CONNECT_TIMEOUT,
+            "socket_timeout": self.REDIS_SOCKET_TIMEOUT,
+            "retry_on_timeout": self.REDIS_RETRY_ON_TIMEOUT,
+            "health_check_interval": self.REDIS_HEALTH_CHECK_INTERVAL,
+            "max_connections": self.REDIS_MAX_CONNECTIONS
+        }
+        
+        # Only add password if provided
+        if self.REDIS_PASSWORD:
+            config["password"] = self.REDIS_PASSWORD
+            
+        # Only add SSL configuration if enabled
+        if self.REDIS_SSL_ENABLED:
+            config["ssl"] = True
+            if self.REDIS_SSL_CA_CERTS:
+                config["ssl_ca_certs"] = self.REDIS_SSL_CA_CERTS
+            config["ssl_cert_reqs"] = self.REDIS_SSL_CERT_REQS
+        
+        return config
     
     model_config = {
         "env_file": ".env",

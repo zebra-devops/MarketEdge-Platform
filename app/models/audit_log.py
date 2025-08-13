@@ -1,12 +1,12 @@
 from typing import Optional, Dict, Any
 from sqlalchemy import Column, String, Boolean, Integer, DateTime, Text, ForeignKey, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID, JSONB, INET
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 import uuid
 import enum
 
 from .base import Base
+from .database_types import CompatibleUUID, CompatibleJSON
 
 
 class AuditAction(str, enum.Enum):
@@ -39,11 +39,11 @@ class AuditLog(Base):
     """
     __tablename__ = "audit_logs"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Who performed the action
-    user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
-    organisation_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("organisations.id"), nullable=True)
+    user_id: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=True)
+    organisation_id: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("organisations.id"), nullable=True)
     
     # What action was performed
     action: Mapped[AuditAction] = mapped_column(SQLEnum(AuditAction), nullable=False)
@@ -55,11 +55,11 @@ class AuditLog(Base):
     severity: Mapped[AuditSeverity] = mapped_column(SQLEnum(AuditSeverity), default=AuditSeverity.LOW)
     
     # Context information
-    changes: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # Before/after values
-    context_data: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # Additional context
+    changes: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)  # Before/after values
+    context_data: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)  # Additional context
     
     # Request information
-    ip_address: Mapped[Optional[str]] = mapped_column(INET, nullable=True)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)  # IPv4/IPv6 compatible
     user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     request_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     
@@ -85,15 +85,15 @@ class AdminAction(Base):
     """
     __tablename__ = "admin_actions"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Administrator who performed the action
-    admin_user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    admin_user_id: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=False)
     
     # Action details
     action_type: Mapped[str] = mapped_column(String(100), nullable=False)  # feature_flag_update, module_enable, etc.
-    target_organisation_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("organisations.id"), nullable=True)
-    target_user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    target_organisation_id: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("organisations.id"), nullable=True)
+    target_user_id: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=True)
     
     # Action summary
     summary: Mapped[str] = mapped_column(Text, nullable=False)
@@ -104,11 +104,11 @@ class AdminAction(Base):
     affected_organisations_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     
     # Configuration changes
-    configuration_changes: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    configuration_changes: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
     
     # Approval workflow (if implemented)
     requires_approval: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    approved_by: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    approved_by: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=True)
     approved_at: Mapped[Optional[DateTime]] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Timestamps

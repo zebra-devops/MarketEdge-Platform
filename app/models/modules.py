@@ -1,6 +1,6 @@
 from typing import Optional, Dict, Any, List
 from sqlalchemy import Column, String, Boolean, Integer, DateTime, Text, ForeignKey, JSON, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from .database_types import CompatibleUUID, CompatibleJSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 import uuid
@@ -52,16 +52,16 @@ class AnalyticsModule(Base):
     
     # Module definition
     entry_point: Mapped[str] = mapped_column(String(500), nullable=False)  # Python module path
-    config_schema: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)  # JSON schema for config
-    default_config: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    config_schema: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)  # JSON schema for config
+    default_config: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
     
     # Requirements and dependencies
-    dependencies: Mapped[List[str]] = mapped_column(JSONB, nullable=False, default=list)  # Module IDs
-    min_data_requirements: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    dependencies: Mapped[List[str]] = mapped_column(CompatibleJSON(), nullable=False, default=list)  # Module IDs
+    min_data_requirements: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
     
     # API endpoints this module provides
-    api_endpoints: Mapped[List[str]] = mapped_column(JSONB, nullable=False, default=list)
-    frontend_components: Mapped[List[str]] = mapped_column(JSONB, nullable=False, default=list)
+    api_endpoints: Mapped[List[str]] = mapped_column(CompatibleJSON(), nullable=False, default=list)
+    frontend_components: Mapped[List[str]] = mapped_column(CompatibleJSON(), nullable=False, default=list)
     
     # Documentation and help
     documentation_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
@@ -69,10 +69,10 @@ class AnalyticsModule(Base):
     
     # Pricing and licensing
     pricing_tier: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # free, basic, premium, enterprise
-    license_requirements: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    license_requirements: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
     
     # Audit fields
-    created_by: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=False)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -93,19 +93,19 @@ class OrganisationModule(Base):
     """
     __tablename__ = "organisation_modules"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # References
-    organisation_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("organisations.id"), nullable=False)
+    organisation_id: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("organisations.id"), nullable=False)
     module_id: Mapped[str] = mapped_column(String(255), ForeignKey("analytics_modules.id"), nullable=False)
     
     # Configuration
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    configuration: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    configuration: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
     
     # Access control
-    enabled_for_users: Mapped[List[str]] = mapped_column(JSONB, nullable=False, default=list)  # User IDs, empty = all users
-    disabled_for_users: Mapped[List[str]] = mapped_column(JSONB, nullable=False, default=list)  # User IDs to exclude
+    enabled_for_users: Mapped[List[str]] = mapped_column(CompatibleJSON(), nullable=False, default=list)  # User IDs, empty = all users
+    disabled_for_users: Mapped[List[str]] = mapped_column(CompatibleJSON(), nullable=False, default=list)  # User IDs to exclude
     
     # Usage tracking
     first_enabled_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -113,8 +113,8 @@ class OrganisationModule(Base):
     access_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     
     # Audit fields
-    created_by: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
-    updated_by: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    created_by: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=False)
+    updated_by: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -135,23 +135,23 @@ class ModuleConfiguration(Base):
     """
     __tablename__ = "module_configurations"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # References
     module_id: Mapped[str] = mapped_column(String(255), ForeignKey("analytics_modules.id"), nullable=False)
-    organisation_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("organisations.id"), nullable=False)
+    organisation_id: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("organisations.id"), nullable=False)
     
     # Configuration data
     config_key: Mapped[str] = mapped_column(String(255), nullable=False)
-    config_value: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    config_value: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False)
     
     # Validation and schema
     schema_version: Mapped[str] = mapped_column(String(50), nullable=False, default="1.0.0")
     is_encrypted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     
     # Audit fields
-    created_by: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
-    updated_by: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    created_by: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=False)
+    updated_by: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -171,12 +171,12 @@ class ModuleUsageLog(Base):
     """
     __tablename__ = "module_usage_logs"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # References
     module_id: Mapped[str] = mapped_column(String(255), ForeignKey("analytics_modules.id"), nullable=False)
-    organisation_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("organisations.id"), nullable=False)
-    user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    organisation_id: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("organisations.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=False)
     
     # Usage details
     action: Mapped[str] = mapped_column(String(100), nullable=False)  # viewed, executed, configured, etc.
@@ -184,7 +184,7 @@ class ModuleUsageLog(Base):
     duration_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     
     # Context data
-    context: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    context: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
     
     # Result tracking
     success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

@@ -112,7 +112,7 @@ class TestDataSourceRouter:
         result = await router.route_competitive_data("test-org", "manchester", params)
         
         assert result == sample_data_response
-        mock_supabase_source.get_competitive_data.assert_called_once_with("test-org", "manchester", params)
+        mock_supabase_source.get_competitive_data.assert_called_once_with(org_id="test-org", market="manchester", params=params)
         mock_cache_manager.set.assert_called_once()
     
     @pytest.mark.asyncio

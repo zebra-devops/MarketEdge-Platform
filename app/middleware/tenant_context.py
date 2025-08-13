@@ -20,6 +20,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from ..auth.jwt import verify_token
 from ..models.user import User, UserRole
 from ..core.database import get_db
+from ..core.config import settings
+from ..core.validators import create_security_headers, sanitize_string_input, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -65,10 +67,28 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
                 # Set database session variables
                 await self._set_database_context(tenant_context)
                 
-                # Add context to request state for access by endpoints
-                request.state.tenant_id = tenant_context["tenant_id"]
-                request.state.user_role = tenant_context["user_role"]
-                request.state.user_id = tenant_context["user_id"]
+                # Add context to request state for access by endpoints with validation
+                try:
+                    validated_tenant_id = sanitize_string_input(str(tenant_context["tenant_id"]), max_length=100)
+                    validated_user_role = sanitize_string_input(tenant_context["user_role"], max_length=50)
+                    validated_user_id = sanitize_string_input(str(tenant_context["user_id"]), max_length=100)
+                    
+                    request.state.tenant_id = validated_tenant_id
+                    request.state.user_role = validated_user_role
+                    request.state.user_id = validated_user_id
+                except ValidationError as e:
+                    logger.error(
+                        "Tenant context validation failed",
+                        extra={
+                            "event": "tenant_context_validation_error",
+                            "error": str(e),
+                            "path": request.url.path
+                        }
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid tenant context"
+                    )
                 
                 logger.info(
                     "Tenant context established",
@@ -84,13 +104,39 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
             # Process the request
             response = await call_next(request)
             
-            # Clear database context after request
+            # Add tenant context validation headers and security headers to response
             if tenant_context:
+                response.headers["X-Tenant-Context"] = "validated"
+                response.headers["X-Tenant-ID"] = str(tenant_context["tenant_id"])
+                response.headers["X-User-Role"] = tenant_context["user_role"]
+                
+                # Clear database context after request
                 await self._clear_database_context()
+            
+            # Add security headers if enabled
+            if settings.SECURITY_HEADERS_ENABLED:
+                security_headers = create_security_headers()
+                for key, value in security_headers.items():
+                    response.headers[key] = value
             
             # Add performance metrics
             processing_time = (time.time() - start_time) * 1000  # Convert to milliseconds
             response.headers["X-Tenant-Processing-Time"] = f"{processing_time:.2f}ms"
+            
+            # Add session validation for production security
+            if settings.is_production and tenant_context:
+                # Verify session security cookie exists
+                session_security = request.cookies.get("session_security")
+                if session_security != "verified":
+                    logger.warning(
+                        "Missing session security cookie in production",
+                        extra={
+                            "event": "missing_session_security",
+                            "path": request.url.path,
+                            "tenant_id": str(tenant_context["tenant_id"])
+                        }
+                    )
+                    # Don't fail the request but log for monitoring
             
             return response
             
@@ -217,10 +263,20 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
                         detail="User account is inactive"
                     )
                 
+                # Get organisation for industry context
+                organisation = None
+                if user.organisation_id:
+                    from ..models.organisation import Organisation
+                    organisation = db.query(Organisation).filter(
+                        Organisation.id == user.organisation_id
+                    ).first()
+                
                 return {
                     "tenant_id": user.organisation_id,
                     "user_role": user.role.value,
-                    "user_id": user.id
+                    "user_id": user.id,
+                    "organisation": organisation,
+                    "industry_type": organisation.industry_type if organisation else None
                 }
                 
             finally:
@@ -277,6 +333,14 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
                 text("SELECT set_config('app.current_user_id', :user_id, true)"),
                 {"user_id": str(tenant_context["user_id"])}
             )
+            
+            # Set industry type for industry-specific policies
+            industry_type = tenant_context.get("industry_type")
+            if industry_type:
+                db.execute(
+                    text("SELECT set_config('app.current_industry_type', :industry_type, true)"),
+                    {"industry_type": industry_type.value}
+                )
             
             # For super admins, allow cross-tenant access to be explicitly enabled per request
             # Default is false for security
@@ -335,6 +399,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
             db.execute(text("SELECT set_config('app.current_tenant_id', null, true)"))
             db.execute(text("SELECT set_config('app.current_user_role', null, true)"))
             db.execute(text("SELECT set_config('app.current_user_id', null, true)"))
+            db.execute(text("SELECT set_config('app.current_industry_type', null, true)"))
             db.execute(text("SELECT set_config('app.allow_cross_tenant', null, true)"))
             
             db.commit()

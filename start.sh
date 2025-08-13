@@ -7,8 +7,17 @@ echo "Starting Platform Wrapper Backend..."
 echo "Environment: ${ENVIRONMENT:-production}"
 echo "Port: ${PORT:-8000}"
 
-# Start the application without migrations first (for health check)
-# Railway health checks need the app to respond quickly
+# Run database migrations before starting the application
+if [ "$ENVIRONMENT" = "production" ]; then
+    echo "Running database migrations..."
+    if python3 -m alembic upgrade head; then
+        echo "✅ Database migrations completed"
+    else
+        echo "❌ Database migrations failed"
+        exit 1
+    fi
+fi
+
 echo "Starting FastAPI application..."
 exec uvicorn app.main:app \
     --host 0.0.0.0 \

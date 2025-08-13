@@ -1,3 +1,4 @@
+import asyncio
 import json
 import hashlib
 from typing import Any, Optional, Dict
@@ -7,6 +8,8 @@ from redis.exceptions import RedisError
 
 from ..interfaces.cache import ICacheManager
 from ...core.logging import logger
+from ...core.config import settings
+from ...core.redis_manager import redis_manager
 
 
 class RedisCacheManager(ICacheManager):
@@ -19,35 +22,30 @@ class RedisCacheManager(ICacheManager):
         self.key_prefix = config.get("key_prefix", "data_layer:")
         
     async def initialize(self) -> None:
-        """Initialize Redis connection"""
+        """Initialize Redis connection using centralized connection manager"""
         try:
-            redis_url = self.config.get("redis_url", "redis://localhost:6379/0")
+            # Use centralized Redis connection manager
+            self.redis_client = await redis_manager.create_cache_client(self.config)
             
-            self.redis_client = redis.from_url(
-                redis_url,
-                encoding="utf-8",
-                decode_responses=True,
-                socket_connect_timeout=5,
-                socket_timeout=5,
-                retry_on_timeout=True,
-                health_check_interval=30
-            )
+            if self.redis_client:
+                logger.info("Redis cache manager initialized successfully")
+            else:
+                if redis_manager.is_fallback_mode():
+                    logger.warning("Redis cache manager initialized in fallback mode (no Redis connection)")
+                else:
+                    logger.error("Failed to get Redis client from connection manager")
+                    raise ConnectionError("Could not establish Redis connection")
             
-            # Test connection
-            await self.redis_client.ping()
-            logger.info("Redis cache manager initialized successfully")
-            
-        except RedisError as e:
-            logger.error(f"Failed to initialize Redis cache: {e}")
-            raise
         except Exception as e:
-            logger.error(f"Unexpected error initializing Redis cache: {e}")
+            logger.error(f"Failed to initialize Redis cache: {e}")
             raise
     
     async def get(self, key: str) -> Optional[Any]:
-        """Get value from cache"""
+        """Get value from cache with fallback support"""
         try:
             if not self.redis_client:
+                if redis_manager.is_fallback_mode():
+                    return None  # Cache miss in fallback mode
                 logger.warning("Redis client not initialized")
                 return None
             
@@ -60,7 +58,7 @@ class RedisCacheManager(ICacheManager):
             # Try to deserialize JSON, fallback to string
             try:
                 return json.loads(cached_value)
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, TypeError):
                 return cached_value
                 
         except RedisError as e:
@@ -76,9 +74,11 @@ class RedisCacheManager(ICacheManager):
         value: Any, 
         ttl: Optional[timedelta] = None
     ) -> bool:
-        """Set value in cache with optional TTL"""
+        """Set value in cache with optional TTL and fallback support"""
         try:
             if not self.redis_client:
+                if redis_manager.is_fallback_mode():
+                    return True  # Pretend success in fallback mode
                 logger.warning("Redis client not initialized")
                 return False
             
@@ -116,9 +116,11 @@ class RedisCacheManager(ICacheManager):
             return False
     
     async def delete(self, key: str) -> bool:
-        """Delete key from cache"""
+        """Delete key from cache with fallback support"""
         try:
             if not self.redis_client:
+                if redis_manager.is_fallback_mode():
+                    return True  # Pretend success in fallback mode
                 return False
             
             full_key = f"{self.key_prefix}{key}"

@@ -1,12 +1,12 @@
 from typing import Optional, Dict, Any, List
 from sqlalchemy import Column, String, Boolean, Integer, DateTime, Text, ForeignKey, JSON, Enum as SQLEnum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 import uuid
 import enum
 
 from .base import Base
+from .database_types import CompatibleUUID, CompatibleJSON
 
 
 class FeatureFlagScope(str, enum.Enum):
@@ -31,7 +31,7 @@ class FeatureFlag(Base):
     """
     __tablename__ = "feature_flags"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # Basic flag information
     flag_key: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
@@ -45,18 +45,18 @@ class FeatureFlag(Base):
     status: Mapped[FeatureFlagStatus] = mapped_column(SQLEnum(FeatureFlagStatus), default=FeatureFlagStatus.ACTIVE)
     
     # JSON configuration for complex rules
-    config: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    config: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
     
     # Sector restrictions (SIC codes)
-    allowed_sectors: Mapped[List[str]] = mapped_column(JSONB, nullable=False, default=list)
-    blocked_sectors: Mapped[List[str]] = mapped_column(JSONB, nullable=False, default=list)
+    allowed_sectors: Mapped[List[str]] = mapped_column(CompatibleJSON(), nullable=False, default=list)
+    blocked_sectors: Mapped[List[str]] = mapped_column(CompatibleJSON(), nullable=False, default=list)
     
     # Module association
     module_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     
     # Audit fields
-    created_by: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
-    updated_by: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    created_by: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=False)
+    updated_by: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -77,12 +77,12 @@ class FeatureFlagOverride(Base):
     """
     __tablename__ = "feature_flag_overrides"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # References
-    feature_flag_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("feature_flags.id"), nullable=False)
-    organisation_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("organisations.id"), nullable=True)
-    user_id: Mapped[Optional[str]] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    feature_flag_id: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("feature_flags.id"), nullable=False)
+    organisation_id: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("organisations.id"), nullable=True)
+    user_id: Mapped[Optional[str]] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=True)
     
     # Override configuration
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
@@ -90,7 +90,7 @@ class FeatureFlagOverride(Base):
     expires_at: Mapped[Optional[DateTime]] = mapped_column(DateTime(timezone=True), nullable=True)
     
     # Audit fields
-    created_by: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    created_by: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=False)
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
@@ -110,16 +110,16 @@ class FeatureFlagUsage(Base):
     """
     __tablename__ = "feature_flag_usage"
 
-    id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(CompatibleUUID(), primary_key=True, default=lambda: str(uuid.uuid4()))
     
     # References
-    feature_flag_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("feature_flags.id"), nullable=False)
-    organisation_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("organisations.id"), nullable=False)
-    user_id: Mapped[str] = mapped_column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    feature_flag_id: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("feature_flags.id"), nullable=False)
+    organisation_id: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("organisations.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=False)
     
     # Usage tracking
     was_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False)
-    evaluation_context: Mapped[Dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    evaluation_context: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)
     
     # Timestamp
     accessed_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
