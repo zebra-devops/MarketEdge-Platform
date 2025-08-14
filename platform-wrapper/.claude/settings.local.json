@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(alembic revision:*)",
+      "Bash(python -m alembic revision:*)",
+      "Bash(python3 -m alembic revision:*)",
+      "Bash(mkdir:*)",
+      "Bash(docker logs:*)",
+      "Bash(cp:*)",
+      "Bash(find:*)",
+      "Bash(sed:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker compose:*)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(grep:*)",
+      "Bash(alembic upgrade:*)"
+    ],
+    "deny": []
+  }
+}

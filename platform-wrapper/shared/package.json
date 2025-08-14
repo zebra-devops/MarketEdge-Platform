@@ -1,0 +1,18 @@
+{
+  "name": "@platform-wrapper/shared",
+  "version": "1.0.0",
+  "description": "Shared types and utilities for Platform Wrapper",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
