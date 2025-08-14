@@ -81,15 +81,28 @@ class HealthChecker:
     async def check_redis_connection(self) -> Dict[str, Any]:
         """
         Test Redis connection using environment-aware configuration.
-        Tests both main Redis and rate limiting Redis connections.
+        Tests main Redis and conditionally tests rate limiting Redis if enabled.
         """
         results = {
-            "main_redis": await self._test_redis_url(settings.get_redis_url_for_environment(), "main"),
-            "rate_limit_redis": await self._test_redis_url(settings.get_rate_limit_redis_url_for_environment(), "rate_limit")
+            "main_redis": await self._test_redis_url(settings.get_redis_url_for_environment(), "main")
         }
         
-        # Overall status
-        all_connected = all(r["status"] == "connected" for r in results.values())
+        # Only test rate limiting Redis if rate limiting is enabled
+        if settings.RATE_LIMIT_ENABLED:
+            results["rate_limit_redis"] = await self._test_redis_url(settings.get_rate_limit_redis_url_for_environment(), "rate_limit")
+        else:
+            results["rate_limit_redis"] = {
+                "status": "skipped",
+                "reason": "Rate limiting is disabled (RATE_LIMIT_ENABLED=false)",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        
+        # Overall status - consider rate limiting Redis only if it's enabled
+        required_connections = ["main_redis"]
+        if settings.RATE_LIMIT_ENABLED:
+            required_connections.append("rate_limit_redis")
+        
+        all_connected = all(results[conn]["status"] == "connected" for conn in required_connections)
         
         return {
             "status": "connected" if all_connected else "error",
