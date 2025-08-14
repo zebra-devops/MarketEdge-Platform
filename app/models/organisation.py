@@ -47,3 +47,18 @@ class Organisation(Base):
     
     # Audit relationships
     audit_logs = relationship("AuditLog", back_populates="organisation")
+    
+    # Hierarchical organization relationships
+    hierarchy_nodes = relationship("OrganizationHierarchy", back_populates="legacy_organisation")
+    template_applications = relationship("OrganizationTemplateApplication", back_populates="organization")
+    
+    def get_root_hierarchy_node(self):
+        """Get the root hierarchy node for this organization"""
+        for node in self.hierarchy_nodes:
+            if node.level.value == "organization" and node.parent_id is None:
+                return node
+        return None
+        
+    def get_all_hierarchy_nodes(self):
+        """Get all hierarchy nodes for this organization"""
+        return self.hierarchy_nodes

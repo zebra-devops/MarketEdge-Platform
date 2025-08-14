@@ -239,15 +239,21 @@ def get_user_permissions(user_role: str, tenant_context: Optional[Dict[str, Any]
             "read:users", "write:users", "delete:users",
             "read:organizations", "write:organizations", "delete:organizations",
             "read:audit_logs", "read:system_metrics",
-            "manage:feature_flags", "manage:rate_limits"
+            "manage:feature_flags", "manage:rate_limits",
+            # Application permissions for admin
+            "read:market_edge", "read:causal_edge", "read:value_edge"
         ],
         "manager": [
             "read:users", "write:users",
             "read:organizations", "write:organizations",
-            "read:audit_logs"
+            "read:audit_logs",
+            # Application permissions for manager
+            "read:market_edge", "read:causal_edge", "read:value_edge"
         ],
         "viewer": [
-            "read:organizations"
+            "read:organizations",
+            # Application permissions for viewer (basic access)
+            "read:market_edge"
         ]
     }
     
@@ -257,11 +263,27 @@ def get_user_permissions(user_role: str, tenant_context: Optional[Dict[str, Any]
     if tenant_context and tenant_context.get("industry"):
         industry = tenant_context["industry"].lower()
         industry_permissions = {
-            "cinema": ["read:cinema_data", "analyze:cinema_metrics"],
-            "hotel": ["read:hotel_data", "analyze:hotel_metrics"],
-            "gym": ["read:gym_data", "analyze:gym_metrics"],
-            "retail": ["read:retail_data", "analyze:retail_metrics"],
-            "b2b": ["read:b2b_data", "analyze:b2b_metrics"]
+            "cinema": [
+                "read:cinema_data", "analyze:cinema_metrics",
+                # Additional application access for cinema industry
+                "read:causal_edge", "read:value_edge"
+            ],
+            "hotel": [
+                "read:hotel_data", "analyze:hotel_metrics",
+                "read:causal_edge", "read:value_edge"
+            ],
+            "gym": [
+                "read:gym_data", "analyze:gym_metrics",
+                "read:causal_edge", "read:value_edge"
+            ],
+            "retail": [
+                "read:retail_data", "analyze:retail_metrics",
+                "read:causal_edge", "read:value_edge"
+            ],
+            "b2b": [
+                "read:b2b_data", "analyze:b2b_metrics",
+                "read:causal_edge", "read:value_edge"
+            ]
         }
         permissions.extend(industry_permissions.get(industry, []))
     

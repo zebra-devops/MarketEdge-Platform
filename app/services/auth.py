@@ -8,6 +8,10 @@ from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 from fastapi import HTTPException, status
 import logging
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import os
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
@@ -165,3 +169,82 @@ class AuthService:
 
 # Global auth service instance
 authService = AuthService()
+
+
+async def send_invitation_email(
+    email: str, 
+    first_name: str, 
+    organization_name: str, 
+    invitation_token: str
+):
+    """Send invitation email to user"""
+    try:
+        # Email configuration (in production, use environment variables)
+        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        smtp_user = os.getenv("SMTP_USER")
+        smtp_password = os.getenv("SMTP_PASSWORD")
+        
+        if not smtp_user or not smtp_password:
+            logger.warning("SMTP credentials not configured, skipping invitation email")
+            return
+        
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = smtp_user
+        msg['To'] = email
+        msg['Subject'] = f"Welcome to {organization_name} - Market Edge Platform"
+        
+        # Email body
+        invitation_url = f"{os.getenv('FRONTEND_URL', 'http://localhost:3000')}/accept-invitation?token={invitation_token}"
+        
+        body = f"""
+        <html>
+        <body>
+            <h2>Welcome to Market Edge Platform</h2>
+            <p>Hello {first_name},</p>
+            
+            <p>You have been invited to join <strong>{organization_name}</strong> on the Market Edge Platform.</p>
+            
+            <p>Market Edge provides powerful competitive intelligence and analytics tools to help your organization make data-driven decisions.</p>
+            
+            <p>To get started, please click the button below to accept your invitation:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{invitation_url}" 
+                   style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+                   Accept Invitation
+                </a>
+            </div>
+            
+            <p>Or copy and paste this link into your browser:</p>
+            <p><a href="{invitation_url}">{invitation_url}</a></p>
+            
+            <p>This invitation will expire in 7 days.</p>
+            
+            <p>If you have any questions, please contact your organization administrator.</p>
+            
+            <hr>
+            <p style="color: #666; font-size: 12px;">
+                This is an automated message from Market Edge Platform. 
+                If you received this email in error, please ignore it.
+            </p>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        # Send email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_user, smtp_password)
+        text = msg.as_string()
+        server.sendmail(smtp_user, email, text)
+        server.quit()
+        
+        logger.info(f"Invitation email sent to {email}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send invitation email to {email}: {str(e)}")
+        # Don't raise exception - invitation email is not critical for user creation

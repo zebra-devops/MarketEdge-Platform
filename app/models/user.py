@@ -2,14 +2,24 @@ from sqlalchemy import String, Boolean, ForeignKey, Enum
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from .base import Base
 from .database_types import CompatibleUUID
+from .hierarchy import EnhancedUserRole
 import enum
 import uuid
 
 
 class UserRole(str, enum.Enum):
+    """Legacy user roles - maintained for backward compatibility"""
     admin = "admin"
     analyst = "analyst"
     viewer = "viewer"
+
+
+# Mapping between legacy and enhanced roles
+LEGACY_TO_ENHANCED_ROLE_MAPPING = {
+    UserRole.admin: EnhancedUserRole.org_admin,
+    UserRole.analyst: EnhancedUserRole.user,
+    UserRole.viewer: EnhancedUserRole.viewer,
+}
 
 
 class User(Base):
@@ -38,3 +48,42 @@ class User(Base):
     # Audit relationships
     audit_logs = relationship("AuditLog", back_populates="user")
     admin_actions = relationship("AdminAction", foreign_keys="AdminAction.admin_user_id", back_populates="admin_user")
+    
+    # Hierarchical organization relationships
+    hierarchy_assignments = relationship("UserHierarchyAssignment", back_populates="user")
+    permission_overrides = relationship("HierarchyPermissionOverride", foreign_keys="HierarchyPermissionOverride.user_id", back_populates="user")
+    
+    # Application access relationships
+    application_access = relationship("UserApplicationAccess", foreign_keys="UserApplicationAccess.user_id", back_populates="user")
+    invitations = relationship("UserInvitation", foreign_keys="UserInvitation.user_id", back_populates="user")
+    
+    def get_enhanced_role(self) -> EnhancedUserRole:
+        """Convert legacy role to enhanced role"""
+        return LEGACY_TO_ENHANCED_ROLE_MAPPING.get(self.role, EnhancedUserRole.user)
+        
+    def get_hierarchy_nodes(self, active_only: bool = True):
+        """Get all hierarchy nodes this user is assigned to"""
+        assignments = self.hierarchy_assignments
+        if active_only:
+            assignments = [a for a in assignments if a.is_active]
+        return [a.hierarchy_node for a in assignments]
+        
+    def get_primary_hierarchy_assignment(self):
+        """Get the user's primary hierarchy assignment"""
+        for assignment in self.hierarchy_assignments:
+            if assignment.is_primary and assignment.is_active:
+                return assignment
+        # Fallback to first active assignment
+        active_assignments = [a for a in self.hierarchy_assignments if a.is_active]
+        return active_assignments[0] if active_assignments else None
+    
+    def get_application_access(self):
+        """Get user's application access permissions"""
+        return {access.application.value: access.has_access for access in self.application_access}
+    
+    def has_application_access(self, application: str) -> bool:
+        """Check if user has access to specific application"""
+        for access in self.application_access:
+            if access.application.value == application:
+                return access.has_access
+        return False

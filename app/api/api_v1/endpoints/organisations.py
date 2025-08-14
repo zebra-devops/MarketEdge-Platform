@@ -240,7 +240,9 @@ async def get_organisation_industry_config(
 
 
 @router.get("/industries", response_model=List[Dict[str, str]])
-async def get_available_industries():
+async def get_available_industries(
+    current_user: User = Depends(get_current_user)
+):
     """Get list of available industry types"""
     industries = []
     for industry in Industry:

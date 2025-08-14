@@ -1,5 +1,5 @@
 from .organisation import Organisation
-from .user import User
+from .user import User, UserRole, LEGACY_TO_ENHANCED_ROLE_MAPPING
 from .tool import Tool
 from .organisation_tool_access import OrganisationToolAccess
 
@@ -9,10 +9,26 @@ from .modules import AnalyticsModule, OrganisationModule, ModuleConfiguration, M
 from .feature_flags import FeatureFlag, FeatureFlagOverride, FeatureFlagUsage
 from .audit_log import AuditLog, AdminAction
 
+# Hierarchical organization models
+from .hierarchy import (
+    OrganizationHierarchy, UserHierarchyAssignment, HierarchyRoleAssignment,
+    HierarchyPermissionOverride, IndustryTemplate, OrganizationTemplateApplication,
+    EnhancedUserRole, HierarchyLevel, PermissionScope
+)
+
 __all__ = [
-    "Organisation", "User", "Tool", "OrganisationToolAccess",
+    # Core models
+    "Organisation", "User", "UserRole", "LEGACY_TO_ENHANCED_ROLE_MAPPING", 
+    "Tool", "OrganisationToolAccess",
+    
+    # Phase 3 models
     "SICCode", "SectorModule", "CompetitiveFactorTemplate",
     "AnalyticsModule", "OrganisationModule", "ModuleConfiguration", "ModuleUsageLog",
     "FeatureFlag", "FeatureFlagOverride", "FeatureFlagUsage",
-    "AuditLog", "AdminAction"
+    "AuditLog", "AdminAction",
+    
+    # Hierarchical organization models
+    "OrganizationHierarchy", "UserHierarchyAssignment", "HierarchyRoleAssignment",
+    "HierarchyPermissionOverride", "IndustryTemplate", "OrganizationTemplateApplication",
+    "EnhancedUserRole", "HierarchyLevel", "PermissionScope"
 ]
