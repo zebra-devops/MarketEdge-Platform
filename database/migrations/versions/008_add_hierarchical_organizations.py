@@ -19,7 +19,7 @@ import uuid
 
 # revision identifiers, used by Alembic.
 revision = '008_add_hierarchical_organizations'
-down_revision = '007'
+down_revision = '007_add_industry_type'
 branch_labels = None
 depends_on = None
 
