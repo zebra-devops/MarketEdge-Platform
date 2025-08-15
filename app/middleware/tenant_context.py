@@ -31,6 +31,8 @@ EXCLUDED_ROUTES = {
     "/docs",
     "/redoc",
     "/openapi.json",
+    "/cors-debug",
+    "/ready",
     "/api/v1/auth/login",
     "/api/v1/auth/auth0-url",
     "/api/v1/auth/refresh",

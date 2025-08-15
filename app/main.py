@@ -45,17 +45,17 @@ app.add_middleware(
 )
 
 # Add middleware to the FastAPI app
+# EMERGENCY FIX: Minimal middleware for critical CORS deployment
 # Middleware order is important:
 # 1. TrustedHostMiddleware - basic security  
 # 2. ErrorHandlerMiddleware - error handling
 # 3. LoggingMiddleware - request logging
-# 4. TenantContextMiddleware - extract tenant context (needed for rate limiting)
-# 5. RateLimitMiddleware - rate limiting (uses tenant context)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(LoggingMiddleware)
-app.add_middleware(TenantContextMiddleware)
-app.add_middleware(RateLimitMiddleware)
+# EMERGENCY: Disable tenant context and rate limiting for critical CORS testing
+# app.add_middleware(TenantContextMiddleware)
+# app.add_middleware(RateLimitMiddleware)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
@@ -72,8 +72,9 @@ async def health_check(request: Request):
             "status": "healthy",
             "version": settings.PROJECT_VERSION,
             "timestamp": time.time(),
-            "cors_mode": "caddy_proxy_multi_service",
-            "service_type": "fastapi_backend"
+            "cors_mode": "emergency_fastapi_direct",
+            "service_type": "fastapi_backend_minimal_middleware",
+            "emergency_mode": "odeon_demo_critical_fix"
         }
         
         # Log health check request (but don't let logging failures affect health)
@@ -107,7 +108,7 @@ async def cors_debug(request: Request):
     user_agent = request.headers.get("user-agent", "no-user-agent")
     
     debug_info = {
-        "cors_mode": "caddy_proxy_multi_service",
+        "cors_mode": "emergency_fastapi_direct",
         "cors_origins_configured": settings.CORS_ORIGINS,
         "request_origin": origin,
         "origin_allowed": origin in settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else False,
@@ -117,8 +118,9 @@ async def cors_debug(request: Request):
         "debug_mode": settings.DEBUG,
         "timestamp": time.time(),
         "fastapi_cors_middleware": "active",
-        "caddy_proxy": "active",
-        "service_type": "fastapi_backend"
+        "middleware_disabled": "tenant_context_rate_limiting",
+        "emergency_mode": "odeon_demo_critical_fix",
+        "service_type": "fastapi_backend_minimal"
     }
     
     # Log CORS debug request
