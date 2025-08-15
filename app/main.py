@@ -66,15 +66,24 @@ app = FastAPI(
     root_path="",
 )
 
-# EMERGENCY CORS FIX: Manual CORS middleware for Odeon demo
+# PRIORITY 1 FIX: Proper FastAPI CORSMiddleware implementation
 cors_origins = [
     "http://localhost:3000",
     "http://localhost:3001", 
     "https://app.zebra.associates",
     "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app"
 ]
-logger.info(f"EMERGENCY CORS FIX: Manual middleware with origins: {cors_origins}")
-app.add_middleware(ManualCORSMiddleware, allowed_origins=cors_origins)
+logger.info(f"CORS PRIORITY 1 FIX: FastAPI CORSMiddleware with origins: {cors_origins}")
+
+# Add CORS middleware FIRST - order matters for Railway
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
 
 # Add middleware to the FastAPI app
 # Middleware order is important:
