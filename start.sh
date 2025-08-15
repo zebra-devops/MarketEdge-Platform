@@ -1,36 +1,60 @@
 #!/bin/bash
 
-# FastAPI startup script for supervisord multi-service deployment
+# Security: Hardened FastAPI startup script for multi-service deployment
 set -e
+set -u  # Security: Treat unset variables as error
+set -o pipefail  # Security: Fail on pipe errors
 
-echo "Starting FastAPI service..."
-echo "Environment: ${ENVIRONMENT:-production}"
-echo "Port: ${PORT:-8000}"
-echo "CORS-001: Multi-Service Configuration Active"
+# Security: Validate critical environment variables
+ENVIRONMENT="${ENVIRONMENT:-production}"
+PORT="${PORT:-8000}"
+LOG_LEVEL="${LOG_LEVEL:-info}"
 
-# Run database migrations before starting the application
+echo "Security: Starting FastAPI service with hardened configuration"
+echo "Environment: ${ENVIRONMENT}"
+echo "Port: ${PORT}"
+echo "CADDY_PROXY_MODE: ${CADDY_PROXY_MODE:-true}"
+
+# Security: Run database migrations with proper error handling
 if [ "$ENVIRONMENT" = "production" ]; then
-    echo "Running database migrations..."
-    if python3 -m alembic upgrade head; then
-        echo "✅ Database migrations completed"
+    echo "Security: Running database migrations in production mode..."
+    if timeout 300 python3 -m alembic upgrade head; then
+        echo "✅ Database migrations completed successfully"
     else
-        echo "❌ Database migrations failed"
+        echo "❌ Database migrations failed - exiting for security"
         exit 1
     fi
+else
+    echo "Security: Skipping database migrations in ${ENVIRONMENT} mode"
 fi
 
-echo "Starting FastAPI backend service..."
+echo "Security: Starting FastAPI backend service with restricted network binding"
 
-# CORS-001: FastAPI runs as internal service behind Caddy proxy
-export FORWARDED_ALLOW_IPS="*"
-export PROXY_HEADERS=1
+# Security: Validate port is numeric
+if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+    echo "❌ Security: Invalid port number: $PORT"
+    exit 1
+fi
 
-# Run FastAPI on internal port 8000 (Caddy proxies from port 80)
+# Security: Validate log level
+case "${LOG_LEVEL,,}" in
+    critical|error|warning|info|debug|trace)
+        ;;
+    *)
+        echo "❌ Security: Invalid log level: $LOG_LEVEL"
+        exit 1
+        ;;
+esac
+
+# Security: Run FastAPI with restricted network binding and secure proxy settings
 exec uvicorn app.main:app \
     --host 127.0.0.1 \
-    --port 8000 \
-    --log-level $(echo "${LOG_LEVEL:-info}" | tr '[:upper:]' '[:lower:]') \
+    --port "${PORT}" \
+    --log-level "${LOG_LEVEL,,}" \
     --access-log \
-    --use-colors \
+    --no-use-colors \
     --proxy-headers \
-    --forwarded-allow-ips="127.0.0.1"
+    --forwarded-allow-ips="127.0.0.1" \
+    --limit-concurrency 1000 \
+    --limit-max-requests 10000 \
+    --timeout-keep-alive 5

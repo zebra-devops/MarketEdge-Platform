@@ -6,6 +6,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 import logging
 import time
+import os
 from .core.config import settings
 from .core.logging import configure_logging
 from .core.health_checks import health_checker
@@ -18,42 +19,7 @@ from .middleware.rate_limiting import RateLimitMiddleware
 configure_logging()
 logger = logging.getLogger(__name__)
 
-class ManualCORSMiddleware(BaseHTTPMiddleware):
-    """Manual CORS middleware - emergency fix for Odeon demo"""
-    
-    def __init__(self, app, allowed_origins):
-        super().__init__(app)
-        self.allowed_origins = allowed_origins
-        print(f"Manual CORS Middleware initialized with: {allowed_origins}")
-    
-    async def dispatch(self, request: Request, call_next):
-        origin = request.headers.get("origin")
-        
-        # Handle preflight requests
-        if request.method == "OPTIONS":
-            if origin in self.allowed_origins:
-                return Response(
-                    content="",
-                    status_code=200,
-                    headers={
-                        "Access-Control-Allow-Origin": origin,
-                        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
-                        "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, X-Requested-With, Origin",
-                        "Access-Control-Allow-Credentials": "true",
-                        "Access-Control-Max-Age": "600",
-                    }
-                )
-        
-        # Process request
-        response = await call_next(request)
-        
-        # Add CORS headers to response
-        if origin in self.allowed_origins:
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Expose-Headers"] = "*"
-        
-        return response
+# Security: Removed redundant ManualCORSMiddleware - using FastAPI CORSMiddleware only
 
 # Production-ready FastAPI app configuration
 app = FastAPI(
@@ -66,24 +32,20 @@ app = FastAPI(
     root_path="",
 )
 
-# PRIORITY 1 FIX: Proper FastAPI CORSMiddleware implementation
-cors_origins = [
-    "http://localhost:3000",
-    "http://localhost:3001", 
-    "https://app.zebra.associates",
-    "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app"
-]
-logger.info(f"CORS PRIORITY 1 FIX: FastAPI CORSMiddleware with origins: {cors_origins}")
-
-# Add CORS middleware FIRST - order matters for Railway
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
+# Security: Environment-based CORS configuration - no hardcoded origins
+# Only configure FastAPI CORS if not behind Caddy proxy (single CORS implementation)
+if not os.getenv("CADDY_PROXY_MODE", "false").lower() == "true":
+    logger.info(f"Security: FastAPI CORSMiddleware with environment origins: {settings.CORS_ORIGINS}")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
+        allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With", "Origin", "X-Tenant-ID"],
+        expose_headers=["Content-Type", "Authorization", "X-Tenant-ID"],
+    )
+else:
+    logger.info("Security: CORS handled by Caddy proxy - FastAPI CORS disabled")
 
 # Add middleware to the FastAPI app
 # Middleware order is important:
