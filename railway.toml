@@ -16,6 +16,7 @@ DEBUG = "false"
 LOG_LEVEL = "info"
 FASTAPI_PORT = "8000"
 CADDY_PROXY_MODE = "true"
+CORS_ORIGINS = "[\"https://app.zebra.associates\",\"http://localhost:3000\",\"http://localhost:3001\"]"
 
 # CRITICAL FIX: Multi-service deployment with Caddy proxy
 # Caddy proxy handles CORS on port 80 (external)
