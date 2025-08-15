@@ -7,7 +7,9 @@ set -o pipefail  # Security: Fail on pipe errors
 
 # Security: Validate critical environment variables
 ENVIRONMENT="${ENVIRONMENT:-production}"
-PORT="${PORT:-8000}"
+# In multi-service mode, FastAPI runs on internal port
+FASTAPI_INTERNAL_PORT="${FASTAPI_INTERNAL_PORT:-8000}"
+PORT="${FASTAPI_INTERNAL_PORT}"  # Use internal port for FastAPI
 LOG_LEVEL="${LOG_LEVEL:-info}"
 
 echo "Security: Starting FastAPI service with hardened configuration"

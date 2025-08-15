@@ -14,6 +14,8 @@ ENVIRONMENT = "production"
 DEBUG = "false"
 LOG_LEVEL = "info"
 PORT = "80"
+CADDY_PROXY_MODE = "true"
+FASTAPI_INTERNAL_PORT = "8000"
 
 # CORS-001: Multi-service configuration
 # Caddy reverse proxy handles external traffic on port 80
