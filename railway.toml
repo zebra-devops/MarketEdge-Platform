@@ -10,16 +10,11 @@ restartPolicyMaxRetries = 3
 # Multi-service deployment: supervisord manages Caddy + FastAPI
 startCommand = "supervisord -c /etc/supervisor/conf.d/supervisord.conf"
 
-# Railway networking: External port 80 routes to Caddy, internal port 8000 for FastAPI
-[[deploy.exposedPort]]
-port = 80
-protocol = "http"
-
 [env]
 ENVIRONMENT = "production"
 DEBUG = "false"
 LOG_LEVEL = "info"
-PORT = "8000"
+FASTAPI_PORT = "8000"
 CADDY_PROXY_MODE = "true"
 
 # CRITICAL FIX: Multi-service deployment with Caddy proxy

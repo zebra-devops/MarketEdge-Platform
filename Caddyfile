@@ -1,7 +1,7 @@
 # Security: Secure CORS Configuration for Multi-Tenant Platform
 # Maintains £925K Odeon demo authentication (https://app.zebra.associates)
 
-:80 {
+:{$PORT:80} {
     # Security: Disable automatic HTTPS redirect for Railway deployment
     auto_https off
     

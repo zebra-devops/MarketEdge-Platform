@@ -7,7 +7,7 @@ set -o pipefail  # Security: Fail on pipe errors
 
 # Security: Validate critical environment variables
 ENVIRONMENT="${ENVIRONMENT:-production}"
-PORT="${PORT:-8000}"
+PORT="${FASTAPI_PORT:-8000}"
 LOG_LEVEL="${LOG_LEVEL:-info}"
 
 echo "Security: Starting FastAPI service with hardened configuration"
