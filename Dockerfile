@@ -57,7 +57,7 @@ EXPOSE 80 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# CRITICAL FIX: Single-service deployment for Railway compatibility
-# Security: Run as non-root user
-USER appuser
-CMD ["./start.sh"]
+# CRITICAL FIX: Multi-service deployment with Caddy proxy + FastAPI
+# Security: Run supervisord as root for process management (services run as appuser)
+USER root
+CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
