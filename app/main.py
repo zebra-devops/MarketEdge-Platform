@@ -27,6 +27,7 @@ app = FastAPI(
     root_path="",
 )
 
+# CORS middleware MUST be added first to handle preflight requests correctly
 print(f"CORS Origins: {settings.CORS_ORIGINS}")
 app.add_middleware(
     CORSMiddleware,
@@ -37,11 +38,12 @@ app.add_middleware(
 )
 
 # Middleware order is important:
-# 1. TrustedHostMiddleware - basic security
-# 2. ErrorHandlerMiddleware - error handling
-# 3. LoggingMiddleware - request logging
-# 4. TenantContextMiddleware - extract tenant context (needed for rate limiting)
-# 5. RateLimitMiddleware - rate limiting (uses tenant context)
+# 1. CORSMiddleware - MUST be first to handle preflight requests
+# 2. TrustedHostMiddleware - basic security  
+# 3. ErrorHandlerMiddleware - error handling
+# 4. LoggingMiddleware - request logging
+# 5. TenantContextMiddleware - extract tenant context (needed for rate limiting)
+# 6. RateLimitMiddleware - rate limiting (uses tenant context)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(LoggingMiddleware)
@@ -84,6 +86,34 @@ async def health_check(request: Request):
                 "note": "basic_health_check_fallback"
             }
         )
+
+@app.get("/cors-debug")
+async def cors_debug(request: Request):
+    """
+    Debug endpoint to check CORS configuration and headers.
+    Only available in production for emergency debugging.
+    """
+    origin = request.headers.get("origin", "no-origin-header")
+    user_agent = request.headers.get("user-agent", "no-user-agent")
+    
+    debug_info = {
+        "cors_origins_configured": settings.CORS_ORIGINS,
+        "request_origin": origin,
+        "origin_allowed": origin in settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else False,
+        "user_agent": user_agent,
+        "all_headers": dict(request.headers),
+        "environment": settings.ENVIRONMENT,
+        "debug_mode": settings.DEBUG,
+        "timestamp": time.time()
+    }
+    
+    # Log CORS debug request
+    try:
+        logger.info(f"CORS debug requested from origin: {origin}")
+    except:
+        pass
+    
+    return debug_info
 
 @app.get("/ready")
 async def readiness_check():
