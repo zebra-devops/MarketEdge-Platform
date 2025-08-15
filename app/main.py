@@ -27,11 +27,17 @@ app = FastAPI(
     root_path="",
 )
 
-# Configure CORS using FastAPI's built-in CORSMiddleware
-logger.info(f"Configuring CORS with origins: {settings.CORS_ORIGINS}")
+# EMERGENCY CORS FIX: Hardcode origins for Odeon demo
+cors_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001", 
+    "https://app.zebra.associates",
+    "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app"
+]
+logger.info(f"EMERGENCY CORS FIX: Hardcoded origins: {cors_origins}")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
     allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With", "Origin"],
