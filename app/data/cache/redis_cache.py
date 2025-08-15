@@ -274,3 +274,10 @@ class RedisCacheManager(ICacheManager):
                 logger.info("Redis cache manager closed")
         except Exception as e:
             logger.error(f"Error closing Redis cache manager: {e}")
+
+
+# Global cache manager instance
+cache_manager = RedisCacheManager({
+    "default_ttl": 3600,
+    "key_prefix": "data_layer:"
+})
