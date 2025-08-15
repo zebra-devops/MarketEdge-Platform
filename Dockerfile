@@ -55,9 +55,9 @@ EXPOSE 80 8000
 
 # Security: Health check with minimal privileges
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:80/health || exit 1
+    CMD curl -f http://localhost:8000/health || exit 1
 
-# Security: Drop root privileges where possible - supervisord needs root for process management
-# but individual services run as appuser
-USER root
-CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# CRITICAL FIX: Single-service deployment for Railway compatibility
+# Security: Run as non-root user
+USER appuser
+CMD ["./start.sh"]

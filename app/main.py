@@ -33,19 +33,16 @@ app = FastAPI(
 )
 
 # Security: Environment-based CORS configuration - no hardcoded origins
-# Only configure FastAPI CORS if not behind Caddy proxy (single CORS implementation)
-if not os.getenv("CADDY_PROXY_MODE", "false").lower() == "true":
-    logger.info(f"Security: FastAPI CORSMiddleware with environment origins: {settings.CORS_ORIGINS}")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-        allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With", "Origin", "X-Tenant-ID"],
-        expose_headers=["Content-Type", "Authorization", "X-Tenant-ID"],
-    )
-else:
-    logger.info("Security: CORS handled by Caddy proxy - FastAPI CORS disabled")
+# CRITICAL FIX: Railway doesn't support multi-service properly, use FastAPI CORS directly
+logger.info(f"Security: FastAPI CORSMiddleware with environment origins: {settings.CORS_ORIGINS}")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With", "Origin", "X-Tenant-ID"],
+    expose_headers=["Content-Type", "Authorization", "X-Tenant-ID"],
+)
 
 # Add middleware to the FastAPI app
 # Middleware order is important:

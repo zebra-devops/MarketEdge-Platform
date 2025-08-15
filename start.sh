@@ -7,9 +7,7 @@ set -o pipefail  # Security: Fail on pipe errors
 
 # Security: Validate critical environment variables
 ENVIRONMENT="${ENVIRONMENT:-production}"
-# In multi-service mode, FastAPI runs on internal port
-FASTAPI_INTERNAL_PORT="${FASTAPI_INTERNAL_PORT:-8000}"
-PORT="${FASTAPI_INTERNAL_PORT}"  # Use internal port for FastAPI
+PORT="${PORT:-8000}"
 LOG_LEVEL="${LOG_LEVEL:-info}"
 
 echo "Security: Starting FastAPI service with hardened configuration"
@@ -48,15 +46,15 @@ case "${LOG_LEVEL,,}" in
         ;;
 esac
 
-# Security: Run FastAPI with restricted network binding and secure proxy settings
+# Security: Run FastAPI with production network binding for Railway
 exec uvicorn app.main:app \
-    --host 127.0.0.1 \
+    --host 0.0.0.0 \
     --port "${PORT}" \
     --log-level "${LOG_LEVEL,,}" \
     --access-log \
     --no-use-colors \
     --proxy-headers \
-    --forwarded-allow-ips="127.0.0.1" \
+    --forwarded-allow-ips="*" \
     --limit-concurrency 1000 \
     --limit-max-requests 10000 \
     --timeout-keep-alive 5
