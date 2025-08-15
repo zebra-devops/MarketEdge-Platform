@@ -3,8 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 import logging
 import time
+import json
 from .core.config import settings
 from .core.logging import configure_logging
 from .core.health_checks import health_checker
@@ -17,43 +19,76 @@ from .middleware.rate_limiting import RateLimitMiddleware
 configure_logging()
 logger = logging.getLogger(__name__)
 
-class EmergencyCORSMiddleware(BaseHTTPMiddleware):
+class ASGICORSHandler:
     """
-    Emergency CORS middleware to ensure custom domain access for Odeon demo.
-    This is a failsafe in case FastAPI's CORSMiddleware has issues.
+    ASGI-level CORS handler that completely bypasses FastAPI routing.
+    This is an emergency fix for the Odeon demo authentication issue.
     """
     
-    async def dispatch(self, request: Request, call_next):
-        # Get the origin from the request
-        origin = request.headers.get("origin")
-        
-        # Process the request
-        response = await call_next(request)
-        
-        # Emergency fix: Always allow custom domain and localhost
-        allowed_origins = [
-            "https://app.zebra.associates",
-            "http://localhost:3000",
+    def __init__(self, app):
+        self.app = app
+        # EMERGENCY CORS FIX v3: Custom domain priority + deployment timestamp
+        self.allowed_origins = [
+            "https://app.zebra.associates",  # CRITICAL: Custom domain FIRST
+            "http://localhost:3000", 
             "http://localhost:3001",
             "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app"
         ]
+        print(f"ASGI CORS Handler initialized with origins: {self.allowed_origins}")
+        print(f"DEPLOYMENT TIMESTAMP: {time.time()}")
+    
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+            
+        # Get headers and method
+        headers = dict(scope.get("headers", []))
+        method = scope.get("method", "")
+        origin = headers.get(b"origin", b"").decode("utf-8")
         
-        # If origin is in allowed list, add CORS headers
-        if origin in allowed_origins:
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
-            response.headers["Access-Control-Allow-Headers"] = "*"
-            response.headers["Access-Control-Expose-Headers"] = "*"
+        # Handle OPTIONS preflight requests immediately for allowed origins
+        if method == "OPTIONS" and origin in self.allowed_origins:
+            response_headers = [
+                (b"access-control-allow-origin", origin.encode()),
+                (b"access-control-allow-credentials", b"true"),
+                (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"),
+                (b"access-control-allow-headers", b"Content-Type, Authorization, Accept, X-Requested-With, Origin"),
+                (b"access-control-max-age", b"600"),
+                (b"content-type", b"application/json"),
+            ]
+            
+            await send({
+                "type": "http.response.start",
+                "status": 200,
+                "headers": response_headers,
+            })
+            
+            await send({
+                "type": "http.response.body",
+                "body": json.dumps({"preflight": "emergency_cors_bypass"}).encode(),
+            })
+            return
         
-        # Handle preflight requests
-        if request.method == "OPTIONS" and origin in allowed_origins:
-            response.headers["Access-Control-Max-Age"] = "600"
-        
-        return response
+        # For non-OPTIONS requests, add CORS headers to the response
+        if origin in self.allowed_origins:
+            async def send_with_cors(message):
+                if message["type"] == "http.response.start":
+                    headers = list(message.get("headers", []))
+                    headers.extend([
+                        (b"access-control-allow-origin", origin.encode()),
+                        (b"access-control-allow-credentials", b"true"),
+                        (b"access-control-expose-headers", b"*"),
+                    ])
+                    message["headers"] = headers
+                await send(message)
+            
+            await self.app(scope, receive, send_with_cors)
+        else:
+            await self.app(scope, receive, send)
 
 # Production-ready FastAPI app configuration
-app = FastAPI(
+fastapi_app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.PROJECT_VERSION,
     description="Multi-Tenant Business Intelligence Platform API",
@@ -63,45 +98,32 @@ app = FastAPI(
     root_path="",
 )
 
-# Emergency CORS fix for custom domain authentication (£925K Odeon demo)
-# Add custom middleware first to ensure headers are set
-app.add_middleware(EmergencyCORSMiddleware)
+# EMERGENCY: Completely bypass FastAPI CORS with ASGI-level handler  
+print("EMERGENCY CORS FIX v3: Custom domain FIRST priority + deployment verification")
+print(f"Custom domain: https://app.zebra.associates") 
+print("DEPLOYMENT TIMESTAMP:", time.time())
+print("FORCE REDEPLOY FOR ODEON DEMO - CORS FIX URGENT:", time.time())
 
-# Original CORS middleware (kept as backup)
-cors_origins = settings.CORS_ORIGINS.copy() if isinstance(settings.CORS_ORIGINS, list) else ["http://localhost:3000"]
+# Wrap FastAPI app with our emergency ASGI CORS handler
+app = ASGICORSHandler(fastapi_app)
 
-# Ensure custom domain is included (emergency fix for demo)
-custom_domain = "https://app.zebra.associates"
-if custom_domain not in cors_origins:
-    cors_origins.append(custom_domain)
-
-print(f"CORS Origins: {cors_origins}")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-)
-
+# Add middleware to the FastAPI app (before ASGI wrapping)
 # Middleware order is important:
-# 1. CORSMiddleware - MUST be first to handle preflight requests
-# 2. TrustedHostMiddleware - basic security  
-# 3. ErrorHandlerMiddleware - error handling
-# 4. LoggingMiddleware - request logging
-# 5. TenantContextMiddleware - extract tenant context (needed for rate limiting)
-# 6. RateLimitMiddleware - rate limiting (uses tenant context)
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
-app.add_middleware(ErrorHandlerMiddleware)
-app.add_middleware(LoggingMiddleware)
-app.add_middleware(TenantContextMiddleware)
-app.add_middleware(RateLimitMiddleware)
+# 1. TrustedHostMiddleware - basic security  
+# 2. ErrorHandlerMiddleware - error handling
+# 3. LoggingMiddleware - request logging
+# 4. TenantContextMiddleware - extract tenant context (needed for rate limiting)
+# 5. RateLimitMiddleware - rate limiting (uses tenant context)
+fastapi_app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+fastapi_app.add_middleware(ErrorHandlerMiddleware)
+fastapi_app.add_middleware(LoggingMiddleware)
+fastapi_app.add_middleware(TenantContextMiddleware)
+fastapi_app.add_middleware(RateLimitMiddleware)
 
-app.include_router(api_router, prefix=settings.API_V1_STR)
+fastapi_app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
-@app.get("/health")
+@fastapi_app.get("/health")
 async def health_check(request: Request):
     """
     Simple health check endpoint for Railway health checks.
@@ -135,7 +157,7 @@ async def health_check(request: Request):
             }
         )
 
-@app.get("/cors-debug")
+@fastapi_app.get("/cors-debug")
 async def cors_debug(request: Request):
     """
     Debug endpoint to check CORS configuration and headers.
@@ -152,7 +174,8 @@ async def cors_debug(request: Request):
         "all_headers": dict(request.headers),
         "environment": settings.ENVIRONMENT,
         "debug_mode": settings.DEBUG,
-        "timestamp": time.time()
+        "timestamp": time.time(),
+        "asgi_cors_handler": "active"
     }
     
     # Log CORS debug request
@@ -163,7 +186,7 @@ async def cors_debug(request: Request):
     
     return debug_info
 
-@app.get("/ready")
+@fastapi_app.get("/ready")
 async def readiness_check():
     """
     Railway readiness check endpoint.
