@@ -1,0 +1,119 @@
+# CORS-002: Enhanced Caddyfile CORS Configuration
+# Handles specific origins for £925K Odeon demo authentication
+
+:80 {
+    # Disable Caddy's automatic HTTPS redirect for Railway deployment
+    auto_https off
+    
+    # Handle preflight OPTIONS requests first
+    @options method OPTIONS
+    handle @options {
+        # Check origin and set appropriate CORS headers for preflight
+        @cors_allowed_origin header Origin "https://app.zebra.associates"
+        @cors_allowed_origin_localhost header Origin "http://localhost:3001"
+        @cors_allowed_origin_vercel header Origin "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app"
+        @cors_allowed_origin_dev header Origin "http://localhost:3000"
+        
+        handle @cors_allowed_origin {
+            header Access-Control-Allow-Origin "https://app.zebra.associates"
+            header Access-Control-Allow-Credentials "true"
+            header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
+            header Access-Control-Allow-Headers "Content-Type, Authorization, Accept, X-Requested-With, Origin, X-Tenant-ID"
+            header Access-Control-Max-Age "600"
+            respond "" 204
+        }
+        
+        handle @cors_allowed_origin_localhost {
+            header Access-Control-Allow-Origin "http://localhost:3001"
+            header Access-Control-Allow-Credentials "true"
+            header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
+            header Access-Control-Allow-Headers "Content-Type, Authorization, Accept, X-Requested-With, Origin, X-Tenant-ID"
+            header Access-Control-Max-Age "600"
+            respond "" 204
+        }
+        
+        handle @cors_allowed_origin_vercel {
+            header Access-Control-Allow-Origin "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app"
+            header Access-Control-Allow-Credentials "true"
+            header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
+            header Access-Control-Allow-Headers "Content-Type, Authorization, Accept, X-Requested-With, Origin, X-Tenant-ID"
+            header Access-Control-Max-Age "600"
+            respond "" 204
+        }
+        
+        handle @cors_allowed_origin_dev {
+            header Access-Control-Allow-Origin "http://localhost:3000"
+            header Access-Control-Allow-Credentials "true"
+            header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
+            header Access-Control-Allow-Headers "Content-Type, Authorization, Accept, X-Requested-With, Origin, X-Tenant-ID"
+            header Access-Control-Max-Age "600"
+            respond "" 204
+        }
+        
+        # Default response for unauthorized origins
+        respond "CORS preflight rejected" 403
+    }
+    
+    # Handle all other requests by proxying to FastAPI backend
+    reverse_proxy localhost:8000 {
+        # Preserve original headers for proper forwarding
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+    }
+    
+    # CORS-002: Enhanced CORS headers injection for actual requests
+    @cors_origin_custom header Origin "https://app.zebra.associates"
+    @cors_origin_localhost header Origin "http://localhost:3001"
+    @cors_origin_vercel header Origin "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app"
+    @cors_origin_dev header Origin "http://localhost:3000"
+    
+    # Inject appropriate Access-Control-Allow-Origin based on request origin
+    header @cors_origin_custom {
+        Access-Control-Allow-Origin "https://app.zebra.associates"
+        Access-Control-Allow-Credentials "true"
+        Access-Control-Expose-Headers "Content-Type, Authorization, X-Tenant-ID"
+    }
+    
+    header @cors_origin_localhost {
+        Access-Control-Allow-Origin "http://localhost:3001"
+        Access-Control-Allow-Credentials "true"
+        Access-Control-Expose-Headers "Content-Type, Authorization, X-Tenant-ID"
+    }
+    
+    header @cors_origin_vercel {
+        Access-Control-Allow-Origin "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app"
+        Access-Control-Allow-Credentials "true"
+        Access-Control-Expose-Headers "Content-Type, Authorization, X-Tenant-ID"
+    }
+    
+    header @cors_origin_dev {
+        Access-Control-Allow-Origin "http://localhost:3000"
+        Access-Control-Allow-Credentials "true"
+        Access-Control-Expose-Headers "Content-Type, Authorization, X-Tenant-ID"
+    }
+    
+    # Enhanced logging for CORS debugging
+    log {
+        output file /var/log/caddy/access.log
+        format json {
+            timestamp
+            request>remote_ip
+            request>method
+            request>uri
+            request>headers>Origin
+            status
+            latency
+            size
+        }
+    }
+    
+    # Enhanced error handling
+    handle_errors {
+        header Access-Control-Allow-Origin "*"
+        header Access-Control-Allow-Credentials "false"
+        respond "Caddy Proxy Error: {http.error.status_code} - CORS-002 Enhanced" {http.error.status_code}
+    }
+}

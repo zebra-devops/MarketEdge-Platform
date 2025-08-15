@@ -104,8 +104,8 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/health")
 async def health_check(request: Request):
     """
-    Simple health check endpoint for Railway health checks.
-    Returns basic application status without external dependencies.
+    Health check endpoint for Railway health checks.
+    CORS-001: Works with Caddy reverse proxy multi-service setup.
     """
     try:
         # Minimal health check that doesn't depend on database/redis
@@ -113,11 +113,13 @@ async def health_check(request: Request):
             "status": "healthy",
             "version": settings.PROJECT_VERSION,
             "timestamp": time.time(),
+            "cors_mode": "caddy_proxy_multi_service",
+            "service_type": "fastapi_backend"
         }
         
         # Log health check request (but don't let logging failures affect health)
         try:
-            logger.info("Health check requested - application is running")
+            logger.info("Health check requested - CORS-001 multi-service active")
         except:
             pass  # Don't fail health check if logging fails
         
@@ -131,6 +133,7 @@ async def health_check(request: Request):
                 "status": "healthy",
                 "version": "1.0.0",
                 "timestamp": time.time(),
+                "cors_mode": "caddy_proxy_multi_service",
                 "note": "basic_health_check_fallback"
             }
         )
@@ -139,12 +142,13 @@ async def health_check(request: Request):
 async def cors_debug(request: Request):
     """
     Debug endpoint to check CORS configuration and headers.
-    Only available in production for emergency debugging.
+    CORS-001: Multi-service setup with Caddy proxy + FastAPI CORS.
     """
     origin = request.headers.get("origin", "no-origin-header")
     user_agent = request.headers.get("user-agent", "no-user-agent")
     
     debug_info = {
+        "cors_mode": "caddy_proxy_multi_service",
         "cors_origins_configured": settings.CORS_ORIGINS,
         "request_origin": origin,
         "origin_allowed": origin in settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else False,
@@ -153,12 +157,14 @@ async def cors_debug(request: Request):
         "environment": settings.ENVIRONMENT,
         "debug_mode": settings.DEBUG,
         "timestamp": time.time(),
-        "fastapi_cors_middleware": "active"
+        "fastapi_cors_middleware": "active",
+        "caddy_proxy": "active",
+        "service_type": "fastapi_backend"
     }
     
     # Log CORS debug request
     try:
-        logger.info(f"CORS debug requested from origin: {origin}")
+        logger.info(f"CORS debug requested from origin: {origin} - CORS-001 active")
     except:
         pass
     

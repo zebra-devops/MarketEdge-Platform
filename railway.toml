@@ -7,13 +7,14 @@ healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
-startCommand = "./start.sh"
+# CORS-001: Use supervisord instead of start.sh directly
 
 [env]
 ENVIRONMENT = "production"
 DEBUG = "false"
 LOG_LEVEL = "info"
-PORT = "8000"
+PORT = "80"
 
-# No volumes - this is a FastAPI backend service
-# Database connections via Railway internal network
+# CORS-001: Multi-service configuration
+# Caddy reverse proxy handles external traffic on port 80
+# FastAPI backend runs internally on port 8000
