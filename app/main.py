@@ -28,13 +28,22 @@ app = FastAPI(
 )
 
 # CORS middleware MUST be added first to handle preflight requests correctly
-print(f"CORS Origins: {settings.CORS_ORIGINS}")
+# Emergency fix: Ensure custom domain is explicitly included for Odeon demo
+cors_origins = settings.CORS_ORIGINS.copy() if isinstance(settings.CORS_ORIGINS, list) else ["http://localhost:3000"]
+
+# Ensure custom domain is included (emergency fix for demo)
+custom_domain = "https://app.zebra.associates"
+if custom_domain not in cors_origins:
+    cors_origins.append(custom_domain)
+
+print(f"CORS Origins: {cors_origins}")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Middleware order is important:
