@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 import logging
 import time
 from .core.config import settings
@@ -16,6 +18,43 @@ from .middleware.rate_limiting import RateLimitMiddleware
 configure_logging()
 logger = logging.getLogger(__name__)
 
+class ManualCORSMiddleware(BaseHTTPMiddleware):
+    """Manual CORS middleware - emergency fix for Odeon demo"""
+    
+    def __init__(self, app, allowed_origins):
+        super().__init__(app)
+        self.allowed_origins = allowed_origins
+        print(f"Manual CORS Middleware initialized with: {allowed_origins}")
+    
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get("origin")
+        
+        # Handle preflight requests
+        if request.method == "OPTIONS":
+            if origin in self.allowed_origins:
+                return Response(
+                    content="",
+                    status_code=200,
+                    headers={
+                        "Access-Control-Allow-Origin": origin,
+                        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+                        "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, X-Requested-With, Origin",
+                        "Access-Control-Allow-Credentials": "true",
+                        "Access-Control-Max-Age": "600",
+                    }
+                )
+        
+        # Process request
+        response = await call_next(request)
+        
+        # Add CORS headers to response
+        if origin in self.allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Expose-Headers"] = "*"
+        
+        return response
+
 # Production-ready FastAPI app configuration
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -27,22 +66,15 @@ app = FastAPI(
     root_path="",
 )
 
-# EMERGENCY CORS FIX: Hardcode origins for Odeon demo
+# EMERGENCY CORS FIX: Manual CORS middleware for Odeon demo
 cors_origins = [
     "http://localhost:3000",
     "http://localhost:3001", 
     "https://app.zebra.associates",
     "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app"
 ]
-logger.info(f"EMERGENCY CORS FIX: Hardcoded origins: {cors_origins}")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-    allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With", "Origin"],
-    max_age=600,
-)
+logger.info(f"EMERGENCY CORS FIX: Manual middleware with origins: {cors_origins}")
+app.add_middleware(ManualCORSMiddleware, allowed_origins=cors_origins)
 
 # Add middleware to the FastAPI app
 # Middleware order is important:
