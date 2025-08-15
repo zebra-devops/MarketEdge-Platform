@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 import logging
 import time
 from .core.config import settings
@@ -16,6 +17,41 @@ from .middleware.rate_limiting import RateLimitMiddleware
 configure_logging()
 logger = logging.getLogger(__name__)
 
+class EmergencyCORSMiddleware(BaseHTTPMiddleware):
+    """
+    Emergency CORS middleware to ensure custom domain access for Odeon demo.
+    This is a failsafe in case FastAPI's CORSMiddleware has issues.
+    """
+    
+    async def dispatch(self, request: Request, call_next):
+        # Get the origin from the request
+        origin = request.headers.get("origin")
+        
+        # Process the request
+        response = await call_next(request)
+        
+        # Emergency fix: Always allow custom domain and localhost
+        allowed_origins = [
+            "https://app.zebra.associates",
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app"
+        ]
+        
+        # If origin is in allowed list, add CORS headers
+        if origin in allowed_origins:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Expose-Headers"] = "*"
+        
+        # Handle preflight requests
+        if request.method == "OPTIONS" and origin in allowed_origins:
+            response.headers["Access-Control-Max-Age"] = "600"
+        
+        return response
+
 # Production-ready FastAPI app configuration
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -27,8 +63,11 @@ app = FastAPI(
     root_path="",
 )
 
-# CORS middleware MUST be added first to handle preflight requests correctly
-# Emergency fix: Ensure custom domain is explicitly included for Odeon demo
+# Emergency CORS fix for custom domain authentication (£925K Odeon demo)
+# Add custom middleware first to ensure headers are set
+app.add_middleware(EmergencyCORSMiddleware)
+
+# Original CORS middleware (kept as backup)
 cors_origins = settings.CORS_ORIGINS.copy() if isinstance(settings.CORS_ORIGINS, list) else ["http://localhost:3000"]
 
 # Ensure custom domain is included (emergency fix for demo)
