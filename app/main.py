@@ -34,10 +34,14 @@ app = FastAPI(
 
 # Security: Environment-based CORS configuration - no hardcoded origins
 # CRITICAL FIX: Railway doesn't support multi-service properly, use FastAPI CORS directly
-logger.info(f"Security: FastAPI CORSMiddleware with environment origins: {settings.CORS_ORIGINS}")
+# EMERGENCY FIX: Ensure Odeon demo origin is always included
+emergency_cors_origins = settings.CORS_ORIGINS.copy() if isinstance(settings.CORS_ORIGINS, list) else [settings.CORS_ORIGINS]
+if "https://app.zebra.associates" not in emergency_cors_origins:
+    emergency_cors_origins.append("https://app.zebra.associates")
+logger.info(f"Security: FastAPI CORSMiddleware with emergency origins: {emergency_cors_origins}")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=emergency_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
     allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With", "Origin", "X-Tenant-ID"],
