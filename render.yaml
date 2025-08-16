@@ -1,0 +1,69 @@
+# Fixed Render Blueprint - MarketEdge Platform  
+# Epic 2: Railway to Render Migration (Path Fixed)
+
+services:
+  - type: web
+    name: marketedge-platform
+    runtime: docker
+    dockerfilePath: ./platform-wrapper/Dockerfile
+    # Path adjusted for repository structure
+    plan: standard
+    healthCheckPath: /health
+    
+    envVars:
+      # Core Application
+      - key: PORT
+        value: 80
+      - key: FASTAPI_PORT  
+        value: 8000
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: LOG_LEVEL
+        value: INFO
+        
+      # Auth0 Configuration
+      - key: AUTH0_DOMAIN
+        value: dev-g8trhgbfdq2sk2m8.us.auth0.com
+      - key: AUTH0_CLIENT_ID
+        value: mQG01Z4lNhTTN081GHbR9R9C4fBQdPNr
+      - key: AUTH0_CALLBACK_URL
+        value: https://marketedge-platform.onrender.com/callback
+        
+      # CORS Configuration (Critical - includes Vercel frontend)
+      - key: CORS_ORIGINS
+        value: '["https://frontend-5r7ft62po-zebraassociates-projects.vercel.app","http://localhost:3000"]'
+        
+      # Security
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: JWT_SECRET_KEY
+        generateValue: true
+        
+      # Database URLs (auto-populated by Render)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: marketedge-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromDatabase:
+          name: marketedge-redis
+          property: connectionString
+        
+      # Rate Limiting
+      - key: RATE_LIMIT_ENABLED
+        value: true
+      - key: RATE_LIMIT_REQUESTS_PER_MINUTE
+        value: 60
+
+databases:
+  - name: marketedge-postgres
+    databaseName: marketedge_production
+    user: marketedge_user
+    plan: standard
+    
+  - name: marketedge-redis
+    plan: standard
