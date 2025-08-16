@@ -5,7 +5,7 @@ services:
   - type: web
     name: marketedge-platform
     runtime: docker
-    dockerfilePath: ./backend/Dockerfile
+    dockerfilePath: ./Dockerfile
     # No dockerContext - let Render auto-detect from repo root
     plan: standard
     healthCheckPath: /health
