@@ -38,11 +38,6 @@ class UserResponse(BaseModel):
         from_attributes = True
 
 
-class BulkUserCreate(BaseModel):
-    users: List["UserCreate"]
-    send_invitations: bool = True
-
-
 class UserCreate(BaseModel):
     email: EmailStr
     first_name: str
@@ -51,6 +46,11 @@ class UserCreate(BaseModel):
     organisation_id: Optional[str] = None  # For super admin use
     application_access: List[ApplicationAccess] = []
     send_invitation: bool = True
+
+
+class BulkUserCreate(BaseModel):
+    users: List[UserCreate]
+    send_invitations: bool = True
 
 
 class UserUpdate(BaseModel):
