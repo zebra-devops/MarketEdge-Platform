@@ -22,42 +22,40 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Copy from platform-wrapper/backend directory (Render build context is repo root)
+# Copy requirements first for better Docker layer caching
 COPY platform-wrapper/backend/requirements.txt .
 
-# Security: Install Python packages as non-root where possible
+# Install Python packages
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Security: Copy application code with proper ownership from platform-wrapper/backend directory
+# Copy all backend files
 COPY --chown=appuser:appuser platform-wrapper/backend/ .
 
-# Security: Create secure log directories with restricted permissions
+# Create necessary directories
 RUN mkdir -p /var/log/supervisor /var/log/caddy /var/run \
     && chmod 755 /var/log/supervisor /var/log/caddy \
     && chown appuser:appuser /var/log/supervisor /var/log/caddy
 
-# Security: Create supervisord configuration directory with restricted access
+# Create supervisord configuration directory
 RUN mkdir -p /etc/supervisor/conf.d \
     && chmod 755 /etc/supervisor/conf.d
 
-# Security: Copy configurations with proper ownership and permissions
+# Copy supervisord configuration
 COPY --chown=root:root platform-wrapper/backend/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-COPY --chown=appuser:appuser platform-wrapper/backend/Caddyfile /app/Caddyfile
 
-# Security: Set proper permissions on scripts
+# Set proper permissions
 RUN chmod 755 start.sh \
     && chmod 644 /etc/supervisor/conf.d/supervisord.conf \
-    && chmod 644 /app/Caddyfile
+    && chmod 644 Caddyfile
 
-# Security: Only expose necessary ports
+# Expose ports
 EXPOSE 80 8000
 
-# Security: Health check with minimal privileges
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# CRITICAL FIX: Multi-service deployment with Caddy proxy + FastAPI
-# Security: Run supervisord as root for process management (services run as appuser)
+# Run supervisord as root for process management
 USER root
 CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
