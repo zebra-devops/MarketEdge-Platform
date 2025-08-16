@@ -13,8 +13,6 @@ services:
     envVars:
       # Core Application
       - key: PORT
-        value: 80
-      - key: FASTAPI_PORT  
         value: 8000
       - key: ENVIRONMENT
         value: production
@@ -28,6 +26,8 @@ services:
         value: dev-g8trhgbfdq2sk2m8.us.auth0.com
       - key: AUTH0_CLIENT_ID
         value: mQG01Z4lNhTTN081GHbR9R9C4fBQdPNr
+      - key: AUTH0_CLIENT_SECRET
+        generateValue: true
       - key: AUTH0_CALLBACK_URL
         value: https://marketedge-platform.onrender.com/callback
         
