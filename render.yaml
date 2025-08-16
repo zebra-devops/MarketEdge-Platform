@@ -43,15 +43,13 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
         
-      # Database URL (auto-populated by Render)
+      # Database URL - manually set in Render dashboard
       - key: DATABASE_URL
-        fromDatabase:
-          name: marketedge-postgres
-          property: connectionString
+        sync: false
       
-      # Redis URL with fallback for initial deployment
+      # Redis URL - manually set in Render dashboard  
       - key: REDIS_URL
-        value: redis://localhost:6379
+        sync: false
         
       # Rate Limiting
       - key: RATE_LIMIT_ENABLED
