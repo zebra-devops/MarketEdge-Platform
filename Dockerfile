@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Copy from platform-wrapper/backend directory (since this Dockerfile is at repo root)
+# Copy from platform-wrapper/backend directory (Render build context is repo root)
 COPY platform-wrapper/backend/requirements.txt .
 
 # Security: Install Python packages as non-root where possible

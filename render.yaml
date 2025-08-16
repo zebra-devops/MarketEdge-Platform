@@ -5,7 +5,7 @@ services:
   - type: web
     name: marketedge-platform
     runtime: docker
-    dockerfilePath: ./platform-wrapper/Dockerfile
+    dockerfilePath: ./Dockerfile
     # Path adjusted for repository structure
     plan: free
     healthCheckPath: /health
