@@ -112,7 +112,27 @@
       "Bash(./validate-emergency-auth-fix.sh:*)",
       "Bash(alembic current:*)",
       "WebFetch(domain:manage.auth0.com)",
-      "Bash([INFO] GET /api/v1/auth/auth0-url HTTP/1.1\" 200 OK\n[INFO] Authentication successful\n[INFO] Market Edge API endpoints operational\n```\n\n## Next Steps\n1. **Monitoring Fixes**: Issue #32 addresses monitoring configuration\n2. **Continue Demo Preparation**: Platform ready for Odeon demo\n3. **Post-Demo Development**: Proceed with Phase 3A implementation as planned\n\n**The platform has been operational throughout this entire incident.**\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash([INFO] GET /api/v1/auth/auth0-url HTTP/1.1\" 200 OK\n[INFO] Authentication successful\n[INFO] Market Edge API endpoints operational\n```\n\n## Next Steps\n1. **Monitoring Fixes**: Issue #32 addresses monitoring configuration\n2. **Continue Demo Preparation**: Platform ready for Odeon demo\n3. **Post-Demo Development**: Proceed with Phase 3A implementation as planned\n\n**The platform has been operational throughout this entire incident.**\n\n🤖 Generated with [Claude Code](https://claude.ai/code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git branch:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(alembic check:*)",
+      "Bash(dig:*)",
+      "WebFetch(domain:app.zebra.associates)",
+      "Bash(git submodule foreach git add:*)",
+      "Bash(git submodule foreach git commit:*)",
+      "Bash(./emergency-cors-fix.sh:*)",
+      "Bash(./emergency-cors-fallback.sh:*)",
+      "Bash(./validate-cors-001.sh:*)",
+      "Bash(./validate-cors-002.sh:*)",
+      "Bash(./deploy-cors-003.sh:*)",
+      "Bash(./validate-production-cors.sh:*)",
+      "Bash(./force-railway-redeploy.sh:*)",
+      "Bash(if [ -f verify-railway-variables.sh ])",
+      "Bash(then cat verify-railway-variables.sh)",
+      "Bash(fi)",
+      "Bash(./scripts/railway-config-audit.sh:*)",
+      "Bash(./scripts/render-capability-validation.sh:*)",
+      "Bash(./scripts/multi-service-readiness-test.sh:*)"
     ],
     "deny": []
   }

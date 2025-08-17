@@ -1,0 +1,205 @@
+{
+  "timestamp": 1755380652.278972,
+  "test_environment": "epic2_render_production",
+  "frontend_url": "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+  "backend_url": "https://marketedge-platform.onrender.com",
+  "total_tests": 17,
+  "passed_tests": 10,
+  "failed_tests": 7,
+  "test_suites": {
+    "Backend Health Check": {
+      "total": 3,
+      "passed": 2,
+      "failed": 1,
+      "tests": [
+        {
+          "name": "Backend Health Endpoint",
+          "status": "PASS",
+          "response_code": 200,
+          "response_time_ms": 632.5730000000001
+        },
+        {
+          "name": "CORS Debug Endpoint",
+          "status": "PASS",
+          "response_code": 200,
+          "cors_config": [
+            "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+            "http://localhost:3000"
+          ],
+          "origin_allowed": true
+        },
+        {
+          "name": "API v1 Health",
+          "status": "FAIL",
+          "response_code": 404
+        }
+      ]
+    },
+    "CORS Preflight Tests": {
+      "total": 4,
+      "passed": 4,
+      "failed": 0,
+      "tests": [
+        {
+          "name": "CORS Preflight /health",
+          "status": "PASS",
+          "response_code": 200,
+          "cors_headers": {
+            "access-control-allow-origin": "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+            "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID",
+            "access-control-allow-credentials": "true"
+          }
+        },
+        {
+          "name": "CORS Preflight /cors-debug",
+          "status": "PASS",
+          "response_code": 200,
+          "cors_headers": {
+            "access-control-allow-origin": "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+            "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID",
+            "access-control-allow-credentials": "true"
+          }
+        },
+        {
+          "name": "CORS Preflight /api/v1/auth/auth0-url",
+          "status": "PASS",
+          "response_code": 200,
+          "cors_headers": {
+            "access-control-allow-origin": "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+            "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID",
+            "access-control-allow-credentials": "true"
+          }
+        },
+        {
+          "name": "CORS Preflight /api/v1/auth/callback",
+          "status": "PASS",
+          "response_code": 200,
+          "cors_headers": {
+            "access-control-allow-origin": "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+            "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+            "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID",
+            "access-control-allow-credentials": "true"
+          }
+        }
+      ]
+    },
+    "API Endpoint CORS Tests": {
+      "total": 3,
+      "passed": 1,
+      "failed": 2,
+      "tests": [
+        {
+          "name": "Auth0 URL Generation",
+          "status": "PASS",
+          "response_code": 200,
+          "cors_origin": "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+          "endpoint": "/api/v1/auth/auth0-url"
+        },
+        {
+          "name": "Health Check with CORS",
+          "status": "FAIL",
+          "response_code": 404,
+          "cors_origin": "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+          "endpoint": "/api/v1/health",
+          "error": "Missing CORS headers or bad response"
+        },
+        {
+          "name": "OpenAPI Schema",
+          "status": "FAIL",
+          "response_code": 404,
+          "cors_origin": "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+          "endpoint": "/api/v1/openapi.json",
+          "error": "Missing CORS headers or bad response"
+        }
+      ]
+    },
+    "Auth0 CORS Integration": {
+      "total": 3,
+      "passed": 2,
+      "failed": 1,
+      "tests": [
+        {
+          "name": "Auth0 URL Generation",
+          "status": "PASS",
+          "response_code": 200,
+          "auth_url_domain": "dev-g8trhgbfdq2sk2m8.us.auth0.com",
+          "has_cors": true
+        },
+        {
+          "name": "Auth0 Domain Connectivity",
+          "status": "FAIL",
+          "response_code": 404
+        },
+        {
+          "name": "Auth0 Callback CORS",
+          "status": "PASS",
+          "response_code": 200,
+          "cors_origin": "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app"
+        }
+      ]
+    },
+    "Frontend-Backend Connectivity": {
+      "total": 2,
+      "passed": 0,
+      "failed": 2,
+      "tests": [
+        {
+          "name": "Frontend API Call Simulation",
+          "status": "FAIL",
+          "response_code": 404
+        },
+        {
+          "name": "HTTP Methods CORS Support",
+          "status": "FAIL",
+          "successful_methods": 1,
+          "method_results": [
+            {
+              "method": "GET",
+              "status_code": 200,
+              "has_cors": true
+            },
+            {
+              "method": "POST",
+              "status_code": 404,
+              "has_cors": true
+            },
+            {
+              "method": "OPTIONS",
+              "status_code": 405,
+              "has_cors": true
+            }
+          ]
+        }
+      ]
+    },
+    "End-to-End Flow Validation": {
+      "total": 2,
+      "passed": 1,
+      "failed": 1,
+      "tests": [
+        {
+          "name": "End-to-End Auth Flow Setup",
+          "status": "PASS",
+          "auth_url_valid": true,
+          "has_cors": true,
+          "auth_url_components": {
+            "has_client_id": true,
+            "has_redirect_uri": true,
+            "has_state": true,
+            "domain_correct": true
+          }
+        },
+        {
+          "name": "Platform Readiness Check",
+          "status": "FAIL",
+          "response_code": 503
+        }
+      ]
+    }
+  },
+  "execution_time_seconds": 8.759338855743408,
+  "success_rate_percent": 58.82
+}

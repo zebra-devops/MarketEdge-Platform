@@ -1,0 +1,55 @@
+{
+  "migration_details": {
+    "source_platform": "Railway",
+    "target_platform": "Render",
+    "backend_url": "https://marketedge-platform.onrender.com",
+    "frontend_url": "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+    "auth0_domain": "dev-g8trhgbfdq2sk2m8.us.auth0.com",
+    "migration_date": "2025-08-16"
+  },
+  "required_auth0_updates": {
+    "callback_urls": [
+      "https://marketedge-platform.onrender.com/callback",
+      "https://marketedge-platform.onrender.com/api/v1/auth/callback",
+      "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app/callback",
+      "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app/auth/callback",
+      "http://localhost:3000/callback",
+      "http://localhost:8000/callback"
+    ],
+    "logout_urls": [
+      "https://marketedge-platform.onrender.com/logout",
+      "https://marketedge-platform.onrender.com/api/v1/auth/logout",
+      "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app/logout",
+      "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app/",
+      "http://localhost:3000/logout",
+      "http://localhost:3000/"
+    ],
+    "allowed_origins": [
+      "https://marketedge-platform.onrender.com",
+      "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+      "http://localhost:3000",
+      "http://localhost:8000"
+    ],
+    "web_origins": [
+      "https://marketedge-platform.onrender.com",
+      "https://frontend-5r7ft62po-zebraassociates-projects.vercel.app",
+      "http://localhost:3000"
+    ]
+  },
+  "validation_steps": [
+    "Update Auth0 application settings",
+    "Save configuration changes",
+    "Run CORS testing suite",
+    "Validate Auth0 URL generation",
+    "Test end-to-end authentication flow",
+    "Monitor for CORS errors",
+    "Confirm Odeon demo readiness"
+  ],
+  "critical_success_factors": [
+    "No CORS errors during authentication",
+    "Successful Auth0 callback processing",
+    "Frontend can authenticate users",
+    "Backend can validate tokens",
+    "\u00a3925K Odeon demo fully functional"
+  ]
+}

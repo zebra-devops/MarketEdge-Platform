@@ -1,0 +1,49 @@
+# Simplified Render Blueprint - MarketEdge Platform
+# Epic 2: Railway to Render Migration (Token Issue Workaround)
+
+services:
+  - type: web
+    name: marketedge-platform
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: standard
+    healthCheckPath: /health
+    
+    envVars:
+      # Core
+      - key: PORT
+        value: 80
+      - key: FASTAPI_PORT  
+        value: 8000
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+        
+      # Auth0 (Set manually)
+      - key: AUTH0_DOMAIN
+        value: dev-g8trhgbfdq2sk2m8.us.auth0.com
+      - key: AUTH0_CLIENT_ID
+        value: mQG01Z4lNhTTN081GHbR9R9C4fBQdPNr
+      - key: AUTH0_CALLBACK_URL
+        value: https://marketedge-platform.onrender.com/callback
+        
+      # CORS (Include Vercel frontend)
+      - key: CORS_ORIGINS
+        value: '["https://frontend-5r7ft62po-zebraassociates-projects.vercel.app","http://localhost:3000"]'
+        
+      # Security
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+
+databases:
+  - name: marketedge-postgres
+    databaseName: marketedge_production
+    user: marketedge_user
+    plan: standard
+    
+  - name: marketedge-redis
+    plan: standard

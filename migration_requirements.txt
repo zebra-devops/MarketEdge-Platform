@@ -1,0 +1,9 @@
+# Requirements for Super Admin Migration Script
+# Install with: pip install -r migration_requirements.txt
+
+# Database connectivity
+psycopg2-binary>=2.9.0
+sqlalchemy>=2.0.0
+
+# Utilities (already in main requirements.txt but listed for standalone usage)
+python-dotenv>=1.0.0

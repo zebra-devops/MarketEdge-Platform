@@ -4,6 +4,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 from sqlalchemy.exc import SQLAlchemyError
 from ..core.logging import logger
+from ..core.config import settings
 import traceback
 
 
@@ -20,9 +21,10 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 status_code=exc.status_code,
                 detail=exc.detail
             )
-            return JSONResponse(
-                status_code=exc.status_code,
-                content={"detail": exc.detail, "type": "http_exception"}
+            return self._create_error_response(
+                request,
+                exc.status_code,
+                {"detail": exc.detail, "type": "http_exception"}
             )
         except SQLAlchemyError as exc:
             logger.error(
@@ -31,9 +33,10 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 method=request.method,
                 error=str(exc)
             )
-            return JSONResponse(
-                status_code=500,
-                content={"detail": "Database error occurred", "type": "database_error"}
+            return self._create_error_response(
+                request,
+                500,
+                {"detail": "Database error occurred", "type": "database_error"}
             )
         except Exception as exc:
             logger.error(
@@ -43,7 +46,30 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 error=str(exc),
                 traceback=traceback.format_exc()
             )
-            return JSONResponse(
-                status_code=500,
-                content={"detail": "Internal server error", "type": "internal_error"}
+            return self._create_error_response(
+                request,
+                500,
+                {"detail": "Internal server error", "type": "internal_error"}
             )
+    
+    def _create_error_response(self, request: Request, status_code: int, content: dict) -> JSONResponse:
+        """Create an error response with appropriate CORS headers"""
+        response = JSONResponse(
+            status_code=status_code,
+            content=content
+        )
+        
+        # Add CORS headers to error responses
+        origin = request.headers.get("origin")
+        if origin:
+            # Check if origin is in allowed origins
+            allowed_origins = settings.CORS_ORIGINS
+            if isinstance(allowed_origins, str):
+                allowed_origins = [allowed_origins]
+            
+            if origin in allowed_origins:
+                response.headers["Access-Control-Allow-Origin"] = origin
+                response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.headers["Access-Control-Expose-Headers"] = "Content-Type, Authorization, X-Tenant-ID"
+        
+        return response
