@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     AUTH0_CALLBACK_URL: str = "http://localhost:3000/callback"
     
     ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    DEBUG: bool = True  # EMERGENCY: Enable debug for database initialization on Render
     LOG_LEVEL: str = "info"
     
     # Production Cookie Security Settings
