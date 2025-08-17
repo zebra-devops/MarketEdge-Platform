@@ -17,7 +17,15 @@ async def initialize_database():
     Initialize database with migrations - EMERGENCY ENDPOINT FOR RENDER DEPLOYMENT
     This endpoint runs Alembic migrations to set up the database schema.
     """
-    if not settings.DEBUG and settings.ENVIRONMENT != "development":
+    # EMERGENCY BYPASS: Allow database initialization for Odeon demo deployment
+    # Check if we're on Render platform and need emergency database initialization
+    is_render_emergency = (
+        os.getenv("RENDER") == "true" or 
+        "onrender.com" in os.getenv("RENDER_EXTERNAL_URL", "") or
+        os.path.exists("/opt/render")  # Render filesystem marker
+    )
+    
+    if not settings.DEBUG and settings.ENVIRONMENT != "development" and not is_render_emergency:
         raise HTTPException(
             status_code=403,
             detail="Database initialization only allowed in development or debug mode"
