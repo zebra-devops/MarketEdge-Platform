@@ -5,6 +5,7 @@ from pydantic import BaseModel, ValidationError as PydanticValidationError
 from typing import Dict, Any, Optional
 from datetime import timedelta
 import secrets
+import json
 from ....core.database import get_db
 from ....models.user import User
 from ....models.organisation import Organisation
@@ -90,13 +91,7 @@ class LogoutRequest(BaseModel):
 async def login(
     response: Response, 
     request: Request, 
-    db: Session = Depends(get_db),
-    # Optional JSON body (for backward compatibility)
-    login_data: Optional[LoginRequest] = None,
-    # Optional form data (for CORS workaround)
-    code: Optional[str] = Form(None),
-    redirect_uri: Optional[str] = Form(None),
-    state: Optional[str] = Form(None)
+    db: Session = Depends(get_db)
 ):
     """Enhanced login with Auth0 authorization code, comprehensive validation, and multi-tenant context"""
     # Add security headers to response
@@ -107,51 +102,77 @@ async def login(
     # Rate limiting check - prevent brute force attacks
     client_ip = request.client.host if request.client else "unknown"
     
-    # Determine request format and create unified LoginRequest object
-    if login_data is not None:
-        # JSON format (existing behavior)
-        logger.info("Login request received in JSON format", extra={
-            "event": "auth_format_json",
-            "client_ip": client_ip
-        })
-        request_data = login_data
-    elif code and redirect_uri:
-        # Form data format (CORS workaround)
-        logger.info("Login request received in form data format", extra={
-            "event": "auth_format_form",
-            "client_ip": client_ip
-        })
-        try:
+    # Determine request format based on Content-Type and parse accordingly
+    content_type = request.headers.get("content-type", "")
+    
+    try:
+        if content_type.startswith("application/json"):
+            # JSON format (existing behavior)
+            logger.info("Login request received in JSON format", extra={
+                "event": "auth_format_json",
+                "client_ip": client_ip
+            })
+            body = await request.body()
+            json_data = json.loads(body.decode('utf-8'))
+            request_data = LoginRequest(**json_data)
+            
+        elif content_type.startswith("application/x-www-form-urlencoded"):
+            # Form data format (CORS workaround)
+            logger.info("Login request received in form data format", extra={
+                "event": "auth_format_form",
+                "client_ip": client_ip
+            })
+            form = await request.form()
             request_data = LoginRequest(
-                code=code,
-                redirect_uri=redirect_uri,
-                state=state
+                code=form.get("code"),
+                redirect_uri=form.get("redirect_uri"), 
+                state=form.get("state")
             )
-        except PydanticValidationError as e:
-            logger.warning(
-                "Form data validation failed",
-                extra={
-                    "event": "auth_form_validation_failed",
-                    "error": str(e),
-                    "client_ip": client_ip
-                }
-            )
+            
+        else:
+            # Unsupported content type
+            logger.error("Unsupported content type", extra={
+                "event": "auth_unsupported_content_type",
+                "content_type": content_type,
+                "client_ip": client_ip
+            })
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid form data parameters: {str(e)}"
+                detail=f"Unsupported content type: {content_type}. Use application/json or application/x-www-form-urlencoded"
             )
-    else:
-        # Neither format provided valid data
-        logger.error("No valid login data provided", extra={
-            "event": "auth_no_valid_data",
-            "has_json": login_data is not None,
-            "has_form_code": code is not None,
-            "has_form_redirect": redirect_uri is not None,
+            
+    except json.JSONDecodeError as e:
+        logger.warning("JSON parsing failed", extra={
+            "event": "auth_json_parse_failed",
+            "error": str(e),
             "client_ip": client_ip
         })
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Missing required parameters: code and redirect_uri must be provided either as JSON or form data"
+            detail="Invalid JSON format"
+        )
+    except PydanticValidationError as e:
+        logger.warning("Request data validation failed", extra={
+            "event": "auth_validation_failed",
+            "error": str(e),
+            "client_ip": client_ip,
+            "content_type": content_type
+        })
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid request parameters: {str(e)}"
+        )
+    except Exception as e:
+        logger.error("Request parsing error", extra={
+            "event": "auth_parse_error",
+            "error": str(e),
+            "error_type": type(e).__name__,
+            "client_ip": client_ip,
+            "content_type": content_type
+        })
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to parse request data"
         )
     
     # Additional input validation and sanitization
