@@ -113,6 +113,63 @@ async def initialize_database():
         )
 
 
+@router.get("/diagnostics")
+async def diagnostic_check():
+    """
+    Diagnostic endpoint to check deployment structure
+    """
+    try:
+        cwd = os.getcwd()
+        
+        # Get environment info
+        env_info = {
+            "cwd": cwd,
+            "render_env": os.getenv("RENDER"),
+            "render_url": os.getenv("RENDER_EXTERNAL_URL"),
+            "python_path": os.getenv("PYTHONPATH"),
+            "path_env": os.getenv("PATH", "").split(":")[:5]  # First 5 PATH entries
+        }
+        
+        # Check for key files in current directory
+        files_info = {}
+        try:
+            files_info["cwd_files"] = os.listdir(cwd)[:20]  # First 20 files
+        except:
+            files_info["cwd_files"] = ["Unable to list"]
+            
+        # Check common directories
+        check_dirs = [
+            "/opt/render/project/src",
+            "/opt/render/project",
+            "/opt/render",
+            os.path.join(cwd, "platform-wrapper"),
+            os.path.join(cwd, "backend")
+        ]
+        
+        dir_info = {}
+        for dir_path in check_dirs:
+            if os.path.exists(dir_path):
+                try:
+                    dir_info[dir_path] = os.listdir(dir_path)[:10]
+                except:
+                    dir_info[dir_path] = ["Unable to list"]
+            else:
+                dir_info[dir_path] = "Does not exist"
+        
+        return {
+            "status": "success",
+            "environment": env_info,
+            "files": files_info,
+            "directories": dir_info
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+
 @router.get("/schema-check")
 async def check_database_schema(db: Session = Depends(get_db)):
     """
