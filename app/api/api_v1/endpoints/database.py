@@ -32,16 +32,41 @@ async def initialize_database():
         )
     
     try:
-        # Change to the correct directory for alembic
-        backend_dir = "/opt/render/project/src/platform-wrapper/backend"
-        if not os.path.exists(backend_dir):
-            # Fallback for local development
-            backend_dir = os.path.join(os.getcwd(), "platform-wrapper", "backend")
+        # Try multiple possible paths for the backend directory
+        possible_paths = [
+            "/opt/render/project/src/platform-wrapper/backend",  # Original expected path
+            "/opt/render/project/src/backend",                   # Alternative render path
+            "/opt/render/project/src",                           # Render project root
+            "/opt/render/project/platform-wrapper/backend",     # Alternative structure
+            os.path.join(os.getcwd(), "platform-wrapper", "backend"),  # Local development
+            os.path.join(os.getcwd(), "backend"),                # Alternative local
+            os.getcwd()                                          # Current directory fallback
+        ]
         
-        if not os.path.exists(backend_dir):
+        backend_dir = None
+        alembic_cfg_path = None
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                # Check if this directory has alembic.ini
+                alembic_ini = os.path.join(path, "alembic.ini")
+                if os.path.exists(alembic_ini):
+                    backend_dir = path
+                    alembic_cfg_path = alembic_ini
+                    break
+                    
+        if not backend_dir:
+            # Generate diagnostic info for debugging
+            cwd = os.getcwd()
+            available_files = []
+            try:
+                available_files = os.listdir(cwd)[:10]  # Limit to first 10 files
+            except:
+                available_files = ["Unable to list directory"]
+                
             raise HTTPException(
                 status_code=500,
-                detail=f"Backend directory not found. Tried: {backend_dir}"
+                detail=f"Backend directory with alembic.ini not found. CWD: {cwd}, Available files: {available_files}, Tried paths: {possible_paths}"
             )
         
         # Set environment variable for database URL
@@ -70,7 +95,8 @@ async def initialize_database():
             "status": "success",
             "message": "Database initialized successfully",
             "migrations_output": result.stdout,
-            "backend_dir": backend_dir
+            "backend_dir": backend_dir,
+            "alembic_config": alembic_cfg_path
         }
         
     except subprocess.TimeoutExpired:
