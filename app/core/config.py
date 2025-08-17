@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: Union[str, List[str]] = Field(default=["http://localhost:3000", "http://localhost:3001"])
     
     # Rate Limiting Configuration
-    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_ENABLED: bool = False  # EMERGENCY: Disabled for Odeon demo due to Redis connectivity issue
     RATE_LIMIT_REQUESTS_PER_MINUTE: int = 60
     RATE_LIMIT_BURST_SIZE: int = 10
     RATE_LIMIT_TENANT_REQUESTS_PER_MINUTE: int = 1000
