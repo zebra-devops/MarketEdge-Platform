@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Form
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel, ValidationError as PydanticValidationError
@@ -87,7 +87,17 @@ class LogoutRequest(BaseModel):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(login_data: LoginRequest, response: Response, request: Request, db: Session = Depends(get_db)):
+async def login(
+    response: Response, 
+    request: Request, 
+    db: Session = Depends(get_db),
+    # Optional JSON body (for backward compatibility)
+    login_data: Optional[LoginRequest] = None,
+    # Optional form data (for CORS workaround)
+    code: Optional[str] = Form(None),
+    redirect_uri: Optional[str] = Form(None),
+    state: Optional[str] = Form(None)
+):
     """Enhanced login with Auth0 authorization code, comprehensive validation, and multi-tenant context"""
     # Add security headers to response
     security_headers = create_security_headers()
@@ -97,12 +107,59 @@ async def login(login_data: LoginRequest, response: Response, request: Request, 
     # Rate limiting check - prevent brute force attacks
     client_ip = request.client.host if request.client else "unknown"
     
+    # Determine request format and create unified LoginRequest object
+    if login_data is not None:
+        # JSON format (existing behavior)
+        logger.info("Login request received in JSON format", extra={
+            "event": "auth_format_json",
+            "client_ip": client_ip
+        })
+        request_data = login_data
+    elif code and redirect_uri:
+        # Form data format (CORS workaround)
+        logger.info("Login request received in form data format", extra={
+            "event": "auth_format_form",
+            "client_ip": client_ip
+        })
+        try:
+            request_data = LoginRequest(
+                code=code,
+                redirect_uri=redirect_uri,
+                state=state
+            )
+        except PydanticValidationError as e:
+            logger.warning(
+                "Form data validation failed",
+                extra={
+                    "event": "auth_form_validation_failed",
+                    "error": str(e),
+                    "client_ip": client_ip
+                }
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid form data parameters: {str(e)}"
+            )
+    else:
+        # Neither format provided valid data
+        logger.error("No valid login data provided", extra={
+            "event": "auth_no_valid_data",
+            "has_json": login_data is not None,
+            "has_form_code": code is not None,
+            "has_form_redirect": redirect_uri is not None,
+            "client_ip": client_ip
+        })
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing required parameters: code and redirect_uri must be provided either as JSON or form data"
+        )
+    
     # Additional input validation and sanitization
     try:
         # Validate and sanitize all input parameters
-        validated_code = sanitize_string_input(login_data.code, max_length=500)
-        validated_redirect_uri = sanitize_string_input(login_data.redirect_uri, max_length=2000)
-        validated_state = sanitize_string_input(login_data.state, max_length=500) if login_data.state else None
+        validated_code = sanitize_string_input(request_data.code, max_length=500)
+        validated_redirect_uri = sanitize_string_input(request_data.redirect_uri, max_length=2000)
+        validated_state = sanitize_string_input(request_data.state, max_length=500) if request_data.state else None
         
         logger.info("Authentication attempt initiated with enhanced validation", extra={
             "event": "auth_attempt",
