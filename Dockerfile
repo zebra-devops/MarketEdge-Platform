@@ -20,6 +20,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy application code from repository root
 COPY app ./app
 
+# Copy Alembic configuration and migrations
+COPY alembic.ini ./
+COPY alembic ./alembic
+
 # Create a simple startup script
 RUN echo '#!/bin/bash\nexec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}' > start.sh \
     && chmod +x start.sh
