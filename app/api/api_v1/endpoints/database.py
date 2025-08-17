@@ -170,6 +170,76 @@ async def diagnostic_check():
         }
 
 
+@router.post("/emergency-fix")
+async def emergency_database_fix(db: Session = Depends(get_db)):
+    """
+    Emergency fix for missing database columns
+    """
+    try:
+        from sqlalchemy import text
+        
+        # Add missing columns to organisations table
+        missing_columns_sql = """
+        DO $$ 
+        BEGIN
+            -- Add industry_type if missing
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='organisations' AND column_name='industry_type') THEN
+                ALTER TABLE organisations ADD COLUMN industry_type VARCHAR(50) DEFAULT 'default';
+            END IF;
+            
+            -- Add rate_limit_per_hour if missing
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='organisations' AND column_name='rate_limit_per_hour') THEN
+                ALTER TABLE organisations ADD COLUMN rate_limit_per_hour INTEGER DEFAULT 1000;
+            END IF;
+            
+            -- Add burst_limit if missing
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='organisations' AND column_name='burst_limit') THEN
+                ALTER TABLE organisations ADD COLUMN burst_limit INTEGER DEFAULT 100;
+            END IF;
+            
+            -- Add rate_limit_enabled if missing
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='organisations' AND column_name='rate_limit_enabled') THEN
+                ALTER TABLE organisations ADD COLUMN rate_limit_enabled BOOLEAN DEFAULT TRUE;
+            END IF;
+            
+            -- Add sic_code if missing
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                          WHERE table_name='organisations' AND column_name='sic_code') THEN
+                ALTER TABLE organisations ADD COLUMN sic_code VARCHAR(10);
+            END IF;
+        END $$;
+        """
+        
+        db.execute(text(missing_columns_sql))
+        db.commit()
+        
+        # Check what columns exist now
+        result = db.execute(text("""
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'organisations'
+            ORDER BY column_name
+        """))
+        columns = {row[0]: row[1] for row in result}
+        
+        return {
+            "status": "success",
+            "message": "Emergency fix applied",
+            "organisation_columns": columns
+        }
+        
+    except Exception as e:
+        logger.error(f"Emergency fix error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Emergency fix failed: {str(e)}"
+        )
+
+
 @router.get("/schema-check")
 async def check_database_schema(db: Session = Depends(get_db)):
     """
