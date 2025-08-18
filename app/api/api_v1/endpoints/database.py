@@ -1207,11 +1207,11 @@ async def setup_default_organization_tools(db: Session = Depends(get_db)):
                 create_access_sql = """
                 INSERT INTO organisation_tool_access (
                     id, organisation_id, tool_id, subscription_tier, 
-                    features_enabled, usage_limits, is_active, created_at, updated_at
+                    features_enabled, usage_limits, created_at, updated_at
                 )
                 VALUES (
                     :id, :org_id, :tool_id, :tier,
-                    :features, :limits, :is_active, NOW(), NOW()
+                    :features, :limits, NOW(), NOW()
                 )
                 """
                 
@@ -1221,8 +1221,7 @@ async def setup_default_organization_tools(db: Session = Depends(get_db)):
                     "tool_id": tool_id,
                     "tier": "basic",
                     "features": '["basic_access", "read_access", "standard_features"]',
-                    "limits": '{"daily_requests": 100, "monthly_requests": 3000, "concurrent_users": 10}',
-                    "is_active": True
+                    "limits": '{"daily_requests": 100, "monthly_requests": 3000, "concurrent_users": 10}'
                 })
                 
                 access_records_created += 1
@@ -1237,7 +1236,7 @@ async def setup_default_organization_tools(db: Session = Depends(get_db)):
         SELECT t.name, ota.subscription_tier, ota.features_enabled
         FROM organisation_tool_access ota
         JOIN tools t ON ota.tool_id = t.id
-        WHERE ota.organisation_id = :org_id AND ota.is_active = true;
+        WHERE ota.organisation_id = :org_id;
         """
         
         verify_result = db.execute(text(verify_sql), {"org_id": org_id})
