@@ -511,7 +511,7 @@ async def debug_auth_login(request: Request, response: Response, db: Session = D
         
         # Step 1: Test Auth0 token exchange
         try:
-            from ....core.auth0_client import auth0_client
+            from ....auth.auth0 import auth0_client
             logger.info("🔍 AUTH DEBUG: Starting Auth0 token exchange...")
             
             token_data = await auth0_client.exchange_code_for_token(code, redirect_uri, state)
