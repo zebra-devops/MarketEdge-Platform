@@ -186,15 +186,29 @@ async def login(
         )
     
     # Get user info from Auth0
-    user_info = await auth0_client.get_user_info(token_data["access_token"])
-    if not user_info:
-        logger.error("Failed to get user info", extra={
-            "event": "userinfo_failure",
-            "has_access_token": bool(token_data.get("access_token"))
+    try:
+        user_info = await auth0_client.get_user_info(token_data["access_token"])
+        if not user_info:
+            logger.error("Failed to get user info", extra={
+                "event": "userinfo_failure",
+                "has_access_token": bool(token_data.get("access_token"))
+            })
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to get user information from Auth0"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error getting user info from Auth0", extra={
+            "event": "userinfo_exception",
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "has_token": bool(token_data)
         })
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to get user information from Auth0"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error retrieving user information"
         )
     
     # Enhanced user info validation with sanitization
@@ -234,41 +248,54 @@ async def login(
         )
     
     # Find or create user in database using sanitized email
-    user = db.query(User).filter(User.email == sanitized_email).first()
-    if not user:
-        # Create user with default organization
-        default_org = db.query(Organisation).filter(Organisation.name == "Default").first()
-        if not default_org:
-            from ....models.organisation import SubscriptionPlan
-            from ....core.rate_limit_config import Industry
-            default_org = Organisation(
-                name="Default", 
-                industry="default",
-                industry_type=Industry.DEFAULT,
-                subscription_plan=SubscriptionPlan.basic
+    try:
+        user = db.query(User).filter(User.email == sanitized_email).first()
+        if not user:
+            # Create user with default organization
+            default_org = db.query(Organisation).filter(Organisation.name == "Default").first()
+            if not default_org:
+                from ....models.organisation import SubscriptionPlan
+                from ....core.rate_limit_config import Industry
+                default_org = Organisation(
+                    name="Default", 
+                    industry="default",
+                    industry_type=Industry.DEFAULT,
+                    subscription_plan=SubscriptionPlan.basic
+                )
+                db.add(default_org)
+                db.commit()
+                db.refresh(default_org)
+            
+            from ....models.user import UserRole
+            user = User(
+                email=sanitized_email,
+                first_name=sanitized_given_name,
+                last_name=sanitized_family_name,
+                organisation_id=default_org.id,
+                role=UserRole.viewer
             )
-            db.add(default_org)
+            db.add(user)
             db.commit()
-            db.refresh(default_org)
-        
-        from ....models.user import UserRole
-        user = User(
-            email=sanitized_email,
-            first_name=sanitized_given_name,
-            last_name=sanitized_family_name,
-            organisation_id=default_org.id,
-            role=UserRole.viewer
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        
-        logger.info("New user created", extra={
-            "event": "user_created",
-            "user_id": str(user.id),
-            "email": user.email,
-            "organisation_id": str(user.organisation_id)
+            db.refresh(user)
+            
+            logger.info("New user created", extra={
+                "event": "user_created",
+                "user_id": str(user.id),
+                "email": user.email,
+                "organisation_id": str(user.organisation_id)
+            })
+    except Exception as e:
+        logger.error("Database error during user creation/lookup", extra={
+            "event": "database_error",
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "email": sanitized_email
         })
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error during authentication"
+        )
     
     # Ensure user has organization relationship loaded
     if not user.organisation:
