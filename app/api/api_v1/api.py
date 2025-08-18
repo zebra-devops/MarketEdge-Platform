@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from .endpoints import (
     auth, users, organisations, tools, market_edge, admin, features, 
-    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, database
+    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, database, debug_auth
 )
 
 api_router = APIRouter()
@@ -22,3 +22,6 @@ api_router.include_router(industry_templates.router, prefix="/v2", tags=["indust
 
 # Database diagnostic and testing endpoints
 api_router.include_router(database.router, prefix="/database", tags=["database-diagnostics"])
+
+# Debug authentication endpoint for 500 error investigation
+api_router.include_router(debug_auth.router, prefix="/debug", tags=["debug"])
