@@ -866,6 +866,140 @@ async def check_auth0_configuration():
         }
 
 
+@router.post("/emergency-fix-enum-uppercase")
+async def emergency_fix_enum_uppercase(db: Session = Depends(get_db)):
+    """
+    EMERGENCY FIX: Update production database enum values from lowercase to uppercase
+    """
+    try:
+        from sqlalchemy import text
+        
+        results = {}
+        
+        # Check current enum values
+        enum_check_sql = """
+        SELECT t.typname, e.enumlabel 
+        FROM pg_type t 
+        JOIN pg_enum e ON t.oid = e.enumtypid 
+        WHERE t.typname = 'industry'
+        ORDER BY t.typname, e.enumsortorder;
+        """
+        
+        try:
+            enum_result = db.execute(text(enum_check_sql))
+            current_enums = []
+            for row in enum_result:
+                current_enums.append(row[1])
+            results["current_enum_values"] = current_enums
+        except Exception as e:
+            results["current_enum_values"] = {"error": str(e)}
+        
+        # Emergency fix: Create new uppercase enum and migrate data
+        fix_enum_sql = """
+        DO $$ 
+        BEGIN
+            -- Create new uppercase enum type
+            DROP TYPE IF EXISTS industry_new CASCADE;
+            CREATE TYPE industry_new AS ENUM ('CINEMA', 'HOTEL', 'GYM', 'B2B', 'RETAIL', 'DEFAULT');
+            
+            -- Add temporary column with new enum type
+            ALTER TABLE organisations ADD COLUMN industry_type_new industry_new;
+            
+            -- Migrate data to uppercase values
+            UPDATE organisations 
+            SET industry_type_new = CASE 
+                WHEN industry_type = 'cinema' THEN 'CINEMA'::industry_new
+                WHEN industry_type = 'hotel' THEN 'HOTEL'::industry_new
+                WHEN industry_type = 'gym' THEN 'GYM'::industry_new
+                WHEN industry_type = 'b2b' THEN 'B2B'::industry_new
+                WHEN industry_type = 'retail' THEN 'RETAIL'::industry_new
+                WHEN industry_type = 'default' THEN 'DEFAULT'::industry_new
+                ELSE 'DEFAULT'::industry_new
+            END;
+            
+            -- Drop old column and constraint
+            ALTER TABLE organisations DROP COLUMN industry_type;
+            
+            -- Rename new column to original name  
+            ALTER TABLE organisations RENAME COLUMN industry_type_new TO industry_type;
+            
+            -- Set default value for new column
+            ALTER TABLE organisations ALTER COLUMN industry_type SET DEFAULT 'DEFAULT';
+            
+            -- Drop old enum type
+            DROP TYPE IF EXISTS industry CASCADE;
+            
+            -- Rename new enum type to original name
+            ALTER TYPE industry_new RENAME TO industry;
+            
+        END $$;
+        """
+        
+        try:
+            db.execute(text(fix_enum_sql))
+            db.commit()
+            results["enum_fix"] = "SUCCESS - Updated enum values to uppercase"
+        except Exception as e:
+            results["enum_fix"] = f"ERROR: {str(e)}"
+            db.rollback()
+        
+        # Verify the fix worked
+        verify_sql = """
+        SELECT t.typname, e.enumlabel 
+        FROM pg_type t 
+        JOIN pg_enum e ON t.oid = e.enumtypid 
+        WHERE t.typname = 'industry'
+        ORDER BY t.typname, e.enumsortorder;
+        """
+        
+        try:
+            verify_result = db.execute(text(verify_sql))
+            new_enums = []
+            for row in verify_result:
+                new_enums.append(row[1])
+            results["new_enum_values"] = new_enums
+        except Exception as e:
+            results["new_enum_values"] = {"error": str(e)}
+        
+        # Test organization creation with new enum
+        test_sql = """
+        INSERT INTO organisations (id, name, industry_type, subscription_plan, is_active, rate_limit_per_hour, burst_limit, rate_limit_enabled)
+        VALUES (gen_random_uuid(), 'Enum Fix Test', 'DEFAULT', 'basic', true, 1000, 100, true)
+        RETURNING id, name, industry_type;
+        """
+        
+        try:
+            test_result = db.execute(text(test_sql))
+            test_org = test_result.fetchone()
+            if test_org:
+                results["test_creation"] = {
+                    "success": True,
+                    "org": {
+                        "id": str(test_org[0]),
+                        "name": test_org[1],
+                        "industry_type": test_org[2]
+                    }
+                }
+                # Clean up test org
+                db.execute(text(f"DELETE FROM organisations WHERE id = '{test_org[0]}'"))
+            db.commit()
+        except Exception as e:
+            results["test_creation"] = {"success": False, "error": str(e)}
+        
+        return {
+            "status": "success",
+            "message": "Emergency enum fix completed",
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Emergency enum fix error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Emergency enum fix failed: {str(e)}"
+        )
+
+
 @router.post("/test-enum-creation")
 async def test_enum_organisation_creation(db: Session = Depends(get_db)):
     """
