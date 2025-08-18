@@ -323,12 +323,98 @@ async def fix_enum_case_issue(db: Session = Depends(get_db)):
             "message": "Enum and foreign key fixes applied",
             "fixes": results
         }
+
+
+@router.post("/fix-enum-sqlalchemy-issue")
+async def fix_enum_sqlalchemy_issue(db: Session = Depends(get_db)):
+    """
+    ULTIMATE FIX: Directly handle enum value conversion in SQLAlchemy
+    """
+    try:
+        from sqlalchemy import text
+        from ....models.organisation import Organisation
+        from ....core.rate_limit_config import Industry
+        from ....models.organisation import SubscriptionPlan
+        
+        results = {}
+        
+        # Test 1: Create organisation by directly setting enum values as strings
+        try:
+            # Create using string values instead of enum objects
+            test_org = Organisation(
+                name="String Enum Test Org",
+                is_active=True,
+                rate_limit_per_hour=1000,
+                burst_limit=100,
+                rate_limit_enabled=True
+            )
+            
+            # Manually set enum fields as strings
+            test_org.industry_type = Industry.DEFAULT.value  # Use .value to get 'default'
+            test_org.subscription_plan = SubscriptionPlan.basic.value  # Use .value to get 'basic'
+            
+            db.add(test_org)
+            db.commit()
+            
+            results["string_enum_creation"] = {
+                "success": True,
+                "org": {
+                    "id": str(test_org.id),
+                    "name": test_org.name,
+                    "industry_type": str(test_org.industry_type),
+                    "subscription_plan": str(test_org.subscription_plan)
+                }
+            }
+            
+            # Clean up
+            db.delete(test_org)
+            db.commit()
+            
+        except Exception as e:
+            results["string_enum_creation"] = {"success": False, "error": str(e)}
+            db.rollback()
+        
+        # Test 2: Try direct SQL insert with proper values
+        try:
+            create_sql = """
+            INSERT INTO organisations (id, name, industry_type, subscription_plan, is_active, rate_limit_per_hour, burst_limit, rate_limit_enabled)
+            VALUES (gen_random_uuid(), 'SQL Insert Test', 'default', 'basic', true, 1000, 100, true)
+            RETURNING id, name, industry_type, subscription_plan;
+            """
+            
+            result = db.execute(text(create_sql))
+            org_data = result.fetchone()
+            
+            if org_data:
+                results["direct_sql_insert"] = {
+                    "success": True,
+                    "org": {
+                        "id": str(org_data[0]),
+                        "name": org_data[1],
+                        "industry_type": org_data[2],
+                        "subscription_plan": org_data[3]
+                    }
+                }
+                # Clean up
+                db.execute(text(f"DELETE FROM organisations WHERE id = '{org_data[0]}'"))
+            
+            db.commit()
+            
+        except Exception as e:
+            results["direct_sql_insert"] = {"success": False, "error": str(e)}
+            db.rollback()
+        
+        return {
+            "status": "success", 
+            "message": "Advanced enum fixes tested",
+            "test_results": results
+        }
         
     except Exception as e:
         logger.error(f"Enum fix error: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail=f"Enum fix failed: {str(e)}"
+            detail=f"Advanced enum fix failed: {str(e)}"
         )
 
 
