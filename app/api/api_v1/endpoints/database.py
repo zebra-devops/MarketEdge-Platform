@@ -276,3 +276,136 @@ async def check_database_schema(db: Session = Depends(get_db)):
             status_code=500,
             detail=f"Schema check failed: {str(e)}"
         )
+
+
+@router.post("/test-enum-creation")
+async def test_enum_organisation_creation(db: Session = Depends(get_db)):
+    """
+    Test organisation creation to diagnose enum issues
+    """
+    try:
+        from sqlalchemy import text
+        from ....models.organisation import Organisation
+        from ....core.rate_limit_config import Industry
+        from ....models.organisation import SubscriptionPlan
+        
+        results = {}
+        
+        # Test 1: Check what enum types actually exist in database
+        enum_check_sql = """
+        SELECT t.typname, e.enumlabel 
+        FROM pg_type t 
+        JOIN pg_enum e ON t.oid = e.enumtypid 
+        WHERE t.typname IN ('industry', 'subscriptionplan')
+        ORDER BY t.typname, e.enumsortorder;
+        """
+        
+        try:
+            enum_result = db.execute(text(enum_check_sql))
+            enum_values = {}
+            for row in enum_result:
+                type_name, enum_label = row
+                if type_name not in enum_values:
+                    enum_values[type_name] = []
+                enum_values[type_name].append(enum_label)
+            results["database_enums"] = enum_values
+        except Exception as e:
+            results["database_enums"] = {"error": str(e)}
+        
+        # Test 2: Check what enum values our models expect
+        try:
+            results["model_enums"] = {
+                "Industry": [member.value for member in Industry],
+                "SubscriptionPlan": [member.value for member in SubscriptionPlan]
+            }
+        except Exception as e:
+            results["model_enums"] = {"error": str(e)}
+        
+        # Test 3: Try to create organisation with direct SQL
+        direct_sql_test = """
+        INSERT INTO organisations (id, name, industry_type, subscription_plan, is_active, rate_limit_per_hour, burst_limit, rate_limit_enabled)
+        VALUES (gen_random_uuid(), 'Direct SQL Test Org', 'default', 'basic', true, 1000, 100, true)
+        RETURNING id, name, industry_type, subscription_plan;
+        """
+        
+        try:
+            direct_result = db.execute(text(direct_sql_test))
+            direct_org = direct_result.fetchone()
+            if direct_org:
+                results["direct_sql_creation"] = {
+                    "success": True,
+                    "org": {
+                        "id": str(direct_org[0]),
+                        "name": direct_org[1],
+                        "industry_type": direct_org[2],
+                        "subscription_plan": direct_org[3]
+                    }
+                }
+                # Clean up
+                db.execute(text(f"DELETE FROM organisations WHERE id = '{direct_org[0]}'"))
+            db.commit()
+        except Exception as e:
+            results["direct_sql_creation"] = {"success": False, "error": str(e)}
+            db.rollback()
+        
+        # Test 4: Try to create organisation with SQLAlchemy model
+        try:
+            test_org = Organisation(
+                name="SQLAlchemy Test Org",
+                industry_type=Industry.DEFAULT,
+                subscription_plan=SubscriptionPlan.basic,
+                is_active=True
+            )
+            db.add(test_org)
+            db.commit()
+            
+            results["sqlalchemy_creation"] = {
+                "success": True,
+                "org": {
+                    "id": str(test_org.id),
+                    "name": test_org.name,
+                    "industry_type": test_org.industry_type.value if hasattr(test_org.industry_type, 'value') else str(test_org.industry_type),
+                    "subscription_plan": test_org.subscription_plan.value if hasattr(test_org.subscription_plan, 'value') else str(test_org.subscription_plan)
+                }
+            }
+            
+            # Clean up
+            db.delete(test_org)
+            db.commit()
+            
+        except Exception as e:
+            results["sqlalchemy_creation"] = {"success": False, "error": str(e)}
+            db.rollback()
+        
+        # Test 5: Check if sic_codes table exists
+        sic_check_sql = """
+        SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'sic_codes'
+        );
+        """
+        
+        try:
+            sic_result = db.execute(text(sic_check_sql))
+            sic_exists = sic_result.scalar()
+            results["sic_codes_table_exists"] = sic_exists
+            
+            if sic_exists:
+                sic_count_sql = "SELECT COUNT(*) FROM sic_codes;"
+                count_result = db.execute(text(sic_count_sql))
+                results["sic_codes_count"] = count_result.scalar()
+        except Exception as e:
+            results["sic_codes_table_exists"] = False
+            results["sic_codes_error"] = str(e)
+        
+        return {
+            "status": "success",
+            "test_results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Enum test error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Enum test failed: {str(e)}"
+        )
