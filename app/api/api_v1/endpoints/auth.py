@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Form
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel, ValidationError as PydanticValidationError
@@ -87,7 +87,16 @@ class LogoutRequest(BaseModel):
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(login_data: LoginRequest, response: Response, request: Request, db: Session = Depends(get_db)):
+async def login(
+    response: Response, 
+    request: Request, 
+    db: Session = Depends(get_db),
+    # Support both JSON and form data
+    login_data: Optional[LoginRequest] = None,
+    code: Optional[str] = Form(None),
+    redirect_uri: Optional[str] = Form(None),
+    state: Optional[str] = Form(None)
+):
     """Enhanced login with Auth0 authorization code, comprehensive validation, and multi-tenant context"""
     # Add security headers to response
     security_headers = create_security_headers()
@@ -96,6 +105,12 @@ async def login(login_data: LoginRequest, response: Response, request: Request, 
     
     # Rate limiting check - prevent brute force attacks
     client_ip = request.client.host if request.client else "unknown"
+    
+    # Handle both JSON and form data
+    if login_data is None and code is not None:
+        login_data = LoginRequest(code=code, redirect_uri=redirect_uri, state=state)
+    elif login_data is None:
+        raise HTTPException(status_code=400, detail="Missing authentication data")
     
     # Additional input validation and sanitization
     try:
