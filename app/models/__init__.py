@@ -2,6 +2,7 @@ from .organisation import Organisation
 from .user import User, UserRole, LEGACY_TO_ENHANCED_ROLE_MAPPING
 from .tool import Tool
 from .organisation_tool_access import OrganisationToolAccess
+from .user_application_access import UserApplicationAccess, UserInvitation, ApplicationType, InvitationStatus
 
 # Phase 3 models
 from .sectors import SICCode, SectorModule, CompetitiveFactorTemplate
@@ -20,6 +21,7 @@ __all__ = [
     # Core models
     "Organisation", "User", "UserRole", "LEGACY_TO_ENHANCED_ROLE_MAPPING", 
     "Tool", "OrganisationToolAccess",
+    "UserApplicationAccess", "UserInvitation", "ApplicationType", "InvitationStatus",
     
     # Phase 3 models
     "SICCode", "SectorModule", "CompetitiveFactorTemplate",
