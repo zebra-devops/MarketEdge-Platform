@@ -300,7 +300,7 @@ async def login(
             from ....core.rate_limit_config import Industry
             default_org = Organisation(
                 name="Default", 
-                industry="Technology",
+                industry="default",  # Changed from "Technology" to match enum constraint
                 industry_type=Industry.DEFAULT.value,  # Use .value to get 'default'
                 subscription_plan=SubscriptionPlan.basic.value  # Use .value to get 'basic'
             )
