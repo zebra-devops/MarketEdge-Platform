@@ -323,6 +323,13 @@ async def fix_enum_case_issue(db: Session = Depends(get_db)):
             "message": "Enum and foreign key fixes applied",
             "fixes": results
         }
+        
+    except Exception as e:
+        logger.error(f"Enum case fix error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Enum case fix failed: {str(e)}"
+        )
 
 
 @router.post("/fix-enum-sqlalchemy-issue")
@@ -416,6 +423,62 @@ async def fix_enum_sqlalchemy_issue(db: Session = Depends(get_db)):
             status_code=500,
             detail=f"Advanced enum fix failed: {str(e)}"
         )
+
+
+@router.post("/test-user-creation")
+async def test_user_creation_realistic(db: Session = Depends(get_db)):
+    """Test the exact user creation flow that happens during Auth0 authentication"""
+    try:
+        from ....models.user import User, UserRole
+        from ....models.organisation import Organisation, SubscriptionPlan
+        from ....core.rate_limit_config import Industry
+        
+        # Step 1: Create default organization (same as auth.py lines 297-309)
+        default_org = db.query(Organisation).filter(Organisation.name == "Default").first()
+        if not default_org:
+            default_org = Organisation(
+                name="Default", 
+                industry="Technology",
+                industry_type=Industry.DEFAULT.value,  # This is the critical line
+                subscription_plan=SubscriptionPlan.basic.value
+            )
+            db.add(default_org)
+            db.commit()
+            db.refresh(default_org)
+        
+        # Step 2: Create user (same as auth.py lines 312-321)
+        import uuid
+        user = User(
+            email=f"test.auth.user.{uuid.uuid4().hex[:8]}@example.com",
+            first_name="Auth",
+            last_name="Test",
+            organisation_id=default_org.id,
+            role=UserRole.viewer
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        return {
+            "status": "success",
+            "message": "User creation simulation successful",
+            "user_id": str(user.id),
+            "org_id": str(default_org.id),
+            "enum_values": {
+                "industry_type": default_org.industry_type,
+                "subscription_plan": default_org.subscription_plan
+            }
+        }
+        
+    except Exception as e:
+        import traceback
+        logger.error(f"User creation test failed: {str(e)}")
+        return {
+            "status": "error", 
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "error_type": type(e).__name__
+        }
 
 
 @router.get("/schema-check")
