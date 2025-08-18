@@ -169,10 +169,16 @@ async def login(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
         logger.error("Authentication endpoint error", extra={
             "event": "auth_error",
             "error_type": type(e).__name__,
-            "error_message": str(e)
+            "error_message": str(e),
+            "traceback": traceback.format_exc(),
+            "environment": settings.ENVIRONMENT,
+            "auth0_domain": settings.AUTH0_DOMAIN,
+            "validated_code_length": len(validated_code) if 'validated_code' in locals() else 0,
+            "redirect_uri": validated_redirect_uri if 'validated_redirect_uri' in locals() else "unknown"
         })
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
