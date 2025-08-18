@@ -676,6 +676,67 @@ async def check_database_schema(db: Session = Depends(get_db)):
         )
 
 
+@router.post("/auth0-raw-test")
+async def test_auth0_raw(request: Request):
+    """Direct Auth0 token exchange test with raw response"""
+    try:
+        import json
+        import httpx
+        body = await request.body()
+        data = json.loads(body.decode('utf-8'))
+        code = data.get("code")
+        redirect_uri = data.get("redirect_uri", "https://app.zebra.associates/callback")
+        
+        from ....auth.auth0 import auth0_client
+        
+        # Show config being used
+        config_info = {
+            "domain": auth0_client.domain,
+            "client_id": auth0_client.client_id,
+            "has_secret": bool(auth0_client.client_secret),
+            "secret_first_10": auth0_client.client_secret[:10] if auth0_client.client_secret else None,
+            "secret_last_10": auth0_client.client_secret[-10:] if auth0_client.client_secret else None,
+            "secret_length": len(auth0_client.client_secret) if auth0_client.client_secret else 0
+        }
+        
+        # Make direct request to Auth0
+        async with httpx.AsyncClient(timeout=30) as client:
+            try:
+                token_url = f"https://{auth0_client.domain}/oauth/token"
+                payload = {
+                    "grant_type": "authorization_code",
+                    "client_id": auth0_client.client_id,
+                    "client_secret": auth0_client.client_secret,
+                    "code": code,
+                    "redirect_uri": redirect_uri
+                }
+                
+                response = await client.post(
+                    token_url,
+                    data=payload,
+                    headers={"Content-Type": "application/x-www-form-urlencoded"}
+                )
+                
+                return {
+                    "config": config_info,
+                    "request_url": token_url,
+                    "status_code": response.status_code,
+                    "response_text": response.text[:500] if response.text else None,
+                    "success": response.is_success
+                }
+                
+            except Exception as e:
+                return {
+                    "config": config_info,
+                    "error": str(e),
+                    "error_type": type(e).__name__
+                }
+                
+    except Exception as e:
+        import traceback
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
+
 @router.post("/auth0-redirect-test")
 async def test_auth0_redirect_uris(request: Request):
     """Test Auth0 token exchange with different redirect URIs"""

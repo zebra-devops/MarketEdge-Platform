@@ -210,7 +210,11 @@ class Auth0Client:
                             "error": str(e),
                             "status_code": status_code,
                             "response_body": response_text[:500] if response_text else None,  # Truncate for logging
-                            "attempt": attempt + 1
+                            "attempt": attempt + 1,
+                            "client_id": self.client_id[:10] + "..." if self.client_id else None,
+                            "has_secret": bool(self.client_secret),
+                            "secret_length": len(self.client_secret) if self.client_secret else 0,
+                            "redirect_uri": redirect_uri
                         }
                     )
                     
