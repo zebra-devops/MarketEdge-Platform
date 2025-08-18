@@ -45,8 +45,8 @@ class SICCode(Base):
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-    # Relationships
-    organisations = relationship("Organisation", foreign_keys="Organisation.sic_code", back_populates="sic_code_rel")
+    # Relationships - organisations relationship disabled until foreign key is restored
+    # organisations = relationship("Organisation", foreign_keys="Organisation.sic_code", back_populates="sic_code_rel")
     sector_modules = relationship("SectorModule", back_populates="sic_code_rel")
 
     def __repr__(self):
