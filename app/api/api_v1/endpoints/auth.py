@@ -258,7 +258,7 @@ async def login(
                 from ....core.rate_limit_config import Industry
                 default_org = Organisation(
                     name="Default", 
-                    industry="default",
+                    industry=Industry.DEFAULT.value,
                     industry_type=Industry.DEFAULT,
                     subscription_plan=SubscriptionPlan.basic
                 )
