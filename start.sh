@@ -36,8 +36,9 @@ if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; th
     exit 1
 fi
 
-# Security: Validate log level
-case "${LOG_LEVEL,,}" in
+# Security: Validate log level (convert to lowercase for bash 3.2 compatibility)
+LOG_LEVEL_LOWER=$(echo "$LOG_LEVEL" | tr '[:upper:]' '[:lower:]')
+case "$LOG_LEVEL_LOWER" in
     critical|error|warning|info|debug|trace)
         ;;
     *)
@@ -47,10 +48,10 @@ case "${LOG_LEVEL,,}" in
 esac
 
 # Security: Run FastAPI with production network binding for Railway
-exec uvicorn app.main:app \
+exec python3 -m uvicorn app.main:app \
     --host 0.0.0.0 \
     --port "${PORT}" \
-    --log-level "${LOG_LEVEL,,}" \
+    --log-level "${LOG_LEVEL_LOWER}" \
     --access-log \
     --no-use-colors \
     --proxy-headers \

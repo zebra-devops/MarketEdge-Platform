@@ -29,11 +29,17 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 "Database error occurred",
                 path=request.url.path,
                 method=request.method,
-                error=str(exc)
+                error=str(exc),
+                error_type=type(exc).__name__,
+                traceback=traceback.format_exc()
             )
             return JSONResponse(
                 status_code=500,
-                content={"detail": "Database error occurred", "type": "database_error"}
+                content={
+                    "detail": "Database error occurred", 
+                    "type": "database_error",
+                    "error_details": str(exc) if hasattr(exc, '__str__') else None
+                }
             )
         except Exception as exc:
             logger.error(

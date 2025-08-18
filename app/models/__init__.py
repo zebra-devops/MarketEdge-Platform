@@ -1,5 +1,6 @@
 from .organisation import Organisation
 from .user import User, UserRole, LEGACY_TO_ENHANCED_ROLE_MAPPING
+from .user_application_access import UserApplicationAccess, UserInvitation, ApplicationType, InvitationStatus
 from .tool import Tool
 from .organisation_tool_access import OrganisationToolAccess
 
@@ -19,6 +20,7 @@ from .hierarchy import (
 __all__ = [
     # Core models
     "Organisation", "User", "UserRole", "LEGACY_TO_ENHANCED_ROLE_MAPPING", 
+    "UserApplicationAccess", "UserInvitation", "ApplicationType", "InvitationStatus",
     "Tool", "OrganisationToolAccess",
     
     # Phase 3 models

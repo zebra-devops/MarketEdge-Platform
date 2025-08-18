@@ -17,8 +17,8 @@ class Organisation(Base):
     
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     industry: Mapped[Optional[str]] = mapped_column(String(100))  # Legacy field - to be deprecated
-    industry_type: Mapped[Industry] = mapped_column(Enum(Industry), default=Industry.DEFAULT, nullable=False, server_default='default')
-    subscription_plan: Mapped[SubscriptionPlan] = mapped_column(Enum(SubscriptionPlan), default=SubscriptionPlan.basic, server_default=SubscriptionPlan.basic.value)
+    industry_type: Mapped[Industry] = mapped_column(Enum(Industry, name='industry', create_constraint=False, values_callable=lambda x: [e.value for e in x]), default=Industry.DEFAULT, nullable=False, server_default='default')
+    subscription_plan: Mapped[SubscriptionPlan] = mapped_column(Enum(SubscriptionPlan), default=SubscriptionPlan.basic, server_default='basic')
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, server_default='true')
     
     # Rate limiting configuration
