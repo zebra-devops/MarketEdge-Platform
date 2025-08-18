@@ -51,5 +51,10 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
             )
             return JSONResponse(
                 status_code=500,
-                content={"detail": "Internal server error", "type": "internal_error"}
+                content={
+                    "detail": "Internal server error", 
+                    "type": "internal_error",
+                    "debug_error": str(exc)[:200] if hasattr(exc, '__str__') else "Unknown error",
+                    "error_type": type(exc).__name__
+                }
             )
