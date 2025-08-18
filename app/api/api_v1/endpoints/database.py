@@ -1170,8 +1170,8 @@ async def setup_default_organization_tools(db: Session = Depends(get_db)):
                 # Create new tool
                 tool_id = str(uuid.uuid4())
                 create_tool_sql = """
-                INSERT INTO tools (id, name, description, is_active, created_at, updated_at)
-                VALUES (:id, :name, :description, :is_active, NOW(), NOW())
+                INSERT INTO tools (id, name, description, version, is_active, created_at, updated_at)
+                VALUES (:id, :name, :description, :version, :is_active, NOW(), NOW())
                 RETURNING id;
                 """
                 
@@ -1179,6 +1179,7 @@ async def setup_default_organization_tools(db: Session = Depends(get_db)):
                     "id": tool_id,
                     "name": tool_info["name"],
                     "description": tool_info["description"],
+                    "version": "1.0.0",
                     "is_active": tool_info["is_active"]
                 })
                 
