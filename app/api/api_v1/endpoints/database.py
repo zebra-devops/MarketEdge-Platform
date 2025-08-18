@@ -1106,6 +1106,163 @@ async def check_organization_tool_access(db: Session = Depends(get_db)):
         )
 
 
+@router.post("/setup-default-org-tools")
+async def setup_default_organization_tools(db: Session = Depends(get_db)):
+    """
+    Set up Default organization with basic tools and access permissions
+    """
+    try:
+        from sqlalchemy import text
+        import uuid
+        
+        results = {}
+        
+        # Get Default organization
+        default_org_sql = """
+        SELECT id, name FROM organisations WHERE name = 'Default' LIMIT 1;
+        """
+        
+        org_result = db.execute(text(default_org_sql))
+        org_data = org_result.fetchone()
+        
+        if not org_data:
+            return {"error": "Default organization not found"}
+        
+        org_id = str(org_data[0])
+        results["organization_id"] = org_id
+        
+        # Create basic tools if they don't exist
+        basic_tools = [
+            {
+                "name": "Market Edge",
+                "description": "Market analysis and insights platform",
+                "tool_type": "analytics",
+                "is_active": True
+            },
+            {
+                "name": "Causal Edge", 
+                "description": "Causal analysis and modeling platform",
+                "tool_type": "modeling",
+                "is_active": True
+            },
+            {
+                "name": "Value Edge",
+                "description": "Value assessment and optimization platform", 
+                "tool_type": "optimization",
+                "is_active": True
+            }
+        ]
+        
+        created_tools = []
+        
+        for tool_info in basic_tools:
+            # Check if tool already exists
+            check_tool_sql = """
+            SELECT id FROM tools WHERE name = :tool_name LIMIT 1;
+            """
+            existing_tool = db.execute(text(check_tool_sql), {"tool_name": tool_info["name"]})
+            tool_row = existing_tool.fetchone()
+            
+            if tool_row:
+                tool_id = str(tool_row[0])
+                results[f"tool_{tool_info['name'].lower().replace(' ', '_')}"] = f"Already exists: {tool_id}"
+            else:
+                # Create new tool
+                tool_id = str(uuid.uuid4())
+                create_tool_sql = """
+                INSERT INTO tools (id, name, description, tool_type, is_active, created_at, updated_at)
+                VALUES (:id, :name, :description, :tool_type, :is_active, NOW(), NOW())
+                RETURNING id;
+                """
+                
+                db.execute(text(create_tool_sql), {
+                    "id": tool_id,
+                    "name": tool_info["name"],
+                    "description": tool_info["description"],
+                    "tool_type": tool_info["tool_type"],
+                    "is_active": tool_info["is_active"]
+                })
+                
+                results[f"tool_{tool_info['name'].lower().replace(' ', '_')}"] = f"Created: {tool_id}"
+            
+            created_tools.append(tool_id)
+        
+        # Create organization tool access for each tool
+        access_records_created = 0
+        
+        for tool_id in created_tools:
+            # Check if access already exists
+            check_access_sql = """
+            SELECT id FROM organisation_tool_access 
+            WHERE organisation_id = :org_id AND tool_id = :tool_id LIMIT 1;
+            """
+            existing_access = db.execute(text(check_access_sql), {
+                "org_id": org_id, 
+                "tool_id": tool_id
+            })
+            
+            if not existing_access.fetchone():
+                # Create tool access record
+                access_id = str(uuid.uuid4())
+                create_access_sql = """
+                INSERT INTO organisation_tool_access (
+                    id, organisation_id, tool_id, subscription_tier, 
+                    features_enabled, usage_limits, is_active, created_at, updated_at
+                )
+                VALUES (
+                    :id, :org_id, :tool_id, :tier,
+                    :features, :limits, :is_active, NOW(), NOW()
+                )
+                """
+                
+                db.execute(text(create_access_sql), {
+                    "id": access_id,
+                    "org_id": org_id,
+                    "tool_id": tool_id,
+                    "tier": "basic",
+                    "features": '["basic_access", "read_access", "standard_features"]',
+                    "limits": '{"daily_requests": 100, "monthly_requests": 3000, "concurrent_users": 10}',
+                    "is_active": True
+                })
+                
+                access_records_created += 1
+        
+        db.commit()
+        
+        results["tools_created"] = len(created_tools)
+        results["access_records_created"] = access_records_created
+        
+        # Verify the setup
+        verify_sql = """
+        SELECT t.name, ota.subscription_tier, ota.features_enabled
+        FROM organisation_tool_access ota
+        JOIN tools t ON ota.tool_id = t.id
+        WHERE ota.organisation_id = :org_id AND ota.is_active = true;
+        """
+        
+        verify_result = db.execute(text(verify_sql), {"org_id": org_id})
+        verification = [
+            {"tool_name": row[0], "tier": row[1], "features": row[2]}
+            for row in verify_result
+        ]
+        
+        results["verification"] = verification
+        
+        return {
+            "status": "success",
+            "message": "Default organization tools setup completed",
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Setup org tools error: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Setup org tools failed: {str(e)}"
+        )
+
+
 @router.post("/test-enum-creation")
 async def test_enum_organisation_creation(db: Session = Depends(get_db)):
     """
