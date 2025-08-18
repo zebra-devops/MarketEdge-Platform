@@ -676,6 +676,75 @@ async def check_database_schema(db: Session = Depends(get_db)):
         )
 
 
+@router.get("/auth0-config-check")
+async def check_auth0_configuration():
+    """Check Auth0 configuration and test basic connectivity"""
+    try:
+        from ....core.config import settings
+        from ....auth.auth0 import auth0_client
+        import httpx
+        
+        # Check configuration values (safely)
+        config_status = {
+            "domain": auth0_client.domain,
+            "client_id": auth0_client.client_id[:10] + "..." if auth0_client.client_id else None,
+            "has_client_secret": bool(auth0_client.client_secret),
+            "client_secret_length": len(auth0_client.client_secret) if auth0_client.client_secret else 0,
+            "base_url": auth0_client.base_url
+        }
+        
+        # Test basic connectivity to Auth0 domain
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                response = await client.get(f"https://{auth0_client.domain}/.well-known/openid_configuration")
+                if response.status_code == 200:
+                    well_known = response.json()
+                    config_status["auth0_connectivity"] = "SUCCESS"
+                    config_status["auth0_issuer"] = well_known.get("issuer")
+                    config_status["auth0_token_endpoint"] = well_known.get("token_endpoint")
+                else:
+                    config_status["auth0_connectivity"] = f"FAILED - Status {response.status_code}"
+        except Exception as e:
+            config_status["auth0_connectivity"] = f"ERROR - {str(e)}"
+        
+        # Test a simple token exchange with obviously fake data to see the error
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                fake_data = {
+                    "grant_type": "authorization_code",
+                    "client_id": auth0_client.client_id,
+                    "client_secret": auth0_client.client_secret,
+                    "code": "fake_test_code_12345",
+                    "redirect_uri": "https://app.zebra.associates/callback"
+                }
+                
+                response = await client.post(
+                    f"{auth0_client.base_url}/oauth/token",
+                    data=fake_data,
+                    headers={"Content-Type": "application/x-www-form-urlencoded"}
+                )
+                
+                config_status["fake_token_test"] = {
+                    "status_code": response.status_code,
+                    "response": response.text[:200] if response.text else "No response"
+                }
+        except Exception as e:
+            config_status["fake_token_test"] = {"error": str(e)}
+        
+        return {
+            "status": "success",
+            "auth0_config": config_status
+        }
+        
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+
 @router.post("/test-enum-creation")
 async def test_enum_organisation_creation(db: Session = Depends(get_db)):
     """
