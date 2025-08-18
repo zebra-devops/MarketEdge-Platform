@@ -240,6 +240,98 @@ async def emergency_database_fix(db: Session = Depends(get_db)):
         )
 
 
+@router.post("/fix-enum-case-issue")
+async def fix_enum_case_issue(db: Session = Depends(get_db)):
+    """
+    CRITICAL FIX: Address enum case sensitivity and foreign key issues preventing auth
+    """
+    try:
+        from sqlalchemy import text
+        
+        results = {}
+        
+        # Fix 1: Drop foreign key constraint on sic_code since sic_codes table doesn't exist
+        fix_fk_sql = """
+        DO $$ 
+        BEGIN
+            -- Drop foreign key constraint if it exists
+            IF EXISTS (SELECT 1 FROM information_schema.table_constraints 
+                      WHERE constraint_name LIKE '%sic_code%' AND table_name = 'organisations') THEN
+                ALTER TABLE organisations DROP CONSTRAINT IF EXISTS organisations_sic_code_fkey;
+            END IF;
+        END $$;
+        """
+        
+        try:
+            db.execute(text(fix_fk_sql))
+            db.commit()
+            results["foreign_key_fix"] = "SUCCESS - Removed sic_code foreign key constraint"
+        except Exception as e:
+            results["foreign_key_fix"] = f"ERROR: {str(e)}"
+            
+        # Fix 2: Test enum creation with lowercase values
+        test_enum_sql = """
+        INSERT INTO organisations (id, name, industry_type, subscription_plan, is_active, rate_limit_per_hour, burst_limit, rate_limit_enabled)
+        VALUES (gen_random_uuid(), 'Enum Fix Test Org', 'default', 'basic', true, 1000, 100, true)
+        RETURNING id, name, industry_type, subscription_plan;
+        """
+        
+        try:
+            test_result = db.execute(text(test_enum_sql))
+            test_org = test_result.fetchone()
+            if test_org:
+                results["enum_test"] = {
+                    "success": True,
+                    "org": {
+                        "id": str(test_org[0]),
+                        "name": test_org[1],
+                        "industry_type": test_org[2],
+                        "subscription_plan": test_org[3]
+                    }
+                }
+                # Clean up test org
+                db.execute(text(f"DELETE FROM organisations WHERE id = '{test_org[0]}'"))
+            db.commit()
+        except Exception as e:
+            results["enum_test"] = {"success": False, "error": str(e)}
+            
+        # Fix 3: Create minimal sic_codes table if needed for future
+        create_sic_table_sql = """
+        CREATE TABLE IF NOT EXISTS sic_codes (
+            code VARCHAR(10) PRIMARY KEY,
+            title VARCHAR(500) NOT NULL,
+            section VARCHAR(1) NOT NULL,
+            division VARCHAR(2) NOT NULL,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+        
+        -- Insert default SIC code
+        INSERT INTO sic_codes (code, title, section, division)
+        VALUES ('59140', 'Motion picture projection activities', 'J', '59')
+        ON CONFLICT (code) DO NOTHING;
+        """
+        
+        try:
+            db.execute(text(create_sic_table_sql))
+            db.commit()
+            results["sic_table_creation"] = "SUCCESS - Created sic_codes table"
+        except Exception as e:
+            results["sic_table_creation"] = f"ERROR: {str(e)}"
+            
+        return {
+            "status": "success",
+            "message": "Enum and foreign key fixes applied",
+            "fixes": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Enum fix error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Enum fix failed: {str(e)}"
+        )
+
+
 @router.get("/schema-check")
 async def check_database_schema(db: Session = Depends(get_db)):
     """

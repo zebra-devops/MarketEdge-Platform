@@ -17,8 +17,8 @@ class Organisation(Base):
     
     name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
     industry: Mapped[Optional[str]] = mapped_column(String(100))  # Legacy field - to be deprecated
-    industry_type: Mapped[Industry] = mapped_column(Enum(Industry), default=Industry.DEFAULT, nullable=False, server_default='default')
-    subscription_plan: Mapped[SubscriptionPlan] = mapped_column(Enum(SubscriptionPlan), default=SubscriptionPlan.basic, server_default=SubscriptionPlan.basic.value)
+    industry_type: Mapped[Industry] = mapped_column(Enum(Industry, name='industry'), default=Industry.DEFAULT, nullable=False, server_default='default')
+    subscription_plan: Mapped[SubscriptionPlan] = mapped_column(Enum(SubscriptionPlan, name='subscriptionplan'), default=SubscriptionPlan.basic, server_default=SubscriptionPlan.basic.value)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, server_default='true')
     
     # Rate limiting configuration
@@ -26,15 +26,15 @@ class Organisation(Base):
     burst_limit: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
     rate_limit_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     
-    # SIC code relationship
-    sic_code: Mapped[Optional[str]] = mapped_column(String(10), ForeignKey("sic_codes.code"), nullable=True)
+    # SIC code relationship - temporarily remove foreign key constraint
+    sic_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     
     # Relationships
     users: Mapped[List["User"]] = relationship("User", back_populates="organisation")
     tool_access: Mapped[List["OrganisationToolAccess"]] = relationship("OrganisationToolAccess", back_populates="organisation")
     
-    # SIC relationship
-    sic_code_rel = relationship("SICCode", back_populates="organisations")
+    # SIC relationship - disabled until sic_codes table is properly created
+    # sic_code_rel = relationship("SICCode", back_populates="organisations")
     
     # Feature flag relationships
     feature_flag_overrides = relationship("FeatureFlagOverride", back_populates="organisation")
