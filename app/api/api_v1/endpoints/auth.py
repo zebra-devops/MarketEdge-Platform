@@ -222,7 +222,7 @@ async def login(login_data: LoginRequest, response: Response, request: Request, 
             from ....core.rate_limit_config import Industry
             default_org = Organisation(
                 name="Default", 
-                industry="Technology",
+                industry="default",
                 industry_type=Industry.DEFAULT,
                 subscription_plan=SubscriptionPlan.basic
             )
@@ -255,7 +255,7 @@ async def login(login_data: LoginRequest, response: Response, request: Request, 
     
     # Get user permissions based on role and tenant context
     tenant_context = {
-        "industry": user.organisation.industry if user.organisation else "Technology"
+        "industry": user.organisation.industry if user.organisation else "default"
     }
     permissions = get_user_permissions(user.role.value, tenant_context)
     
@@ -270,7 +270,7 @@ async def login(login_data: LoginRequest, response: Response, request: Request, 
         tenant_id=str(user.organisation_id),
         user_role=user.role.value,
         permissions=permissions,
-        industry=user.organisation.industry if user.organisation else "Technology"
+        industry=user.organisation.industry if user.organisation else "default"
     )
     
     refresh_token = create_refresh_token(
@@ -417,7 +417,7 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
         tenant_id=str(user.organisation_id),
         user_role=user.role.value,
         permissions=permissions,
-        industry=user.organisation.industry if user.organisation else "Technology"
+        industry=user.organisation.industry if user.organisation else "default"
     )
     
     # Create new refresh token with same family for rotation tracking
