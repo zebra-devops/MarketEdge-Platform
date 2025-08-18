@@ -301,8 +301,8 @@ async def login(
             default_org = Organisation(
                 name="Default", 
                 industry="Technology",
-                industry_type=Industry.DEFAULT,
-                subscription_plan=SubscriptionPlan.basic
+                industry_type=Industry.DEFAULT.value,  # Use .value to get 'default'
+                subscription_plan=SubscriptionPlan.basic.value  # Use .value to get 'basic'
             )
             db.add(default_org)
             db.commit()
