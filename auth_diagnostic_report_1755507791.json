@@ -1,0 +1,110 @@
+{
+  "timestamp": "2025-08-18T10:03:03.654825",
+  "backend_url": "https://marketedge-platform.onrender.com",
+  "frontend_url": "https://frontend-cdir2vud8-zebraassociates-projects.vercel.app",
+  "tests": [
+    {
+      "name": "Backend Health Check",
+      "url": "https://marketedge-platform.onrender.com/health",
+      "method": "GET",
+      "status": "error",
+      "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "success": false
+    },
+    [
+      {
+        "name": "Auth Endpoint - Standard Test Code",
+        "url": "https://marketedge-platform.onrender.com/api/v1/auth/login",
+        "method": "POST",
+        "code": "test_diagnostic_standard",
+        "status": "error",
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+        "success": false
+      },
+      {
+        "name": "Auth Endpoint - Realistic Auth0 Code",
+        "url": "https://marketedge-platform.onrender.com/api/v1/auth/login",
+        "method": "POST",
+        "code": "AUTH0_dGVzdF8xNzU1NTA3Nzgz",
+        "status": "error",
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+        "success": false
+      },
+      {
+        "name": "Auth Endpoint - JWT-like Code",
+        "url": "https://marketedge-platform.onrender.com/api/v1/auth/login",
+        "method": "POST",
+        "code": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0Z...",
+        "status": "error",
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+        "success": false
+      }
+    ],
+    [
+      {
+        "name": "Database Constraints - Lowercase (likely correct)",
+        "url": "https://marketedge-platform.onrender.com/api/v1/organisations",
+        "method": "POST",
+        "enum_values": {
+          "industry_type": "default",
+          "subscription_plan": "basic",
+          "description": "Lowercase (likely correct)"
+        },
+        "status": "error",
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]"
+      },
+      {
+        "name": "Database Constraints - Uppercase (might cause issues)",
+        "url": "https://marketedge-platform.onrender.com/api/v1/organisations",
+        "method": "POST",
+        "enum_values": {
+          "industry_type": "DEFAULT",
+          "subscription_plan": "BASIC",
+          "description": "Uppercase (might cause issues)"
+        },
+        "status": "error",
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]"
+      },
+      {
+        "name": "Database Constraints - Title case (might cause issues)",
+        "url": "https://marketedge-platform.onrender.com/api/v1/organisations",
+        "method": "POST",
+        "enum_values": {
+          "industry_type": "Default",
+          "subscription_plan": "Basic",
+          "description": "Title case (might cause issues)"
+        },
+        "status": "error",
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]"
+      },
+      {
+        "name": "Database Constraints - Alternative values",
+        "url": "https://marketedge-platform.onrender.com/api/v1/organisations",
+        "method": "POST",
+        "enum_values": {
+          "industry_type": "technology",
+          "subscription_plan": "professional",
+          "description": "Alternative values"
+        },
+        "status": "error",
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]"
+      }
+    ],
+    [
+      {
+        "name": "Auth0 URL Generation",
+        "url": "https://marketedge-platform.onrender.com/api/v1/auth/auth0-url",
+        "method": "GET",
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]"
+      }
+    ]
+  ],
+  "recommendations": [],
+  "summary": {
+    "total_tests": 4,
+    "critical_issues_found": 0,
+    "backend_healthy": false,
+    "database_errors_confirmed": false,
+    "enum_constraint_issues": false
+  }
+}

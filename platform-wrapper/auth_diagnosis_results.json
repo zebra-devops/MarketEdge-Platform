@@ -1,0 +1,82 @@
+{
+  "timestamp": 1755512327.020552,
+  "results": [
+    {
+      "test": "Backend Connectivity",
+      "status": "accessible",
+      "details": {
+        "health_endpoint": {
+          "status_code": 404,
+          "accessible": false
+        },
+        "root_endpoint": {
+          "status_code": 404,
+          "accessible": true
+        },
+        "api_endpoint": {
+          "status_code": 404,
+          "accessible": true
+        }
+      }
+    },
+    {
+      "test": "Auth0 Configuration",
+      "status": "error",
+      "details": {
+        "auth0_url": {
+          "status_code": 404,
+          "response": "{\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"X26WPs46Rr2ipWQjrJsmnA\"}"
+        }
+      }
+    },
+    {
+      "test": "Database Operations",
+      "status": "issues",
+      "details": {
+        "db_health": {
+          "status_code": 404,
+          "response": "{\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"fCDulGkVQAWSbw6U5nX1uw\"}"
+        },
+        "org_creation": {
+          "status_code": 404,
+          "response": "{\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"HPCcs_hqRRuU2s_95nX1uw\"}"
+        }
+      }
+    },
+    {
+      "test": "Auth0 Token Exchange",
+      "status": "endpoint_not_found",
+      "details": {
+        "auth_endpoint": {
+          "status_code": 404,
+          "response": "{\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"_BjBne8FSW-cN8JrrJsmnA\"}",
+          "has_cors_headers": false
+        },
+        "error_type": "deployment"
+      }
+    },
+    {
+      "test": "Environment Variables",
+      "status": "not_accessible",
+      "details": {
+        "config_status": {
+          "status_code": 404,
+          "response": "{\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"jMyf4bsCS4C0JNqt0-QtfA\"}"
+        }
+      }
+    }
+  ],
+  "analysis": {
+    "primary_issue": "deployment_routing",
+    "confidence": "high",
+    "evidence": [
+      "Auth0 Token Exchange: Deployment/routing error"
+    ],
+    "recommendations": [
+      "1. Check Railway deployment status and logs",
+      "2. Verify service is running and accessible",
+      "3. Check domain routing configuration",
+      "4. Verify build and start commands"
+    ]
+  }
+}
