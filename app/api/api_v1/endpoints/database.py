@@ -513,17 +513,42 @@ async def debug_auth_login(request: Request, response: Response, db: Session = D
         try:
             from ....auth.auth0 import auth0_client
             logger.info("🔍 AUTH DEBUG: Starting Auth0 token exchange...")
+            logger.info(f"🔍 AUTH DEBUG: Auth0 config - domain: {auth0_client.domain}, client_id: {auth0_client.client_id[:10]}...")
             
             token_data = await auth0_client.exchange_code_for_token(code, redirect_uri, state)
+            logger.info(f"🔍 AUTH DEBUG: Token exchange result type: {type(token_data)}")
+            
+            if token_data is None:
+                logger.error("🔍 AUTH DEBUG: Token exchange returned None - check Auth0 configuration and code validity")
+                return {
+                    "debug_status": "auth0_failed", 
+                    "error": "Token exchange returned None",
+                    "details": "Auth0 authorization code may be expired or invalid, or Auth0 configuration may be incorrect"
+                }
+            
             logger.info(f"🔍 AUTH DEBUG: Token exchange SUCCESS - expires_in: {token_data.get('expires_in')}")
             
             # Step 2: Get user info
             user_info = await auth0_client.get_user_info(token_data["access_token"])
+            if user_info is None:
+                logger.error("🔍 AUTH DEBUG: User info retrieval returned None")
+                return {
+                    "debug_status": "auth0_failed",
+                    "error": "User info retrieval failed",
+                    "token_data": token_data
+                }
+            
             logger.info(f"🔍 AUTH DEBUG: User info received: {json.dumps(user_info, indent=2)}")
             
         except Exception as auth_error:
             logger.error(f"🔍 AUTH DEBUG: Auth0 operation failed: {str(auth_error)}")
-            return {"debug_status": "auth0_failed", "error": str(auth_error)}
+            import traceback
+            logger.error(f"🔍 AUTH DEBUG: Auth0 traceback: {traceback.format_exc()}")
+            return {
+                "debug_status": "auth0_failed", 
+                "error": str(auth_error),
+                "traceback": traceback.format_exc()
+            }
         
         # Step 3: Database operations debug
         try:
