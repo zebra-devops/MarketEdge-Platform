@@ -1000,6 +1000,112 @@ async def emergency_fix_enum_uppercase(db: Session = Depends(get_db)):
         )
 
 
+@router.get("/check-org-tool-access")
+async def check_organization_tool_access(db: Session = Depends(get_db)):
+    """
+    Check if organizations have proper tool access configured
+    """
+    try:
+        from sqlalchemy import text
+        
+        results = {}
+        
+        # Check if Default organization exists
+        default_org_sql = """
+        SELECT id, name, industry_type, subscription_plan, is_active
+        FROM organisations 
+        WHERE name = 'Default'
+        LIMIT 1;
+        """
+        
+        try:
+            org_result = db.execute(text(default_org_sql))
+            org_data = org_result.fetchone()
+            if org_data:
+                results["default_organization"] = {
+                    "exists": True,
+                    "id": str(org_data[0]),
+                    "name": org_data[1],
+                    "industry_type": org_data[2],
+                    "subscription_plan": org_data[3],
+                    "is_active": org_data[4]
+                }
+                org_id = str(org_data[0])
+            else:
+                results["default_organization"] = {"exists": False}
+                org_id = None
+        except Exception as e:
+            results["default_organization"] = {"error": str(e)}
+            org_id = None
+        
+        # Check if tools table exists and has data
+        tools_sql = """
+        SELECT id, name, description, is_active 
+        FROM tools 
+        WHERE is_active = true
+        LIMIT 10;
+        """
+        
+        try:
+            tools_result = db.execute(text(tools_sql))
+            tools_data = tools_result.fetchall()
+            results["tools"] = {
+                "count": len(tools_data),
+                "tools": [{"id": str(row[0]), "name": row[1], "description": row[2]} for row in tools_data]
+            }
+        except Exception as e:
+            results["tools"] = {"error": str(e)}
+        
+        # Check if organisation_tool_access table exists and has data for Default org
+        if org_id:
+            tool_access_sql = """
+            SELECT ota.id, ota.organisation_id, ota.tool_id, t.name as tool_name, 
+                   ota.subscription_tier, ota.features_enabled, ota.usage_limits
+            FROM organisation_tool_access ota
+            JOIN tools t ON ota.tool_id = t.id
+            WHERE ota.organisation_id = :org_id;
+            """
+            
+            try:
+                access_result = db.execute(text(tool_access_sql), {"org_id": org_id})
+                access_data = access_result.fetchall()
+                results["tool_access"] = {
+                    "count": len(access_data),
+                    "access_records": [
+                        {
+                            "id": str(row[0]),
+                            "tool_name": row[3],
+                            "subscription_tier": row[4],
+                            "features_enabled": row[5],
+                            "usage_limits": row[6]
+                        } for row in access_data
+                    ]
+                }
+            except Exception as e:
+                results["tool_access"] = {"error": str(e)}
+        
+        # Check total user count
+        user_count_sql = "SELECT COUNT(*) FROM users;"
+        try:
+            user_result = db.execute(text(user_count_sql))
+            results["user_count"] = user_result.scalar()
+        except Exception as e:
+            results["user_count"] = {"error": str(e)}
+        
+        return {
+            "status": "success",
+            "message": "Organization tool access diagnostic complete",
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Tool access check error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Tool access check failed: {str(e)}"
+        )
+
+
 @router.post("/test-enum-creation")
 async def test_enum_organisation_creation(db: Session = Depends(get_db)):
     """
