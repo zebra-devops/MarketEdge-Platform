@@ -676,6 +676,66 @@ async def check_database_schema(db: Session = Depends(get_db)):
         )
 
 
+@router.post("/auth0-redirect-test")
+async def test_auth0_redirect_uris(request: Request):
+    """Test Auth0 token exchange with different redirect URIs"""
+    try:
+        import json
+        body = await request.body()
+        data = json.loads(body.decode('utf-8'))
+        code = data.get("code")
+        
+        if not code:
+            return {"error": "No code provided"}
+        
+        from ....auth.auth0 import auth0_client
+        
+        # Test different possible redirect URIs
+        redirect_uris_to_test = [
+            "https://app.zebra.associates/callback",
+            "https://frontend-ga6uzmt8j-zebraassociates-projects.vercel.app/callback", 
+            "https://frontend-79pvaaolp-zebraassociates-projects.vercel.app/callback",
+            "https://marketedge-platform.onrender.com/callback",
+            "http://localhost:3000/callback",
+            "https://localhost:3000/callback"
+        ]
+        
+        results = {}
+        
+        for redirect_uri in redirect_uris_to_test:
+            try:
+                logger.info(f"🔍 Testing redirect URI: {redirect_uri}")
+                token_data = await auth0_client.exchange_code_for_token(code, redirect_uri, None)
+                
+                if token_data:
+                    results[redirect_uri] = {
+                        "success": True,
+                        "token_type": token_data.get("token_type"),
+                        "expires_in": token_data.get("expires_in")
+                    }
+                    # Found working redirect URI, break early
+                    break
+                else:
+                    results[redirect_uri] = {"success": False, "error": "Token exchange returned None"}
+                    
+            except Exception as e:
+                results[redirect_uri] = {"success": False, "error": str(e)}
+        
+        return {
+            "status": "complete",
+            "test_results": results,
+            "code_tested": code[:10] + "..." if code else None
+        }
+        
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+
 @router.get("/auth0-config-check")
 async def check_auth0_configuration():
     """Check Auth0 configuration and test basic connectivity"""
