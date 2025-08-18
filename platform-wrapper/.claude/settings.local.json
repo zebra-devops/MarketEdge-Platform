@@ -59,7 +59,10 @@
       "Bash(time curl:*)",
       "Bash(/Users/matt/Sites/MarketEdge/update_cors_for_new_frontend.sh)",
       "Bash(cat:*)",
-      "Bash(env)"
+      "Bash(env)",
+      "Bash(--max-time 30 -w \"\\nHTTP Status: %{http_code}\\nResponse Time: %{time_total}s\\n\")",
+      "Bash(npx playwright test:*)",
+      "Bash(npx playwright:*)"
     ],
     "deny": []
   }
