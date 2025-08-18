@@ -8,7 +8,7 @@ services:
   - type: web
     name: marketedge-platform
     runtime: docker
-    repo: https://github.com/MarketEdge/platform-wrapper
+    # repo: https://github.com/zebraassociates-projects/platform-wrapper
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     
