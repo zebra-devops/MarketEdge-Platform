@@ -372,3 +372,20 @@ class OrganisationService:
         stats['total'] = total
         
         return stats
+    
+    def get_user_accessible_organisations(self, user_id: str) -> List[Organisation]:
+        """Get organisations that a specific user has access to"""
+        from ..models.user import User
+        
+        # Get the user
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return []
+        
+        # For now, users only have access to their own organisation
+        # In the future, this could be extended to support multi-org access
+        if user.organisation_id:
+            organisation = self.get_organisation(str(user.organisation_id))
+            return [organisation] if organisation else []
+        
+        return []
