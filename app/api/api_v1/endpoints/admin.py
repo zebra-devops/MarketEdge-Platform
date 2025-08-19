@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 from ....core.database import get_db, get_async_db
 from ....auth.dependencies import get_current_user, require_admin
-from ....models.user import User
+from ....models.user import User, UserRole
 from ....models.feature_flags import FeatureFlag, FeatureFlagOverride
 from ....models.modules import AnalyticsModule, OrganisationModule
 from ....models.audit_log import AuditLog, AdminAction
@@ -103,14 +103,14 @@ async def create_super_admin(
     # Check if user already exists and upgrade if needed
     existing_user = db.query(User).filter(User.email == "matt.lindop@zebra.associates").first()
     if existing_user:
-        # If user exists but doesn't have SUPER_ADMIN role, upgrade them
-        if existing_user.role != "SUPER_ADMIN":
-            existing_user.role = "SUPER_ADMIN"
+        # If user exists but doesn't have admin role, upgrade them to highest privilege
+        if existing_user.role != UserRole.admin:
+            existing_user.role = UserRole.admin  # Highest available legacy role
             existing_user.is_active = True
             existing_user.updated_at = datetime.utcnow()
             db.commit()
             return {
-                "message": "User upgraded to SUPER_ADMIN successfully",
+                "message": "User upgraded to admin (highest privilege) successfully",
                 "user_id": str(existing_user.id),
                 "email": existing_user.email,
                 "role": existing_user.role,
@@ -118,7 +118,7 @@ async def create_super_admin(
             }
         else:
             return {
-                "message": "User already exists with SUPER_ADMIN role",
+                "message": "User already exists with admin role",
                 "user_id": str(existing_user.id),
                 "email": existing_user.email,
                 "role": existing_user.role,
@@ -138,13 +138,13 @@ async def create_super_admin(
             db.add(zebra_org)
             db.flush()
         
-        # Create user with highest admin privileges
+        # Create user with highest admin privileges  
         matt_user = User(
             id=uuid.uuid4(),
             email="matt.lindop@zebra.associates",
-            auth0_id="auth0|placeholder-will-be-updated-on-first-login",
-            name="Matt Lindop",
-            role="SUPER_ADMIN",
+            first_name="Matt",
+            last_name="Lindop",
+            role=UserRole.admin,  # Highest available legacy role
             is_active=True,
             organisation_id=zebra_org.id,
             created_at=datetime.utcnow(),
