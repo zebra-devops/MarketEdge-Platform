@@ -18,8 +18,13 @@ from ....services.audit_service import AuditService
 from ....services.admin_service import AdminService
 from ....services.rate_limiting_service import RateLimitingService, IndustryType
 from ....middleware.rate_limiting import get_rate_limiting_service
+from ....models.organisation import Organisation
+import uuid
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+# TEMPORARY SECRET FOR SUPER ADMIN CREATION - REMOVE AFTER USE
+TEMP_ADMIN_SECRET = "TEMP_ADMIN_SECRET_12345_REMOVE_AFTER_USE"
 
 
 # Pydantic models
@@ -82,6 +87,72 @@ class BulkRateLimitUpdateRequest(BaseModel):
     subscription_plan: str = Field(..., pattern="^(basic|professional|enterprise)$")
     rate_limit_per_hour: int = Field(..., ge=100, le=50000)
     burst_limit: int = Field(..., ge=10, le=1000)
+
+
+# TEMPORARY SUPER ADMIN CREATION ENDPOINT - REMOVE AFTER USE
+@router.post("/create-super-admin")
+async def create_super_admin(
+    secret: str,
+    db: Session = Depends(get_db)
+):
+    """Temporary endpoint to create Matt Lindop super admin user - REMOVE AFTER USE"""
+    
+    if secret != TEMP_ADMIN_SECRET:
+        raise HTTPException(status_code=403, detail="Invalid secret")
+    
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == "matt.lindop@zebra.associates").first()
+    if existing_user:
+        return {
+            "message": "User already exists",
+            "user_id": str(existing_user.id),
+            "email": existing_user.email,
+            "role": existing_user.role
+        }
+    
+    try:
+        # Create organization if it doesn't exist
+        zebra_org = db.query(Organisation).filter(Organisation.name == "Zebra Associates").first()
+        if not zebra_org:
+            zebra_org = Organisation(
+                id=uuid.uuid4(),
+                name="Zebra Associates",
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            db.add(zebra_org)
+            db.flush()
+        
+        # Create user with highest admin privileges
+        matt_user = User(
+            id=uuid.uuid4(),
+            email="matt.lindop@zebra.associates",
+            auth0_id="auth0|placeholder-will-be-updated-on-first-login",
+            name="Matt Lindop",
+            role="SUPER_ADMIN",
+            is_active=True,
+            organisation_id=zebra_org.id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        db.add(matt_user)
+        db.commit()
+        
+        return {
+            "message": "Super admin user created successfully",
+            "user_id": str(matt_user.id),
+            "email": matt_user.email,
+            "role": matt_user.role,
+            "organisation": zebra_org.name
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Super admin creation failed: {str(e)}"
+        )
 
 
 # Feature Flag Management Endpoints
