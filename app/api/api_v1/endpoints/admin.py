@@ -23,8 +23,10 @@ import uuid
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-# TEMPORARY SECRET FOR SUPER ADMIN CREATION - REMOVE AFTER USE
-TEMP_ADMIN_SECRET = "TEMP_ADMIN_SECRET_12345_REMOVE_AFTER_USE"
+# SECURITY NOTICE: Temporary admin endpoint removed after successful deployment
+# Matt Lindop admin user created successfully on 2025-08-19
+# User ID: ebc9567a-bbf8-4ddf-8eee-7635fba62363
+# Role: admin (highest available legacy role)
 
 
 # Pydantic models
@@ -88,95 +90,6 @@ class BulkRateLimitUpdateRequest(BaseModel):
     rate_limit_per_hour: int = Field(..., ge=100, le=50000)
     burst_limit: int = Field(..., ge=10, le=1000)
 
-
-# TEMPORARY SUPER ADMIN CREATION ENDPOINT - REMOVE AFTER USE
-@router.post("/create-super-admin")
-async def create_super_admin(
-    secret: str,
-    db: Session = Depends(get_db)
-):
-    """Temporary endpoint to create Matt Lindop super admin user - REMOVE AFTER USE"""
-    
-    if secret != TEMP_ADMIN_SECRET:
-        raise HTTPException(status_code=403, detail="Invalid secret")
-    
-    # Check if user already exists and upgrade if needed
-    existing_user = db.query(User).filter(User.email == "matt.lindop@zebra.associates").first()
-    if existing_user:
-        # If user exists but doesn't have admin role, upgrade them to highest privilege
-        if existing_user.role != UserRole.admin:
-            try:
-                existing_user.role = UserRole.admin  # Highest available legacy role
-                existing_user.is_active = True
-                existing_user.updated_at = datetime.utcnow()
-                db.commit()
-                return {
-                    "message": "User upgraded to admin (highest privilege) successfully",
-                    "user_id": str(existing_user.id),
-                    "email": existing_user.email,
-                    "role": existing_user.role,
-                    "action": "upgraded"
-                }
-            except Exception as e:
-                db.rollback()
-                error_detail = f"User upgrade failed: {str(e)}"
-                print(f"DEBUG: User upgrade error: {error_detail}")  # For Render logs
-                raise HTTPException(status_code=500, detail=error_detail)
-        else:
-            return {
-                "message": "User already exists with admin role",
-                "user_id": str(existing_user.id),
-                "email": existing_user.email,
-                "role": existing_user.role,
-                "action": "already_admin"
-            }
-    
-    try:
-        # Create organization if it doesn't exist
-        zebra_org = db.query(Organisation).filter(Organisation.name == "Zebra Associates").first()
-        if not zebra_org:
-            zebra_org = Organisation(
-                id=uuid.uuid4(),
-                name="Zebra Associates",
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
-            )
-            db.add(zebra_org)
-            db.flush()
-        
-        # Create user with highest admin privileges  
-        matt_user = User(
-            id=uuid.uuid4(),
-            email="matt.lindop@zebra.associates",
-            first_name="Matt",
-            last_name="Lindop",
-            role=UserRole.admin,  # Highest available legacy role
-            is_active=True,
-            organisation_id=zebra_org.id,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-        
-        db.add(matt_user)
-        db.commit()
-        
-        return {
-            "message": "Super admin user created successfully",
-            "user_id": str(matt_user.id),
-            "email": matt_user.email,
-            "role": matt_user.role,
-            "organisation": zebra_org.name
-        }
-        
-    except Exception as e:
-        db.rollback()
-        # Return detailed error in development/debugging
-        error_detail = f"Super admin creation failed: {str(e)}"
-        print(f"DEBUG: Admin creation error: {error_detail}")  # For Render logs
-        raise HTTPException(
-            status_code=500,
-            detail=error_detail
-        )
 
 
 # Feature Flag Management Endpoints
