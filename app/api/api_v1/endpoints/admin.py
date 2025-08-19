@@ -105,17 +105,23 @@ async def create_super_admin(
     if existing_user:
         # If user exists but doesn't have admin role, upgrade them to highest privilege
         if existing_user.role != UserRole.admin:
-            existing_user.role = UserRole.admin  # Highest available legacy role
-            existing_user.is_active = True
-            existing_user.updated_at = datetime.utcnow()
-            db.commit()
-            return {
-                "message": "User upgraded to admin (highest privilege) successfully",
-                "user_id": str(existing_user.id),
-                "email": existing_user.email,
-                "role": existing_user.role,
-                "action": "upgraded"
-            }
+            try:
+                existing_user.role = UserRole.admin  # Highest available legacy role
+                existing_user.is_active = True
+                existing_user.updated_at = datetime.utcnow()
+                db.commit()
+                return {
+                    "message": "User upgraded to admin (highest privilege) successfully",
+                    "user_id": str(existing_user.id),
+                    "email": existing_user.email,
+                    "role": existing_user.role,
+                    "action": "upgraded"
+                }
+            except Exception as e:
+                db.rollback()
+                error_detail = f"User upgrade failed: {str(e)}"
+                print(f"DEBUG: User upgrade error: {error_detail}")  # For Render logs
+                raise HTTPException(status_code=500, detail=error_detail)
         else:
             return {
                 "message": "User already exists with admin role",
@@ -164,9 +170,12 @@ async def create_super_admin(
         
     except Exception as e:
         db.rollback()
+        # Return detailed error in development/debugging
+        error_detail = f"Super admin creation failed: {str(e)}"
+        print(f"DEBUG: Admin creation error: {error_detail}")  # For Render logs
         raise HTTPException(
             status_code=500,
-            detail=f"Super admin creation failed: {str(e)}"
+            detail=error_detail
         )
 
 
