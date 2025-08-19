@@ -100,15 +100,30 @@ async def create_super_admin(
     if secret != TEMP_ADMIN_SECRET:
         raise HTTPException(status_code=403, detail="Invalid secret")
     
-    # Check if user already exists
+    # Check if user already exists and upgrade if needed
     existing_user = db.query(User).filter(User.email == "matt.lindop@zebra.associates").first()
     if existing_user:
-        return {
-            "message": "User already exists",
-            "user_id": str(existing_user.id),
-            "email": existing_user.email,
-            "role": existing_user.role
-        }
+        # If user exists but doesn't have SUPER_ADMIN role, upgrade them
+        if existing_user.role != "SUPER_ADMIN":
+            existing_user.role = "SUPER_ADMIN"
+            existing_user.is_active = True
+            existing_user.updated_at = datetime.utcnow()
+            db.commit()
+            return {
+                "message": "User upgraded to SUPER_ADMIN successfully",
+                "user_id": str(existing_user.id),
+                "email": existing_user.email,
+                "role": existing_user.role,
+                "action": "upgraded"
+            }
+        else:
+            return {
+                "message": "User already exists with SUPER_ADMIN role",
+                "user_id": str(existing_user.id),
+                "email": existing_user.email,
+                "role": existing_user.role,
+                "action": "already_admin"
+            }
     
     try:
         # Create organization if it doesn't exist
