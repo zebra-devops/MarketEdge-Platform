@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any, List
 from ....core.database import get_db
 from ....core.rate_limit_config import Industry
 from ....models.organisation import Organisation, SubscriptionPlan
-from ....models.user import User
+from ....models.user import User, UserRole
 from ....auth.dependencies import get_current_user, require_admin, require_super_admin
 from ....services.organisation_service import OrganisationService, OrganisationValidationError
 
@@ -37,9 +37,9 @@ class OrganisationCreate(BaseModel):
     industry_type: Industry
     subscription_plan: SubscriptionPlan = SubscriptionPlan.basic
     sic_code: Optional[str] = Field(None, max_length=10)
-    admin_email: str = Field(..., pattern=r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-    admin_first_name: str = Field(..., min_length=1, max_length=100)
-    admin_last_name: str = Field(..., min_length=1, max_length=100)
+    admin_email: Optional[str] = Field(None, pattern=r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+    admin_first_name: Optional[str] = Field(None, min_length=1, max_length=100)
+    admin_last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     
     model_config = ConfigDict(
         json_encoders={
@@ -82,11 +82,23 @@ async def create_organisation(
     try:
         org_service = OrganisationService(db)
         
-        admin_user_data = {
-            'email': organisation_data.admin_email,
-            'first_name': organisation_data.admin_first_name,
-            'last_name': organisation_data.admin_last_name
-        }
+        # Validate admin fields: either all provided or none
+        admin_fields = [organisation_data.admin_email, organisation_data.admin_first_name, organisation_data.admin_last_name]
+        provided_admin_fields = [field for field in admin_fields if field is not None]
+        
+        if len(provided_admin_fields) > 0 and len(provided_admin_fields) != 3:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="If providing admin user details, all fields (email, first_name, last_name) must be provided"
+            )
+        
+        admin_user_data = None
+        if len(provided_admin_fields) == 3:
+            admin_user_data = {
+                'email': organisation_data.admin_email,
+                'first_name': organisation_data.admin_first_name,
+                'last_name': organisation_data.admin_last_name
+            }
         
         organisation = org_service.create_organisation(
             name=organisation_data.name,
@@ -155,6 +167,44 @@ async def update_current_organisation(
         
         organisation = org_service.update_organisation(
             organisation_id=str(current_user.organisation_id),
+            name=organisation_update.name,
+            industry_type=organisation_update.industry_type,
+            subscription_plan=organisation_update.subscription_plan,
+            sic_code=organisation_update.sic_code
+        )
+        
+        return OrganisationResponse(
+            id=str(organisation.id),
+            name=organisation.name,
+            industry=organisation.industry,
+            industry_type=organisation.industry_type.value,
+            subscription_plan=organisation.subscription_plan.value,
+            is_active=organisation.is_active,
+            sic_code=organisation.sic_code,
+            rate_limit_per_hour=organisation.rate_limit_per_hour,
+            burst_limit=organisation.burst_limit
+        )
+        
+    except OrganisationValidationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.put("/{organisation_id}", response_model=OrganisationResponse)
+async def update_organisation_by_id(
+    organisation_id: str,
+    organisation_update: OrganisationUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_super_admin)
+):
+    """Update any organisation by ID (Super Admin only)"""
+    try:
+        org_service = OrganisationService(db)
+        
+        organisation = org_service.update_organisation(
+            organisation_id=organisation_id,
             name=organisation_update.name,
             industry_type=organisation_update.industry_type,
             subscription_plan=organisation_update.subscription_plan,
@@ -303,7 +353,7 @@ async def get_user_accessible_organisations(
         org_service = OrganisationService(db)
         
         # For super admin, return all organisations
-        if current_user.role == 'admin':
+        if current_user.role == UserRole.admin:
             organisations = org_service.get_all_organisations()
         else:
             # For regular users, return organisations they have access to

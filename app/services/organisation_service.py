@@ -350,6 +350,29 @@ class OrganisationService:
         """Get all organisations (Super Admin only)."""
         return self.db.query(Organisation).order_by(Organisation.created_at.desc()).all()
 
+    def get_user_accessible_organisations(self, user_id: str) -> List[Organisation]:
+        """Get organisations that a user has access to.
+        
+        For now, this returns the user's own organisation.
+        In the future, this could be extended to include:
+        - Organisations the user is invited to
+        - Organisations the user has special access to
+        - Multi-tenant access scenarios
+        """
+        from ..models.user import User  # Import here to avoid circular imports
+        
+        # Get the user to find their organisation
+        user = self.db.query(User).filter(User.id == user_id).first()
+        if not user or not user.organisation_id:
+            return []
+        
+        # Get the user's organisation
+        organisation = self.get_organisation(str(user.organisation_id))
+        if organisation:
+            return [organisation]
+        
+        return []
+
     def get_organisations_by_industry(self, industry_type: Industry) -> List[Organisation]:
         """Get all organisations of a specific industry type."""
         return self.db.query(Organisation).filter(
