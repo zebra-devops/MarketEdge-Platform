@@ -135,6 +135,36 @@ async def cors_debug(request: Request):
     
     return debug_info
 
+@app.get("/jwt-debug")
+async def jwt_debug(request: Request):
+    """
+    Debug endpoint to check JWT configuration and environment variables.
+    Shows if JWT settings are properly loaded in production.
+    """
+    authorization_header = request.headers.get("authorization", "no-auth-header")
+    
+    # Safely get JWT config without exposing the actual secret
+    jwt_config = {
+        "jwt_secret_key_set": bool(getattr(settings, 'JWT_SECRET_KEY', None)),
+        "jwt_secret_key_length": len(getattr(settings, 'JWT_SECRET_KEY', '')) if getattr(settings, 'JWT_SECRET_KEY', None) else 0,
+        "jwt_algorithm": getattr(settings, 'JWT_ALGORITHM', 'not-set'),
+        "access_token_expire_minutes": getattr(settings, 'ACCESS_TOKEN_EXPIRE_MINUTES', 'not-set'),
+        "jwt_issuer": getattr(settings, 'JWT_ISSUER', 'not-set'),
+        "jwt_audience": getattr(settings, 'JWT_AUDIENCE', 'not-set'),
+        "authorization_header": authorization_header,
+        "authorization_header_format": "Bearer token" if authorization_header.startswith("Bearer ") else "invalid-format",
+        "environment": settings.ENVIRONMENT,
+        "timestamp": time.time()
+    }
+    
+    # Log JWT debug request
+    try:
+        logger.info(f"JWT debug requested - secret_key_set: {jwt_config['jwt_secret_key_set']}")
+    except:
+        pass
+    
+    return jwt_config
+
 @app.get("/ready")
 async def readiness_check():
     """
