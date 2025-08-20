@@ -1,0 +1,35 @@
+{
+  "health_checks": [
+    {
+      "name": "csv_import_endpoint_health",
+      "endpoint": "/api/v1/organizations/health-check/users/import/template",
+      "method": "GET",
+      "expected_status": [
+        200,
+        403
+      ],
+      "timeout": 10,
+      "interval": 60
+    },
+    {
+      "name": "csv_redis_connection",
+      "check_type": "redis_ping",
+      "description": "Verify Redis connectivity for rate limiting",
+      "interval": 30
+    },
+    {
+      "name": "csv_database_tables",
+      "check_type": "database_query",
+      "query": "SELECT COUNT(*) FROM import_batches WHERE created_at > NOW() - INTERVAL '1 hour'",
+      "description": "Verify import tables are accessible",
+      "interval": 300
+    },
+    {
+      "name": "csv_background_tasks",
+      "check_type": "custom",
+      "description": "Check background task processing health",
+      "script": "check_background_task_queue.py",
+      "interval": 120
+    }
+  ]
+}

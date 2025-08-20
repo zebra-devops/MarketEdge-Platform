@@ -137,6 +137,9 @@ class Settings(BaseSettings):
         """Determine if cookies should be secure based on environment"""
         if self.is_production:
             return True
+        # Development: Use False for HTTP localhost development
+        if self.ENVIRONMENT.lower() == "development":
+            return False
         return self.COOKIE_SECURE
     
     @property

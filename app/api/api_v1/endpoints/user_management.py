@@ -9,7 +9,7 @@ from ....core.database import get_db
 from ....models.user import User, UserRole
 from ....models.user_application_access import UserApplicationAccess, UserInvitation, ApplicationType, InvitationStatus
 from ....models.organisation import Organisation
-from ....auth.dependencies import get_current_user, require_admin
+from ....auth.dependencies import get_current_user, require_admin, require_super_admin
 from ....services.auth import send_invitation_email
 
 router = APIRouter()
@@ -72,7 +72,7 @@ async def get_all_users(
     limit: int = 100,
     organisation_id: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_super_admin)
 ):
     """Get users across all organizations (Super Admin only)"""
     query = db.query(User).options(
@@ -94,7 +94,7 @@ async def create_user_admin(
     user_data: UserCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_super_admin)
 ):
     """Create new user in any organization (Super Admin only)"""
     return await _create_user_internal(user_data, background_tasks, db, current_user)
@@ -105,7 +105,7 @@ async def bulk_create_users_admin(
     bulk_data: BulkUserCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)
+    current_user: User = Depends(require_super_admin)
 ):
     """Bulk create users across organizations (Super Admin only)"""
     created_users = []

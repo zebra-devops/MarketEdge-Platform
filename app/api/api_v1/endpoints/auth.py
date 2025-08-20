@@ -34,6 +34,57 @@ router = APIRouter()
 security = HTTPBearer()
 
 
+def _setup_default_tool_access(db: Session, organisation_id: str):
+    """Set up default tool access for a new organization"""
+    try:
+        from ....models.tool import Tool
+        from ....models.organisation_tool_access import OrganisationToolAccess
+        
+        # Get all available tools
+        tools = db.query(Tool).filter(Tool.is_active == True).all()
+        
+        logger.info(f"Setting up default tool access for organization {organisation_id}", extra={
+            "event": "default_tool_access_setup",
+            "organisation_id": organisation_id,
+            "tools_count": len(tools)
+        })
+        
+        # Create basic access for all tools for the Default organization
+        for tool in tools:
+            # Check if access already exists
+            existing_access = db.query(OrganisationToolAccess).filter(
+                OrganisationToolAccess.organisation_id == organisation_id,
+                OrganisationToolAccess.tool_id == tool.id
+            ).first()
+            
+            if not existing_access:
+                tool_access = OrganisationToolAccess(
+                    organisation_id=organisation_id,
+                    tool_id=tool.id,
+                    subscription_tier="basic",
+                    features_enabled=["basic_access"],
+                    usage_limits={"daily_requests": 100, "monthly_requests": 3000}
+                )
+                db.add(tool_access)
+        
+        db.commit()
+        
+        logger.info(f"Default tool access setup completed for organization {organisation_id}", extra={
+            "event": "default_tool_access_complete",
+            "organisation_id": organisation_id
+        })
+        
+    except Exception as e:
+        logger.error(f"Failed to set up default tool access for organization {organisation_id}", extra={
+            "event": "default_tool_access_error",
+            "organisation_id": organisation_id,
+            "error": str(e),
+            "error_type": type(e).__name__
+        })
+        # Don't raise exception - tool access can be set up later
+        db.rollback()
+
+
 class LoginRequest(BaseModel):
     code: str
     redirect_uri: str
@@ -265,6 +316,9 @@ async def login(
                 db.add(default_org)
                 db.commit()
                 db.refresh(default_org)
+                
+                # Set up default tool access for the Default organization
+                _setup_default_tool_access(db, default_org.id)
             
             from ....models.user import UserRole
             user = User(

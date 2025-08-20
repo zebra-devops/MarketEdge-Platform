@@ -1,0 +1,61 @@
+{
+  "loggers": {
+    "csv_import": {
+      "level": "INFO",
+      "handlers": [
+        "console",
+        "file"
+      ],
+      "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    }
+  },
+  "structured_logs": {
+    "csv_import_started": {
+      "level": "INFO",
+      "fields": [
+        "timestamp",
+        "user_id",
+        "organization_id",
+        "filename",
+        "file_size",
+        "total_rows",
+        "batch_id"
+      ]
+    },
+    "csv_import_completed": {
+      "level": "INFO",
+      "fields": [
+        "timestamp",
+        "batch_id",
+        "total_rows",
+        "successful_rows",
+        "failed_rows",
+        "processing_time",
+        "status"
+      ]
+    },
+    "csv_import_error": {
+      "level": "ERROR",
+      "fields": [
+        "timestamp",
+        "batch_id",
+        "error_type",
+        "error_message",
+        "user_id",
+        "organization_id",
+        "row_number"
+      ]
+    },
+    "csv_rate_limit_hit": {
+      "level": "WARNING",
+      "fields": [
+        "timestamp",
+        "user_id",
+        "limit_type",
+        "current_count",
+        "limit_value",
+        "retry_after"
+      ]
+    }
+  }
+}

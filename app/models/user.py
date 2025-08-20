@@ -32,6 +32,11 @@ class User(Base):
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.viewer, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     
+    # Extended fields for CSV import
+    department: Mapped[str] = mapped_column(String(100), nullable=True)
+    location: Mapped[str] = mapped_column(String(100), nullable=True)
+    phone: Mapped[str] = mapped_column(String(20), nullable=True)
+    
     # Relationships
     organisation: Mapped["Organisation"] = relationship("Organisation", back_populates="users")
     

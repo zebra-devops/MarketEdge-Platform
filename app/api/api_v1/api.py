@@ -1,13 +1,14 @@
 from fastapi import APIRouter
 from .endpoints import (
     auth, users, organisations, tools, market_edge, admin, features, 
-    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, database, debug_auth
+    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, user_import, database, debug_auth
 )
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(user_management.router, tags=["user-management"])
+api_router.include_router(user_import.router, tags=["user-import"])
 api_router.include_router(organisations.router, prefix="/organisations", tags=["organisations"])
 api_router.include_router(tools.router, prefix="/tools", tags=["tools"])
 api_router.include_router(market_edge.router, tags=["market-edge"])

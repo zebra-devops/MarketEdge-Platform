@@ -32,8 +32,18 @@ app = FastAPI(
     root_path="",
 )
 
+# Add middleware to the FastAPI app
+# CRITICAL FIX: Middleware order matters for CORS to work on all responses
+# 1. TrustedHostMiddleware - basic security  
+# 2. ErrorHandlerMiddleware - error handling
+# 3. LoggingMiddleware - request logging
+# 4. CORSMiddleware - MUST BE LAST to handle all responses including errors
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+app.add_middleware(ErrorHandlerMiddleware)
+app.add_middleware(LoggingMiddleware)
+
 # Security: Environment-based CORS configuration - no hardcoded origins
-# CRITICAL FIX: Railway doesn't support multi-service properly, use FastAPI CORS directly
+# CRITICAL FIX: CORS middleware MUST be added last to process all responses
 # EMERGENCY FIX: Ensure Odeon demo origin is always included
 emergency_cors_origins = settings.CORS_ORIGINS.copy() if isinstance(settings.CORS_ORIGINS, list) else [settings.CORS_ORIGINS]
 if "https://app.zebra.associates" not in emergency_cors_origins:
@@ -47,16 +57,6 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With", "Origin", "X-Tenant-ID"],
     expose_headers=["Content-Type", "Authorization", "X-Tenant-ID"],
 )
-
-# Add middleware to the FastAPI app
-# EMERGENCY FIX: Minimal middleware for critical CORS deployment
-# Middleware order is important:
-# 1. TrustedHostMiddleware - basic security  
-# 2. ErrorHandlerMiddleware - error handling
-# 3. LoggingMiddleware - request logging
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
-app.add_middleware(ErrorHandlerMiddleware)
-app.add_middleware(LoggingMiddleware)
 # EMERGENCY: Disable tenant context and rate limiting for critical CORS testing
 # app.add_middleware(TenantContextMiddleware)
 # app.add_middleware(RateLimitMiddleware)

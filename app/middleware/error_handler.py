@@ -8,6 +8,18 @@ import traceback
 
 
 class ErrorHandlerMiddleware(BaseHTTPMiddleware):
+    def _add_cors_headers(self, response: JSONResponse, request: Request) -> JSONResponse:
+        """Add CORS headers to error responses"""
+        origin = request.headers.get("origin")
+        if origin and origin in [
+            "http://localhost:3000", "http://localhost:3001", "http://localhost:3002",
+            "https://app.zebra.associates"
+        ]:
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Vary"] = "Origin"
+        return response
+        
     async def dispatch(self, request: Request, call_next) -> Response:
         try:
             response = await call_next(request)
@@ -20,10 +32,11 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 status_code=exc.status_code,
                 detail=exc.detail
             )
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=exc.status_code,
                 content={"detail": exc.detail, "type": "http_exception"}
             )
+            return self._add_cors_headers(response, request)
         except SQLAlchemyError as exc:
             logger.error(
                 "Database error occurred",
@@ -33,7 +46,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 error_type=type(exc).__name__,
                 traceback=traceback.format_exc()
             )
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=500,
                 content={
                     "detail": "Database error occurred", 
@@ -41,6 +54,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                     "error_details": str(exc) if hasattr(exc, '__str__') else None
                 }
             )
+            return self._add_cors_headers(response, request)
         except Exception as exc:
             logger.error(
                 "Unexpected error occurred",
@@ -49,7 +63,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 error=str(exc),
                 traceback=traceback.format_exc()
             )
-            return JSONResponse(
+            response = JSONResponse(
                 status_code=500,
                 content={
                     "detail": "Internal server error", 
@@ -58,3 +72,4 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                     "error_type": type(exc).__name__
                 }
             )
+            return self._add_cors_headers(response, request)
