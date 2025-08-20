@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth0 Cookie Storage Diagnostic</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .warning { background: #fff3cd; border-color: #ffeeba; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        button { padding: 10px 15px; margin: 5px; border: none; border-radius: 3px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Auth0 Cookie Storage Diagnostic Tool</h1>
+    
+    <div class="section">
+        <h2>1. Current Cookie Status</h2>
+        <p>This diagnostic shows the current state of authentication cookies and tests the fixed flow.</p>
+        <button class="btn-primary" onclick="checkCurrentCookies()">Check Current Cookies</button>
+        <div id="cookieStatus"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. CORS & Credentials Test</h2>
+        <p>Test that CORS allows credentials and API requests work with cookies.</p>
+        <button class="btn-primary" onclick="testCorsCredentials()">Test CORS with Credentials</button>
+        <div id="corsTest"></div>
+    </div>
+    
+    <div class="section">
+        <h2>3. Authentication Flow Test</h2>
+        <p>Simulate the authentication flow to verify cookie storage.</p>
+        <button class="btn-warning" onclick="testAuthFlow()">Test Auth Flow (Mock)</button>
+        <div id="authTest"></div>
+    </div>
+    
+    <div class="section">
+        <h2>4. API Request Test</h2>
+        <p>Test if API requests include authentication headers from cookies.</p>
+        <button class="btn-success" onclick="testApiRequest()">Test Protected API Call</button>
+        <div id="apiTest"></div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'https://marketedge-platform.onrender.com';
+        const FRONTEND_URL = 'https://app.zebra.associates';
+
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'warning';
+            element.innerHTML += `<div class="${className}"><pre>${message}</pre></div>`;
+        }
+
+        function clearLog(elementId) {
+            document.getElementById(elementId).innerHTML = '';
+        }
+
+        async function checkCurrentCookies() {
+            clearLog('cookieStatus');
+            log('cookieStatus', '🔍 Checking current cookies...');
+            
+            // Check all cookies
+            const cookies = document.cookie.split(';').map(c => c.trim()).filter(c => c);
+            
+            if (cookies.length === 0) {
+                log('cookieStatus', '❌ No cookies found', 'error');
+            } else {
+                log('cookieStatus', `📋 Found ${cookies.length} cookies:`);
+                cookies.forEach(cookie => {
+                    const [name] = cookie.split('=');
+                    if (name.includes('token') || name.includes('auth') || name.includes('session')) {
+                        log('cookieStatus', `🔑 AUTH: ${cookie}`, 'success');
+                    } else {
+                        log('cookieStatus', `📝 OTHER: ${cookie}`);
+                    }
+                });
+            }
+            
+            // Check for specific auth cookies
+            const accessToken = getCookie('access_token');
+            const refreshToken = getCookie('refresh_token');
+            
+            if (accessToken) {
+                log('cookieStatus', '✅ access_token found in cookies', 'success');
+            } else {
+                log('cookieStatus', '❌ access_token NOT found in cookies', 'error');
+            }
+            
+            if (refreshToken) {
+                log('cookieStatus', '✅ refresh_token found in cookies', 'success');
+            } else {
+                log('cookieStatus', '❌ refresh_token NOT found in cookies', 'error');
+            }
+        }
+
+        async function testCorsCredentials() {
+            clearLog('corsTest');
+            log('corsTest', '🔍 Testing CORS with credentials...');
+            
+            try {
+                // Test preflight request
+                const response = await fetch(`${BACKEND_URL}/cors-debug`, {
+                    method: 'GET',
+                    credentials: 'include',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('corsTest', '✅ CORS request successful', 'success');
+                    log('corsTest', `📋 Response: ${JSON.stringify(data, null, 2)}`);
+                    
+                    if (data.origin_allowed) {
+                        log('corsTest', '✅ Origin is allowed', 'success');
+                    } else {
+                        log('corsTest', '❌ Origin not allowed', 'error');
+                    }
+                } else {
+                    log('corsTest', `❌ CORS test failed: ${response.status}`, 'error');
+                }
+                
+            } catch (error) {
+                log('corsTest', `❌ CORS test error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAuthFlow() {
+            clearLog('authTest');
+            log('authTest', '🔍 Testing mock authentication flow...');
+            
+            try {
+                // Simulate the login request that would be made after Auth0 callback
+                const formData = new URLSearchParams();
+                formData.append('code', 'mock_test_code_12345');
+                formData.append('redirect_uri', `${window.location.origin}/callback`);
+                
+                const response = await fetch(`${BACKEND_URL}/api/v1/auth/login`, {
+                    method: 'POST',
+                    credentials: 'include', // This is key for cookies
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Origin': window.location.origin
+                    },
+                    body: formData
+                });
+                
+                log('authTest', `📊 Response Status: ${response.status}`);
+                
+                // Check response headers for Set-Cookie
+                const setCookieHeaders = [];
+                for (const [key, value] of response.headers.entries()) {
+                    if (key.toLowerCase() === 'set-cookie') {
+                        setCookieHeaders.push(value);
+                    }
+                }
+                
+                if (setCookieHeaders.length > 0) {
+                    log('authTest', '✅ Set-Cookie headers found!', 'success');
+                    setCookieHeaders.forEach(cookie => {
+                        log('authTest', `🍪 ${cookie}`);
+                    });
+                } else {
+                    log('authTest', '❌ No Set-Cookie headers found', 'error');
+                }
+                
+                // Check CORS headers
+                const corsOrigin = response.headers.get('Access-Control-Allow-Origin');
+                const corsCredentials = response.headers.get('Access-Control-Allow-Credentials');
+                
+                if (corsCredentials === 'true') {
+                    log('authTest', '✅ CORS allows credentials', 'success');
+                } else {
+                    log('authTest', '❌ CORS does not allow credentials', 'error');
+                }
+                
+                // Expected to fail with 400 due to invalid code
+                if (response.status === 400) {
+                    const errorData = await response.json();
+                    if (errorData.detail && errorData.detail.includes('Failed to exchange authorization code')) {
+                        log('authTest', '✅ Expected error: Mock code failed (this is normal)', 'success');
+                        log('authTest', '✅ Authentication endpoint is working correctly', 'success');
+                    }
+                }
+                
+            } catch (error) {
+                log('authTest', `❌ Auth flow test error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testApiRequest() {
+            clearLog('apiTest');
+            log('apiTest', '🔍 Testing protected API request...');
+            
+            try {
+                // Test a protected endpoint
+                const response = await fetch(`${BACKEND_URL}/api/v1/auth/me`, {
+                    method: 'GET',
+                    credentials: 'include', // Include cookies
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                log('apiTest', `📊 Response Status: ${response.status}`);
+                
+                if (response.status === 401) {
+                    log('apiTest', '✅ Expected 401: No auth token (this is correct)', 'success');
+                    log('apiTest', '✅ When cookies are set by login, this should return user data', 'success');
+                } else if (response.status === 403) {
+                    log('apiTest', '✅ Expected 403: Forbidden (server is working)', 'success');
+                } else if (response.ok) {
+                    const userData = await response.json();
+                    log('apiTest', '🎉 SUCCESS: User data received!', 'success');
+                    log('apiTest', `👤 User: ${JSON.stringify(userData, null, 2)}`);
+                } else {
+                    log('apiTest', `❌ Unexpected status: ${response.status}`, 'error');
+                }
+                
+                // Check if cookies were sent
+                const cookieHeader = getCookie('access_token');
+                if (cookieHeader) {
+                    log('apiTest', '✅ access_token cookie available for requests', 'success');
+                } else {
+                    log('apiTest', '❌ access_token cookie not available', 'error');
+                }
+                
+            } catch (error) {
+                log('apiTest', `❌ API request test error: ${error.message}`, 'error');
+            }
+        }
+
+        // Utility function to get cookie value
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) {
+                return parts.pop().split(';').shift();
+            }
+            return null;
+        }
+
+        // Auto-run cookie check on page load
+        window.addEventListener('load', () => {
+            checkCurrentCookies();
+        });
+    </script>
+</body>
+</html>

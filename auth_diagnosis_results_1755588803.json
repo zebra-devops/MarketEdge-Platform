@@ -1,0 +1,257 @@
+{
+  "timestamp": 1755588800.3888419,
+  "base_url": "https://marketedge-platform.onrender.com",
+  "tests": {
+    "health": {
+      "/health": {
+        "status_code": 200,
+        "response": {
+          "status": "healthy",
+          "version": "1.0.0",
+          "timestamp": 1755588800.649719,
+          "cors_mode": "emergency_fastapi_direct",
+          "service_type": "fastapi_backend_minimal_middleware",
+          "emergency_mode": "odeon_demo_critical_fix"
+        },
+        "success": true
+      },
+      "/cors-debug": {
+        "status_code": 200,
+        "response": {
+          "cors_mode": "emergency_fastapi_direct",
+          "cors_origins_configured": [
+            "https://app.zebra.associates",
+            "https://frontend-2q61uheqm-zebraassociates-projects.vercel.app",
+            "https://frontend-79pvaaolp-zebraassociates-projects.vercel.app",
+            "http://localhost:3000",
+            "http://localhost:3001"
+          ],
+          "request_origin": "no-origin-header",
+          "origin_allowed": false,
+          "user_agent": "python-requests/2.32.4",
+          "all_headers": {
+            "host": "marketedge-platform.onrender.com",
+            "user-agent": "python-requests/2.32.4",
+            "accept": "*/*",
+            "accept-encoding": "gzip, br",
+            "cdn-loop": "cloudflare; loops=1",
+            "cf-connecting-ip": "80.6.156.149",
+            "cf-ipcountry": "GB",
+            "cf-ray": "9717f654ca92edf8-LHR",
+            "cf-visitor": "{\"scheme\":\"https\"}",
+            "render-proxy-ttl": "4",
+            "rndr-id": "5ef7d89c-7ca1-41b3",
+            "true-client-ip": "80.6.156.149",
+            "x-forwarded-for": "80.6.156.149, 141.101.99.22, 10.229.175.68",
+            "x-forwarded-proto": "https",
+            "x-request-start": "1755588801169258"
+          },
+          "environment": "production",
+          "debug_mode": false,
+          "timestamp": 1755588801.170657,
+          "fastapi_cors_middleware": "active",
+          "middleware_disabled": "tenant_context_rate_limiting",
+          "emergency_mode": "odeon_demo_critical_fix",
+          "service_type": "fastapi_backend_minimal"
+        },
+        "success": true
+      }
+    },
+    "jwt_debug": {
+      "status_code": 200,
+      "response": {
+        "jwt_secret_key_set": true,
+        "jwt_secret_key_length": 86,
+        "jwt_algorithm": "HS256",
+        "access_token_expire_minutes": 30,
+        "jwt_issuer": "market-edge-platform",
+        "jwt_audience": "market-edge-api",
+        "authorization_header": "no-auth-header",
+        "authorization_header_format": "invalid-format",
+        "environment": "production",
+        "timestamp": 1755588801.3945382
+      },
+      "success": true
+    },
+    "no_auth": {
+      "/api/v1/organisations/current": {
+        "status_code": 403,
+        "headers": {
+          "Date": "Tue, 19 Aug 2025 07:33:21 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "rndr-id": "9354f849-f05d-4804",
+          "vary": "Accept-Encoding",
+          "x-process-time": "0.004451274871826172",
+          "x-render-origin-server": "uvicorn",
+          "cf-cache-status": "DYNAMIC",
+          "Server": "cloudflare",
+          "CF-RAY": "9717f659595fedf8-LHR",
+          "Content-Encoding": "gzip",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        },
+        "response": {
+          "detail": "Not authenticated"
+        },
+        "success": false
+      },
+      "/api/v1/organisations/accessible": {
+        "status_code": 403,
+        "headers": {
+          "Date": "Tue, 19 Aug 2025 07:33:21 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "rndr-id": "1c61f922-912c-4cc2",
+          "vary": "Accept-Encoding",
+          "x-process-time": "0.0014922618865966797",
+          "x-render-origin-server": "uvicorn",
+          "cf-cache-status": "DYNAMIC",
+          "Server": "cloudflare",
+          "CF-RAY": "9717f65abb13edf8-LHR",
+          "Content-Encoding": "gzip",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        },
+        "response": {
+          "detail": "Not authenticated"
+        },
+        "success": false
+      },
+      "/api/v1/organisations/industries": {
+        "status_code": 403,
+        "headers": {
+          "Date": "Tue, 19 Aug 2025 07:33:22 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "rndr-id": "f1fe2538-624f-4cfd",
+          "vary": "Accept-Encoding",
+          "x-process-time": "0.004101276397705078",
+          "x-render-origin-server": "uvicorn",
+          "cf-cache-status": "DYNAMIC",
+          "Server": "cloudflare",
+          "CF-RAY": "9717f65c0cf7edf8-LHR",
+          "Content-Encoding": "gzip",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        },
+        "response": {
+          "detail": "Not authenticated"
+        },
+        "success": false
+      },
+      "/api/v1/tools/": {
+        "status_code": 403,
+        "headers": {
+          "Date": "Tue, 19 Aug 2025 07:33:22 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "rndr-id": "f5eeb45e-90c3-432e",
+          "vary": "Accept-Encoding",
+          "x-process-time": "0.0013935565948486328",
+          "x-render-origin-server": "uvicorn",
+          "cf-cache-status": "DYNAMIC",
+          "Server": "cloudflare",
+          "CF-RAY": "9717f65d7eebedf8-LHR",
+          "Content-Encoding": "gzip",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        },
+        "response": {
+          "detail": "Not authenticated"
+        },
+        "success": false
+      }
+    },
+    "invalid_token": {
+      "/api/v1/organisations/current": {
+        "status_code": 401,
+        "headers": {
+          "Date": "Tue, 19 Aug 2025 07:33:22 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "rndr-id": "9f287423-79bd-4e03",
+          "vary": "Accept-Encoding",
+          "www-authenticate": "Bearer",
+          "x-process-time": "0.002303600311279297",
+          "x-render-origin-server": "uvicorn",
+          "cf-cache-status": "DYNAMIC",
+          "Server": "cloudflare",
+          "CF-RAY": "9717f65ec8d4edf8-LHR",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        },
+        "response": {
+          "detail": "Could not validate credentials"
+        },
+        "success": false
+      },
+      "/api/v1/organisations/accessible": {
+        "status_code": 401,
+        "headers": {
+          "Date": "Tue, 19 Aug 2025 07:33:22 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "rndr-id": "256dc7ce-c69e-47ec",
+          "vary": "Accept-Encoding",
+          "www-authenticate": "Bearer",
+          "x-process-time": "0.003225564956665039",
+          "x-render-origin-server": "uvicorn",
+          "cf-cache-status": "DYNAMIC",
+          "Server": "cloudflare",
+          "CF-RAY": "9717f6601aaaedf8-LHR",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        },
+        "response": {
+          "detail": "Could not validate credentials"
+        },
+        "success": false
+      },
+      "/api/v1/organisations/industries": {
+        "status_code": 401,
+        "headers": {
+          "Date": "Tue, 19 Aug 2025 07:33:22 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "rndr-id": "24e1390f-2438-483c",
+          "vary": "Accept-Encoding",
+          "www-authenticate": "Bearer",
+          "x-process-time": "0.002042055130004883",
+          "x-render-origin-server": "uvicorn",
+          "cf-cache-status": "DYNAMIC",
+          "Server": "cloudflare",
+          "CF-RAY": "9717f6616c67edf8-LHR",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        },
+        "response": {
+          "detail": "Could not validate credentials"
+        },
+        "success": false
+      },
+      "/api/v1/tools/": {
+        "status_code": 401,
+        "headers": {
+          "Date": "Tue, 19 Aug 2025 07:33:23 GMT",
+          "Content-Type": "application/json",
+          "Transfer-Encoding": "chunked",
+          "Connection": "keep-alive",
+          "rndr-id": "731bb346-6beb-4ba7",
+          "vary": "Accept-Encoding",
+          "www-authenticate": "Bearer",
+          "x-process-time": "0.002112865447998047",
+          "x-render-origin-server": "uvicorn",
+          "cf-cache-status": "DYNAMIC",
+          "Server": "cloudflare",
+          "CF-RAY": "9717f662ce93edf8-LHR",
+          "alt-svc": "h3=\":443\"; ma=86400"
+        },
+        "response": {
+          "detail": "Could not validate credentials"
+        },
+        "success": false
+      }
+    }
+  }
+}
