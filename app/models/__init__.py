@@ -7,6 +7,8 @@ from .organisation_tool_access import OrganisationToolAccess
 # Phase 3 models
 from .sectors import SICCode, SectorModule, CompetitiveFactorTemplate
 from .modules import AnalyticsModule, OrganisationModule, ModuleConfiguration, ModuleUsageLog
+# Alias for backward compatibility
+Module = AnalyticsModule
 from .feature_flags import FeatureFlag, FeatureFlagOverride, FeatureFlagUsage
 from .audit_log import AuditLog, AdminAction
 
@@ -25,7 +27,7 @@ __all__ = [
     
     # Phase 3 models
     "SICCode", "SectorModule", "CompetitiveFactorTemplate",
-    "AnalyticsModule", "OrganisationModule", "ModuleConfiguration", "ModuleUsageLog",
+    "AnalyticsModule", "OrganisationModule", "ModuleConfiguration", "ModuleUsageLog", "Module",
     "FeatureFlag", "FeatureFlagOverride", "FeatureFlagUsage",
     "AuditLog", "AdminAction",
     
