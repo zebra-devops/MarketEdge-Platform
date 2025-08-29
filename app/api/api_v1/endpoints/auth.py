@@ -351,9 +351,12 @@ async def login(
             detail="Database error during authentication"
         )
     
-    # Ensure user has organization relationship loaded
-    if not user.organisation:
-        user = db.query(User).options(joinedload(User.organisation)).filter(User.id == user.id).first()
+    # Ensure user has organization and application access relationships loaded
+    if not user.organisation or not hasattr(user, 'application_access'):
+        user = db.query(User).options(
+            joinedload(User.organisation),
+            joinedload(User.application_access)
+        ).filter(User.id == user.id).first()
     
     # Get user permissions based on role and tenant context
     tenant_context = {
@@ -435,7 +438,11 @@ async def login(
             "last_name": user.last_name,
             "role": user.role.value,
             "organisation_id": str(user.organisation_id),
-            "is_active": user.is_active
+            "is_active": user.is_active,
+            "application_access": [
+                {"application": access.application.value, "has_access": access.has_access}
+                for access in user.application_access
+            ] if user.application_access else []
         },
         tenant={
             "id": str(user.organisation_id),
@@ -476,7 +483,10 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
         )
     
     # Validate user exists and is active
-    user = db.query(User).options(joinedload(User.organisation)).filter(User.id == user_id).first()
+    user = db.query(User).options(
+        joinedload(User.organisation),
+        joinedload(User.application_access)
+    ).filter(User.id == user_id).first()
     if not user or not user.is_active:
         logger.warning("User not found or inactive during refresh", extra={
             "event": "refresh_user_invalid",
@@ -583,7 +593,11 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
             "last_name": user.last_name,
             "role": user.role.value,
             "organisation_id": str(user.organisation_id),
-            "is_active": user.is_active
+            "is_active": user.is_active,
+            "application_access": [
+                {"application": access.application.value, "has_access": access.has_access}
+                for access in user.application_access
+            ] if user.application_access else []
         },
         tenant={
             "id": str(user.organisation_id),
@@ -652,9 +666,12 @@ async def get_current_user_info(
     db: Session = Depends(get_db)
 ):
     """Get enhanced current user information with tenant context"""
-    # Ensure organization is loaded
-    if not current_user.organisation:
-        current_user = db.query(User).options(joinedload(User.organisation)).filter(User.id == current_user.id).first()
+    # Ensure organization and application access are loaded
+    if not current_user.organisation or not hasattr(current_user, 'application_access'):
+        current_user = db.query(User).options(
+            joinedload(User.organisation),
+            joinedload(User.application_access)
+        ).filter(User.id == current_user.id).first()
     
     # Get user permissions
     tenant_context = {
@@ -672,7 +689,11 @@ async def get_current_user_info(
             "organisation_id": str(current_user.organisation_id),
             "is_active": current_user.is_active,
             "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
-            "updated_at": current_user.updated_at.isoformat() if current_user.updated_at else None
+            "updated_at": current_user.updated_at.isoformat() if current_user.updated_at else None,
+            "application_access": [
+                {"application": access.application.value, "has_access": access.has_access}
+                for access in current_user.application_access
+            ] if current_user.application_access else []
         },
         "tenant": {
             "id": str(current_user.organisation_id),

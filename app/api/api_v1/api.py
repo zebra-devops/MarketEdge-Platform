@@ -1,8 +1,9 @@
 from fastapi import APIRouter
 from .endpoints import (
     auth, users, organisations, tools, market_edge, admin, features, 
-    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, user_import, database, debug_auth
+    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, user_import, database, debug_auth, module_management
 )
+from ..health import router as health_router
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
@@ -26,3 +27,9 @@ api_router.include_router(database.router, prefix="/database", tags=["database-d
 
 # Debug authentication endpoint for 500 error investigation
 api_router.include_router(debug_auth.router, prefix="/debug", tags=["debug"])
+
+# Module management endpoints for dynamic module routing
+api_router.include_router(module_management.router, prefix="/module-management", tags=["module-management"])
+
+# Health check endpoints for monitoring
+api_router.include_router(health_router, tags=["health"])

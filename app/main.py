@@ -10,14 +10,25 @@ import os
 from .core.config import settings
 from .core.logging import configure_logging
 from .core.health_checks import health_checker
+from .core.secret_manager import validate_secrets_startup, get_secrets_health
 from .api.api_v1.api import api_router
 from .middleware.error_handler import ErrorHandlerMiddleware
 from .middleware.logging import LoggingMiddleware
 from .middleware.tenant_context import TenantContextMiddleware
 from .middleware.rate_limiting import RateLimitMiddleware
+from .core.module_startup import initialize_module_system, shutdown_module_system, get_module_system_info
 
 configure_logging()
 logger = logging.getLogger(__name__)
+
+# Validate secrets on startup
+logger.info("Starting secret validation...")
+try:
+    validate_secrets_startup()
+    logger.info("Secret validation completed successfully")
+except Exception as e:
+    logger.critical(f"Secret validation failed: {e}")
+    logger.critical("Application cannot start safely with invalid secrets")
 
 # Security: Removed redundant ManualCORSMiddleware - using FastAPI CORSMiddleware only
 
@@ -62,6 +73,50 @@ app.add_middleware(
 # app.add_middleware(RateLimitMiddleware)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize module routing system on application startup"""
+    try:
+        logger.info("Initializing module routing system...")
+        
+        # Initialize services needed for module system
+        from .services.feature_flag_service import FeatureFlagService
+        from .services.module_service import ModuleService
+        from .core.database import get_db
+        
+        # Get database session
+        db = next(get_db())
+        
+        # Initialize services
+        feature_flag_service = FeatureFlagService(db)
+        module_service = ModuleService(db)
+        
+        # Initialize module routing system
+        await initialize_module_system(
+            app=app,
+            db=db,
+            feature_flag_service=feature_flag_service,
+            module_service=module_service,
+            auto_discover=True  # Enable auto-discovery for development
+        )
+        
+        logger.info("Module routing system initialized successfully")
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize module routing system: {str(e)}")
+        # Don't fail startup if module system fails to initialize
+        logger.warning("Application starting without module routing system")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean shutdown of module routing system"""
+    try:
+        await shutdown_module_system(app)
+    except Exception as e:
+        logger.error(f"Error during module system shutdown: {str(e)}")
 
 
 @app.get("/health")
@@ -135,6 +190,64 @@ async def cors_debug(request: Request):
     
     return debug_info
 
+@app.get("/secrets/validate")
+async def secrets_validation_check(request: Request):
+    """
+    Secrets validation endpoint for monitoring and debugging.
+    Returns validation status for all critical secrets.
+    """
+    try:
+        from .core.secret_manager import secret_manager
+        
+        summary = secret_manager.get_validation_summary()
+        
+        # Don't expose actual secret values, only validation status
+        safe_response = {
+            "validation_summary": {
+                "total_secrets": summary["total_secrets"],
+                "valid_secrets": summary["valid_secrets"],
+                "invalid_secrets": summary["invalid_secrets"],
+                "placeholder_secrets": summary["placeholder_secrets"],
+                "connectivity_issues": summary["connectivity_issues"],
+                "critical_issues": summary["critical_issues"]
+            },
+            "environment": settings.ENVIRONMENT,
+            "timestamp": time.time(),
+            "overall_status": "healthy" if summary["invalid_secrets"] == 0 else "degraded"
+        }
+        
+        # Add detailed issues for debugging (without secret values)
+        if settings.DEBUG:
+            issues_detail = {}
+            for key, result in summary["validation_details"].items():
+                if result.issues:
+                    issues_detail[key] = {
+                        "is_valid": result.is_valid,
+                        "issues": result.issues,
+                        "connectivity_ok": result.connectivity_ok
+                    }
+            safe_response["issues_detail"] = issues_detail
+        
+        status_code = 200 if summary["invalid_secrets"] == 0 else 503
+        
+        return JSONResponse(
+            status_code=status_code,
+            content=safe_response
+        )
+        
+    except Exception as e:
+        logger.error(f"Secrets validation check failed: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "validation_summary": {
+                    "status": "error",
+                    "error": str(e) if settings.DEBUG else "Validation check failed"
+                },
+                "timestamp": time.time()
+            }
+        )
+
 @app.get("/ready")
 async def readiness_check():
     """
@@ -176,6 +289,29 @@ async def readiness_check():
                 "status": "not_ready",
                 "error": str(e) if settings.DEBUG else "Service not ready",
                 "timestamp": time.time(),
+            }
+        )
+
+
+@app.get("/modules/system/info")
+async def module_system_info(request: Request):
+    """
+    Get information about the module routing system status
+    """
+    try:
+        system_info = get_module_system_info()
+        system_info.update({
+            "timestamp": time.time(),
+            "api_version": settings.PROJECT_VERSION
+        })
+        return system_info
+    except Exception as e:
+        logger.error(f"Error getting module system info: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Error retrieving module system information",
+                "timestamp": time.time()
             }
         )
 
