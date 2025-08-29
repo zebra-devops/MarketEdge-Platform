@@ -16,7 +16,7 @@ services:
     plan: standard  # Provides adequate resources for production
     
     # Health check configuration
-    healthCheckPath: /health
+    healthCheckPath: /health/
     numInstances: 1  # Start with 1, scale as needed
     
     # Persistent storage for logs

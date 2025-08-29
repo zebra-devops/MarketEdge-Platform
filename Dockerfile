@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-transport-https \
     ca-certificates \
     gnupg \
+    net-tools \
     && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg \
     && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
     && apt-get update \
@@ -47,7 +48,7 @@ COPY --chown=root:root supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY --chown=appuser:appuser Caddyfile /app/Caddyfile
 
 # Security: Set proper permissions on scripts
-RUN chmod 755 start.sh \
+RUN chmod 755 start.sh render-startup.sh \
     && chmod 644 /etc/supervisor/conf.d/supervisord.conf \
     && chmod 644 /app/Caddyfile
 
@@ -61,4 +62,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 # CRITICAL FIX: Multi-service deployment with Caddy proxy + FastAPI
 # Security: Run supervisord as root for process management (services run as appuser)
 USER root
-CMD ["supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["./render-startup.sh"]
