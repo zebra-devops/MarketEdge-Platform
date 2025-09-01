@@ -40,4 +40,5 @@ USER appuser
 
 # Single-service deployment: Production-ready Gunicorn with comprehensive configuration
 # Use shell form to enable environment variable expansion
+# Build timestamp: Mon 1 Sep 2025 14:38:16 BST - Force rebuild for Epic 1 & 2 deployment
 CMD gunicorn app.main:app --config gunicorn_production.conf.py
