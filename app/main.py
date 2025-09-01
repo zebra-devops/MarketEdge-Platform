@@ -53,20 +53,44 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(LoggingMiddleware)
 
-# Security: Environment-based CORS configuration - no hardcoded origins
-# CRITICAL FIX: CORS middleware MUST be added last to process all responses
-# EMERGENCY FIX: Ensure Odeon demo origin is always included
-emergency_cors_origins = settings.CORS_ORIGINS.copy() if isinstance(settings.CORS_ORIGINS, list) else [settings.CORS_ORIGINS]
-if "https://app.zebra.associates" not in emergency_cors_origins:
-    emergency_cors_origins.append("https://app.zebra.associates")
-logger.info(f"Security: FastAPI CORSMiddleware with emergency origins: {emergency_cors_origins}")
+# Security: Comprehensive CORS configuration for production deployment
+# Migrated from Caddy to FastAPI for single-service architecture
+allowed_origins = []
+
+# Parse CORS_ORIGINS from environment (can be list or comma-separated string)
+if isinstance(settings.CORS_ORIGINS, list):
+    allowed_origins.extend(settings.CORS_ORIGINS)
+elif isinstance(settings.CORS_ORIGINS, str):
+    # Handle JSON array string or comma-separated values
+    import json
+    try:
+        # Try parsing as JSON array first
+        allowed_origins.extend(json.loads(settings.CORS_ORIGINS))
+    except json.JSONDecodeError:
+        # Fall back to comma-separated parsing
+        allowed_origins.extend([origin.strip() for origin in settings.CORS_ORIGINS.split(",")])
+
+# Ensure critical production origins are always included
+critical_origins = [
+    "https://app.zebra.associates",  # Primary production origin
+    "https://marketedge-frontend.onrender.com",  # Render frontend
+    "http://localhost:3000",  # Development
+    "http://localhost:3001",  # Development
+]
+
+for origin in critical_origins:
+    if origin not in allowed_origins:
+        allowed_origins.append(origin)
+
+logger.info(f"Security: FastAPI CORSMiddleware configured with origins: {allowed_origins}")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=emergency_cors_origins,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
     allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With", "Origin", "X-Tenant-ID"],
     expose_headers=["Content-Type", "Authorization", "X-Tenant-ID"],
+    max_age=600,  # Cache preflight requests for 10 minutes
 )
 # EMERGENCY: Disable tenant context and rate limiting for critical CORS testing
 # app.add_middleware(TenantContextMiddleware)
@@ -122,8 +146,8 @@ async def shutdown_event():
 @app.get("/health")
 async def health_check(request: Request):
     """
-    Health check endpoint for Railway health checks.
-    CORS-001: Works with Caddy reverse proxy multi-service setup.
+    Health check endpoint for Render deployment.
+    Single-service architecture with Gunicorn + FastAPI.
     """
     try:
         # Minimal health check that doesn't depend on database/redis
@@ -131,14 +155,14 @@ async def health_check(request: Request):
             "status": "healthy",
             "version": settings.PROJECT_VERSION,
             "timestamp": time.time(),
-            "cors_mode": "emergency_fastapi_direct",
-            "service_type": "fastapi_backend_minimal_middleware",
-            "emergency_mode": "odeon_demo_critical_fix"
+            "architecture": "single_service_gunicorn_fastapi",
+            "cors_mode": "fastapi_cors_middleware",
+            "service_type": "production_ready_gunicorn"
         }
         
         # Log health check request (but don't let logging failures affect health)
         try:
-            logger.info("Health check requested - CORS-001 multi-service active")
+            logger.info("Health check requested - Single service architecture active")
         except:
             pass  # Don't fail health check if logging fails
         
@@ -147,12 +171,12 @@ async def health_check(request: Request):
     except Exception as e:
         # Even if something goes wrong, return a basic response
         return JSONResponse(
-            status_code=200,  # Still return 200 for Railway health check
+            status_code=200,  # Still return 200 for Render health check
             content={
                 "status": "healthy",
-                "version": "1.0.0",
+                "version": settings.PROJECT_VERSION,
                 "timestamp": time.time(),
-                "cors_mode": "caddy_proxy_multi_service",
+                "architecture": "single_service_fallback",
                 "note": "basic_health_check_fallback"
             }
         )
@@ -161,30 +185,39 @@ async def health_check(request: Request):
 async def cors_debug(request: Request):
     """
     Debug endpoint to check CORS configuration and headers.
-    CORS-001: Multi-service setup with Caddy proxy + FastAPI CORS.
+    Single-service architecture with comprehensive FastAPI CORS.
     """
     origin = request.headers.get("origin", "no-origin-header")
     user_agent = request.headers.get("user-agent", "no-user-agent")
     
+    # Get the configured allowed origins
+    allowed_origins_debug = []
+    if isinstance(settings.CORS_ORIGINS, list):
+        allowed_origins_debug = settings.CORS_ORIGINS
+    elif isinstance(settings.CORS_ORIGINS, str):
+        import json
+        try:
+            allowed_origins_debug = json.loads(settings.CORS_ORIGINS)
+        except json.JSONDecodeError:
+            allowed_origins_debug = [origin.strip() for origin in settings.CORS_ORIGINS.split(",")]
+    
     debug_info = {
-        "cors_mode": "emergency_fastapi_direct",
-        "cors_origins_configured": settings.CORS_ORIGINS,
+        "architecture": "single_service_gunicorn_fastapi",
+        "cors_mode": "fastapi_cors_middleware_comprehensive",
+        "cors_origins_configured": allowed_origins_debug,
         "request_origin": origin,
-        "origin_allowed": origin in settings.CORS_ORIGINS if isinstance(settings.CORS_ORIGINS, list) else False,
+        "origin_allowed": origin in allowed_origins_debug,
         "user_agent": user_agent,
         "all_headers": dict(request.headers),
         "environment": settings.ENVIRONMENT,
         "debug_mode": settings.DEBUG,
         "timestamp": time.time(),
-        "fastapi_cors_middleware": "active",
-        "middleware_disabled": "tenant_context_rate_limiting",
-        "emergency_mode": "odeon_demo_critical_fix",
-        "service_type": "fastapi_backend_minimal"
+        "service_type": "production_ready_single_service"
     }
     
     # Log CORS debug request
     try:
-        logger.info(f"CORS debug requested from origin: {origin} - CORS-001 active")
+        logger.info(f"CORS debug requested from origin: {origin} - Single service architecture")
     except:
         pass
     

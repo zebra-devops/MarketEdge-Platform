@@ -1,10 +1,10 @@
 # Render Blueprint for MarketEdge Platform
-# Epic 2: Railway to Render Migration
-# Generated: 2025-08-16
-# Version: 2.0.0
+# Epic 2: Railway to Render Migration - Single Service Architecture
+# Updated: 2025-09-01
+# Version: 3.0.0 - Gunicorn + FastAPI Single Service
 
 services:
-  # Main web service - Multi-service container (Caddy + FastAPI)
+  # Main web service - Single-service container (Gunicorn + FastAPI)
   - type: web
     name: marketedge-platform
     runtime: docker
@@ -16,21 +16,19 @@ services:
     plan: standard  # Provides adequate resources for production
     
     # Health check configuration
-    healthCheckPath: /health/
+    healthCheckPath: /health
     numInstances: 1  # Start with 1, scale as needed
     
     # Persistent storage for logs
     disk:
       name: marketedge-logs
-      mountPath: /var/log
-      sizeGB: 10  # Increased for production logging
+      mountPath: /var/log/app
+      sizeGB: 5  # Reduced for single-service deployment
     
     # Environment variables
     envVars:
       # ===== Core Application Settings =====
-      # PORT is set automatically by Render - DO NOT override
-      - key: FASTAPI_PORT
-        value: 8000  # FastAPI backend port (used when CADDY_PROXY_MODE=true)
+      # PORT is set automatically by Render for single-service deployment
       - key: ENVIRONMENT
         value: production
       - key: DEBUG
@@ -40,15 +38,9 @@ services:
       - key: PROJECT_NAME
         value: Platform Wrapper
       - key: PROJECT_VERSION
-        value: 2.0.0
+        value: 3.0.0
       - key: API_V1_STR
         value: /api/v1
-      
-      # ===== Caddy Proxy Configuration =====
-      - key: CADDY_PROXY_MODE
-        value: false  # Use single-service mode to avoid port conflicts
-      - key: CADDY_AUTO_HTTPS
-        value: off  # Render handles SSL
       
       # ===== Database Configuration =====
       - key: DATABASE_URL
