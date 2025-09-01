@@ -1,11 +1,10 @@
 FROM python:3.11-slim
 
-# Security: Create non-root user early for proper ownership
+# Direct FastAPI deployment - fallback strategy
 RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
 
 WORKDIR /app
 
-# Security: Install minimal system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
@@ -13,31 +12,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Security: Copy requirements first for better Docker layer caching
 COPY --chown=appuser:appuser requirements.txt .
 
-# Security: Install Python packages as non-root where possible
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Security: Copy application code with proper ownership
 COPY --chown=appuser:appuser . .
 
-# Security: Create secure log directory with restricted permissions
 RUN mkdir -p /var/log/app \
     && chmod 755 /var/log/app \
     && chown appuser:appuser /var/log/app
 
-# Security: Set proper permissions on startup script
-RUN chmod 755 start.sh
-
-# FALLBACK: Direct Uvicorn health check
+# Health check for direct FastAPI
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
-# Security: Switch to non-root user for runtime
 USER appuser
 
-# EMERGENCY FALLBACK: Single Uvicorn process (no Gunicorn)
-# Maximum simplicity for critical deployment
-CMD python3 -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --access-log --log-level info --proxy-headers --forwarded-allow-ips="*"
+# FALLBACK: Direct FastAPI deployment without Gunicorn
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --log-level info
