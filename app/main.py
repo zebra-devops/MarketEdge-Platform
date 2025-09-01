@@ -181,6 +181,7 @@ async def health_check(request: Request):
     """
     Health check endpoint for Render deployment.
     Single-service architecture with Gunicorn + FastAPI.
+    Version: 3.0.0-gunicorn-production
     """
     try:
         # Minimal health check that doesn't depend on database/redis
