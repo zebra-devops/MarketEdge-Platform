@@ -9,8 +9,8 @@ services:
     name: marketedge-platform
     runtime: docker
     # repo: https://github.com/zebraassociates-projects/platform-wrapper
-    dockerfilePath: ./platform-wrapper/backend/Dockerfile
-    dockerContext: ./platform-wrapper/backend
+    dockerfilePath: platform-wrapper/backend/Dockerfile
+    dockerContext: platform-wrapper/backend
     startCommand: gunicorn app.main:app --config gunicorn_production.conf.py
     
     # Resource allocation
