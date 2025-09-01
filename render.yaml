@@ -11,6 +11,7 @@ services:
     # repo: https://github.com/zebraassociates-projects/platform-wrapper
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
+    startCommand: gunicorn app.main:app --config gunicorn_production.conf.py
     
     # Resource allocation
     plan: standard  # Provides adequate resources for production
