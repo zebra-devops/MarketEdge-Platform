@@ -172,3 +172,27 @@ if __name__ == "__main__":
         reload=settings.DEBUG,
         log_level=settings.LOG_LEVEL.lower()
     )# Force deployment Mon  1 Sep 2025 13:57:58 BST
+
+@app.get("/epic-deployment-test")
+async def epic_deployment_test():
+    """Emergency test endpoint to verify deployment is working"""
+    return {
+        "status": "SUCCESS",
+        "message": "Epic deployment test successful",
+        "timestamp": time.time(),
+        "epic_1_endpoint": "/api/v1/module-management/modules",
+        "epic_2_endpoint": "/api/v1/features/enabled",
+        "deployment_active": True
+    }
+
+@app.get("/epic-deployment-test")
+async def epic_deployment_test():
+    """Emergency test endpoint to verify deployment is working"""
+    return {
+        "status": "SUCCESS",
+        "message": "Epic deployment test successful",
+        "timestamp": time.time(),
+        "epic_1_endpoint": "/api/v1/module-management/modules",
+        "epic_2_endpoint": "/api/v1/features/enabled", 
+        "deployment_active": True
+    }
