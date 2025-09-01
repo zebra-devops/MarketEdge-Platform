@@ -1,0 +1,110 @@
+# Environment Variables and Secrets
+# These files should NEVER be committed to version control
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.staging  
+.env.production
+.env.test
+.env.*.local
+
+# Environment backups (created by backup system)
+.env_backups/
+*.env.backup
+*.env.bak
+
+# Secret files
+secrets/
+.secrets/
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# Configuration files that may contain secrets
+config.json
+config.local.json
+app.config
+web.config
+
+# Database files (may contain sensitive data)
+*.db
+*.sqlite
+*.sqlite3
+
+# Log files (may contain sensitive information)
+*.log
+logs/
+log/
+
+# IDE and editor files (may contain sensitive settings)
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Package manager files (may contain auth tokens)
+.npmrc
+.yarnrc
+.pip/pip.conf
+pip.conf
+
+# Cloud provider configs
+.aws/
+.azure/
+.gcloud/
+
+# Docker secrets
+docker-compose.override.yml
+.dockerignore
+
+# Backup and archive files
+*.bak
+*.backup
+*.old
+*.orig
+*.tar.gz
+*.zip
+
+# Coverage and testing artifacts
+coverage/
+.nyc_output/
+test-results/
+*.coverage
+
+# Build artifacts
+dist/
+build/
+out/
+target/
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Environment-specific files that should use templates instead
+# (Uncomment these if you want to be extra strict)
+# package-lock.json  # Use package.json and let CI generate
+# yarn.lock          # Use package.json and let CI generate
+# requirements.txt   # Use requirements.in and pip-tools

@@ -28,10 +28,9 @@ services:
     # Environment variables
     envVars:
       # ===== Core Application Settings =====
-      - key: PORT
-        value: 80  # Caddy proxy port
+      # PORT is set automatically by Render - DO NOT override
       - key: FASTAPI_PORT
-        value: 8000  # FastAPI backend port
+        value: 8000  # FastAPI backend port (used when CADDY_PROXY_MODE=true)
       - key: ENVIRONMENT
         value: production
       - key: DEBUG
@@ -47,7 +46,7 @@ services:
       
       # ===== Caddy Proxy Configuration =====
       - key: CADDY_PROXY_MODE
-        value: true
+        value: false  # Use single-service mode to avoid port conflicts
       - key: CADDY_AUTO_HTTPS
         value: off  # Render handles SSL
       
