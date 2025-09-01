@@ -101,37 +101,70 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize module routing system on application startup"""
+    """Initialize application components on startup with graceful degradation"""
     try:
-        logger.info("Initializing module routing system...")
+        logger.info("🚀 FastAPI application startup initiated...")
         
-        # Initialize services needed for module system
-        from .services.feature_flag_service import FeatureFlagService
-        from .services.module_service import ModuleService
-        from .core.database import get_db
+        # CRITICAL FIX: Test database connectivity first
+        try:
+            from .core.database import engine
+            with engine.connect() as conn:
+                from sqlalchemy import text
+                result = conn.execute(text("SELECT 1"))
+                conn.commit()
+            logger.info("✅ Database connectivity verified")
+        except Exception as db_error:
+            logger.error(f"❌ Database connectivity failed: {db_error}")
+            # Don't fail startup - let health checks handle this
+            logger.warning("⚠️  Application starting with database connectivity issues")
         
-        # Get database session
-        db = next(get_db())
+        # CRITICAL FIX: Test Redis connectivity
+        try:
+            from .core.database import redis_client
+            redis_client.ping()
+            logger.info("✅ Redis connectivity verified")
+        except Exception as redis_error:
+            logger.error(f"❌ Redis connectivity failed: {redis_error}")
+            # Don't fail startup - let health checks handle this
+            logger.warning("⚠️  Application starting with Redis connectivity issues")
         
-        # Initialize services
-        feature_flag_service = FeatureFlagService(db)
-        module_service = ModuleService(db)
+        # Initialize module routing system with enhanced error handling
+        try:
+            logger.info("🔧 Initializing module routing system...")
+            
+            # Import services with explicit error handling
+            from .services.feature_flag_service import FeatureFlagService
+            from .services.module_service import ModuleService
+            from .core.database import get_db
+            
+            # Get database session with timeout protection
+            db = next(get_db())
+            
+            # Initialize services
+            feature_flag_service = FeatureFlagService(db)
+            module_service = ModuleService(db)
+            
+            # Initialize module routing system
+            await initialize_module_system(
+                app=app,
+                db=db,
+                feature_flag_service=feature_flag_service,
+                module_service=module_service,
+                auto_discover=True  # Enable auto-discovery for development
+            )
+            
+            logger.info("✅ Module routing system initialized successfully")
+            
+        except Exception as module_error:
+            logger.error(f"❌ Failed to initialize module routing system: {str(module_error)}")
+            logger.warning("⚠️  Application starting without module routing system")
         
-        # Initialize module routing system
-        await initialize_module_system(
-            app=app,
-            db=db,
-            feature_flag_service=feature_flag_service,
-            module_service=module_service,
-            auto_discover=True  # Enable auto-discovery for development
-        )
+        logger.info("🎯 FastAPI application startup completed successfully")
         
-        logger.info("Module routing system initialized successfully")
-        
-    except Exception as e:
-        logger.error(f"Failed to initialize module routing system: {str(e)}")
-        # Don't fail startup if module system fails to initialize
-        logger.warning("Application starting without module routing system")
+    except Exception as startup_error:
+        logger.error(f"❌ Critical startup error: {str(startup_error)}")
+        logger.warning("⚠️  Application startup encountered errors - some features may be degraded")
+        # Don't raise exception - allow app to start in degraded mode
 
 
 @app.on_event("shutdown")

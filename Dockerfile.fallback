@@ -31,13 +31,13 @@ RUN mkdir -p /var/log/app \
 # Security: Set proper permissions on startup script
 RUN chmod 755 start.sh
 
-# Security: Health check targeting single service on dynamic port
+# FALLBACK: Direct Uvicorn health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
 
 # Security: Switch to non-root user for runtime
 USER appuser
 
-# Single-service deployment: Production-ready Gunicorn with comprehensive configuration
-# Use shell form to enable environment variable expansion
-CMD gunicorn app.main:app --config gunicorn_production.conf.py
+# EMERGENCY FALLBACK: Single Uvicorn process (no Gunicorn)
+# Maximum simplicity for critical deployment
+CMD python3 -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --access-log --log-level info --proxy-headers --forwarded-allow-ips="*"
