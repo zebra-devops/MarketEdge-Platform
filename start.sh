@@ -47,15 +47,12 @@ case "$LOG_LEVEL_LOWER" in
         ;;
 esac
 
-# Security: Run FastAPI with production network binding for Railway
-exec python3 -m uvicorn app.main:app \
-    --host 0.0.0.0 \
-    --port "${PORT}" \
-    --log-level "${LOG_LEVEL_LOWER}" \
-    --access-log \
-    --no-use-colors \
-    --proxy-headers \
-    --forwarded-allow-ips="*" \
-    --limit-concurrency 1000 \
-    --limit-max-requests 10000 \
-    --timeout-keep-alive 5
+# CRITICAL FIX: Run Gunicorn with production configuration for Render deployment
+echo "🚀 Starting Gunicorn with production configuration..."
+echo "Workers will use UvicornWorker class for FastAPI compatibility"
+
+# Export PORT for gunicorn configuration
+export PORT="${PORT}"
+
+# Start Gunicorn with production configuration
+exec gunicorn app.main:app --config gunicorn_production.conf.py
