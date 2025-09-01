@@ -107,11 +107,17 @@ if environment == "development":
     print("🔧 Development mode: Single worker with reload enabled")
 
 elif environment == "production":
-    # Production optimizations
-    preload_app = False  # Keep disabled for Render stability
-    max_requests = 5000
-    max_requests_jitter = 100
-    print("🏭 Production mode: Multi-worker with stability optimizations")
+    # Production optimizations for lazy initialization
+    preload_app = False  # Keep disabled for lazy initialization
+    max_requests = 3000  # Balanced for memory efficiency
+    max_requests_jitter = 150
+    
+    # Production-specific lazy init settings
+    worker_connections = 1200  # Higher for production load
+    
+    print("🏭 Production mode: Lazy Initialization Architecture enabled")
+    print("⚡ Multi-worker with intelligent service bootstrapping")
+    print("📈 Comprehensive performance monitoring active")
 
 # Memory management for Render
 if os.getenv("RENDER"):

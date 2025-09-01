@@ -9,8 +9,8 @@ services:
     name: marketedge-platform
     runtime: docker
     # repo: https://github.com/zebraassociates-projects/platform-wrapper
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerfilePath: ./platform-wrapper/backend/Dockerfile
+    dockerContext: ./platform-wrapper/backend
     startCommand: gunicorn app.main:app --config gunicorn_production.conf.py
     
     # Resource allocation
@@ -171,9 +171,9 @@ envVarGroups:
 # Build configuration
 buildFilter:
   paths:
-    - backend/**
+    - platform-wrapper/backend/**
   ignoredPaths:
-    - backend/tests/**
-    - backend/docs/**
-    - backend/.pytest_cache/**
-    - backend/__pycache__/**
+    - platform-wrapper/backend/tests/**
+    - platform-wrapper/backend/docs/**
+    - platform-wrapper/backend/.pytest_cache/**
+    - platform-wrapper/backend/__pycache__/**
