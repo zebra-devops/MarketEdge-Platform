@@ -7,16 +7,16 @@ from starlette.responses import Response
 import logging
 import time
 import os
-from .core.config import settings
-from .core.logging import configure_logging
-from .core.health_checks import health_checker
-from .core.secret_manager import validate_secrets_startup, get_secrets_health
-from .api.api_v1.api import api_router
-from .middleware.error_handler import ErrorHandlerMiddleware
-from .middleware.logging import LoggingMiddleware
-from .middleware.tenant_context import TenantContextMiddleware
-from .middleware.rate_limiting import RateLimitMiddleware
-from .core.module_startup import initialize_module_system, shutdown_module_system, get_module_system_info
+from app.core.config import settings
+from app.core.logging import configure_logging
+from app.core.health_checks import health_checker
+from app.core.secret_manager import validate_secrets_startup, get_secrets_health
+from app.api.api_v1.api import api_router
+from app.middleware.error_handler import ErrorHandlerMiddleware
+from app.middleware.logging import LoggingMiddleware
+from app.middleware.tenant_context import TenantContextMiddleware
+from app.middleware.rate_limiting import RateLimitMiddleware
+from app.core.module_startup import initialize_module_system, shutdown_module_system, get_module_system_info
 
 configure_logging()
 logger = logging.getLogger(__name__)
