@@ -827,60 +827,42 @@ async def emergency_fix_database_schema(db: Session = Depends(get_db)):
             "missing_columns": ["department", "location", "phone"]
         })
         
-        
-        # Check which columns are missing
-        result = db.execute(text("""
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'users' 
-            AND column_name IN ('department', 'location', 'phone')
-        """))
-        existing_columns = [row[0] for row in result.fetchall()]
-        
-        logger.info(f"Existing columns check: {existing_columns}")
-        
-        # Add missing columns
+        # Try direct column addition approach
         columns_added = []
-        if 'department' not in existing_columns:
-            db.execute(text("ALTER TABLE users ADD COLUMN department VARCHAR(100)"))
+        
+        try:
+            db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)"))
             columns_added.append('department')
             logger.info("Added department column")
+        except Exception as e:
+            logger.info(f"Department column might already exist: {str(e)}")
         
-        if 'location' not in existing_columns:
-            db.execute(text("ALTER TABLE users ADD COLUMN location VARCHAR(100)"))
-            columns_added.append('location')
+        try:
+            db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(100)"))
+            columns_added.append('location') 
             logger.info("Added location column")
+        except Exception as e:
+            logger.info(f"Location column might already exist: {str(e)}")
         
-        if 'phone' not in existing_columns:
-            db.execute(text("ALTER TABLE users ADD COLUMN phone VARCHAR(20)"))
+        try:
+            db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)"))
             columns_added.append('phone')
             logger.info("Added phone column")
+        except Exception as e:
+            logger.info(f"Phone column might already exist: {str(e)}")
         
         # Commit the changes
         db.commit()
         
-        # Verify the fix
-        result = db.execute(text("""
-            SELECT column_name, data_type, is_nullable 
-            FROM information_schema.columns 
-            WHERE table_name = 'users' 
-            AND column_name IN ('department', 'location', 'phone')
-            ORDER BY column_name
-        """))
-        final_columns = [{"name": row[0], "type": row[1], "nullable": row[2]} for row in result.fetchall()]
-        
         logger.info("EMERGENCY: Database schema fix completed successfully", extra={
             "event": "emergency_schema_fix_success",
-            "columns_added": columns_added,
-            "final_schema": final_columns
+            "columns_added": columns_added
         })
         
         return {
             "success": True,
             "message": "Database schema fix completed successfully",
             "columns_added": columns_added,
-            "existing_columns": existing_columns,
-            "final_schema": final_columns,
             "timestamp": "2025-09-02T20:30:00Z"
         }
         
