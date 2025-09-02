@@ -826,13 +826,15 @@ async def emergency_fix_database_schema(db: Session = Depends(get_db)):
             "missing_columns": ["department", "location", "phone"]
         })
         
+        from sqlalchemy import text
+        
         # Check which columns are missing
-        result = db.execute("""
+        result = db.execute(text("""
             SELECT column_name 
             FROM information_schema.columns 
             WHERE table_name = 'users' 
             AND column_name IN ('department', 'location', 'phone')
-        """)
+        """))
         existing_columns = [row[0] for row in result.fetchall()]
         
         logger.info(f"Existing columns check: {existing_columns}")
@@ -840,17 +842,17 @@ async def emergency_fix_database_schema(db: Session = Depends(get_db)):
         # Add missing columns
         columns_added = []
         if 'department' not in existing_columns:
-            db.execute("ALTER TABLE users ADD COLUMN department VARCHAR(100)")
+            db.execute(text("ALTER TABLE users ADD COLUMN department VARCHAR(100)"))
             columns_added.append('department')
             logger.info("Added department column")
         
         if 'location' not in existing_columns:
-            db.execute("ALTER TABLE users ADD COLUMN location VARCHAR(100)")
+            db.execute(text("ALTER TABLE users ADD COLUMN location VARCHAR(100)"))
             columns_added.append('location')
             logger.info("Added location column")
         
         if 'phone' not in existing_columns:
-            db.execute("ALTER TABLE users ADD COLUMN phone VARCHAR(20)")
+            db.execute(text("ALTER TABLE users ADD COLUMN phone VARCHAR(20)"))
             columns_added.append('phone')
             logger.info("Added phone column")
         
@@ -858,13 +860,13 @@ async def emergency_fix_database_schema(db: Session = Depends(get_db)):
         db.commit()
         
         # Verify the fix
-        result = db.execute("""
+        result = db.execute(text("""
             SELECT column_name, data_type, is_nullable 
             FROM information_schema.columns 
             WHERE table_name = 'users' 
             AND column_name IN ('department', 'location', 'phone')
             ORDER BY column_name
-        """)
+        """))
         final_columns = [{"name": row[0], "type": row[1], "nullable": row[2]} for row in result.fetchall()]
         
         logger.info("EMERGENCY: Database schema fix completed successfully", extra={
