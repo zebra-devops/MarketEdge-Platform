@@ -12,6 +12,7 @@ import logging
 import time
 import os
 import asyncio
+from datetime import datetime
 
 # Configure minimal logging
 logging.basicConfig(
@@ -244,6 +245,83 @@ logger.info("🚀 STABLE PRODUCTION MODE: FastAPI app created successfully")
 logger.info(f"✅ CORS enabled for: {cors_origins}")
 logger.info(f"🎯 API router included: {api_router_included}")
 logger.info("🚀 READY FOR £925K OPPORTUNITY")
+
+# Emergency database fix endpoint
+@app.post("/emergency/fix-database-schema")
+async def emergency_fix_database_schema():
+    """Emergency endpoint to fix missing Base columns causing auth 500 errors"""
+    try:
+        from sqlalchemy import text
+        from app.core.database import get_db
+        
+        logger.info("🚨 EMERGENCY: Starting database schema fix for authentication")
+        
+        # Tables with missing columns
+        tables_to_fix = {
+            'feature_flag_overrides': ['updated_at'],
+            'feature_flag_usage': ['created_at', 'updated_at'],
+            'module_usage_logs': ['created_at', 'updated_at'],
+            'admin_actions': ['updated_at'],
+            'audit_logs': ['created_at', 'updated_at'],
+            'competitive_insights': ['updated_at'],
+            'competitors': ['updated_at'],
+            'market_alerts': ['updated_at'],
+            'market_analytics': ['updated_at'],
+            'pricing_data': ['updated_at']
+        }
+        
+        db_session = next(get_db())
+        fixed_tables = []
+        
+        try:
+            for table_name, missing_columns in tables_to_fix.items():
+                try:
+                    # Check if table exists
+                    db_session.execute(text(f"SELECT 1 FROM {table_name} LIMIT 1"))
+                    
+                    for column in missing_columns:
+                        try:
+                            # Try to select the column to see if it exists
+                            db_session.execute(text(f"SELECT {column} FROM {table_name} LIMIT 1"))
+                            logger.info(f"✓ {table_name}.{column} already exists")
+                        except Exception:
+                            # Column doesn't exist, add it
+                            db_session.execute(text(f"""
+                                ALTER TABLE {table_name} 
+                                ADD COLUMN {column} TIMESTAMP WITH TIME ZONE 
+                                DEFAULT CURRENT_TIMESTAMP NOT NULL
+                            """))
+                            logger.info(f"✅ Added {column} to {table_name}")
+                    
+                    fixed_tables.append(table_name)
+                    
+                except Exception as table_error:
+                    logger.warning(f"⚠️  Table {table_name} not found or error: {table_error}")
+            
+            db_session.commit()
+            logger.info("✅ Database schema fix completed successfully")
+            
+            return {
+                "status": "success",
+                "message": "Database schema fixed - authentication should now work",
+                "fixed_tables": fixed_tables,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as fix_error:
+            db_session.rollback()
+            logger.error(f"❌ Database fix failed: {fix_error}")
+            raise
+        finally:
+            db_session.close()
+            
+    except Exception as e:
+        logger.error(f"❌ Emergency database fix failed: {e}")
+        return {
+            "status": "error", 
+            "message": f"Database fix failed: {e}",
+            "timestamp": datetime.now().isoformat()
+        }
 
 if __name__ == "__main__":
     import uvicorn
