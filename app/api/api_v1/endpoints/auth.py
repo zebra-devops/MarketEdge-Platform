@@ -827,32 +827,57 @@ async def emergency_fix_database_schema(db: Session = Depends(get_db)):
             "missing_columns": ["department", "location", "phone"]
         })
         
-        # Try direct column addition approach
+        import os
+        import psycopg2
+        from urllib.parse import urlparse
+        
+        # Get database URL from environment
+        database_url = os.getenv('DATABASE_URL')
+        if not database_url:
+            raise Exception("DATABASE_URL not found in environment")
+            
+        # Parse database URL
+        parsed = urlparse(database_url)
+        
+        # Connect directly with psycopg2
+        conn = psycopg2.connect(
+            host=parsed.hostname,
+            port=parsed.port or 5432,
+            database=parsed.path[1:],  # Remove leading slash
+            user=parsed.username, 
+            password=parsed.password,
+            sslmode='require'
+        )
+        
+        cur = conn.cursor()
         columns_added = []
         
+        # Add columns one by one
         try:
-            db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)"))
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS department VARCHAR(100)")
             columns_added.append('department')
             logger.info("Added department column")
         except Exception as e:
-            logger.info(f"Department column might already exist: {str(e)}")
-        
+            logger.info(f"Department column: {str(e)}")
+            
         try:
-            db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(100)"))
-            columns_added.append('location') 
-            logger.info("Added location column")
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(100)")
+            columns_added.append('location')
+            logger.info("Added location column") 
         except Exception as e:
-            logger.info(f"Location column might already exist: {str(e)}")
-        
+            logger.info(f"Location column: {str(e)}")
+            
         try:
-            db.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)"))
+            cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)")
             columns_added.append('phone')
             logger.info("Added phone column")
         except Exception as e:
-            logger.info(f"Phone column might already exist: {str(e)}")
-        
-        # Commit the changes
-        db.commit()
+            logger.info(f"Phone column: {str(e)}")
+            
+        # Commit changes
+        conn.commit()
+        cur.close()
+        conn.close()
         
         logger.info("EMERGENCY: Database schema fix completed successfully", extra={
             "event": "emergency_schema_fix_success",
@@ -872,7 +897,6 @@ async def emergency_fix_database_schema(db: Session = Depends(get_db)):
             "error_type": type(e).__name__,
             "error_message": str(e)
         })
-        db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Database schema fix failed: {str(e)}"
