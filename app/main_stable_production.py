@@ -70,22 +70,69 @@ app.add_middleware(
     max_age=600,
 )
 
+# Test database connectivity and initialize if needed
+database_ready = False
+database_error = None
+
+try:
+    logger.info("🔍 Testing database connectivity and schema...")
+    from app.core.database import get_db
+    from sqlalchemy import text
+    
+    # Test basic connection
+    db_session = next(get_db())
+    db_session.execute(text("SELECT 1"))
+    
+    # Test if core tables exist
+    try:
+        db_session.execute(text("SELECT COUNT(*) FROM users LIMIT 1"))
+        db_session.execute(text("SELECT COUNT(*) FROM organisations LIMIT 1"))
+        database_ready = True
+        logger.info("✅ Database schema verified - tables exist")
+    except Exception as schema_error:
+        logger.warning(f"⚠️  Database tables missing: {schema_error}")
+        logger.info("🔧 Running database migrations...")
+        
+        # Try to run migrations
+        try:
+            import subprocess
+            result = subprocess.run(['alembic', 'upgrade', 'head'], capture_output=True, text=True, cwd='/app')
+            if result.returncode == 0:
+                database_ready = True
+                logger.info("✅ Database migrations completed successfully")
+            else:
+                logger.error(f"❌ Migration failed: {result.stderr}")
+                database_error = f"Migration failed: {result.stderr}"
+        except Exception as migration_error:
+            logger.error(f"❌ Could not run migrations: {migration_error}")
+            database_error = f"Migration error: {migration_error}"
+    
+    db_session.close()
+    
+except Exception as e:
+    database_error = str(e)
+    logger.error(f"❌ Database connection failed: {e}")
+
 # CRITICAL: Include API router with retry logic
 api_router_included = False
 api_router_error = None
 
-try:
-    logger.info("⚡ Importing API router...")
-    from app.api.api_v1.api import api_router
-    logger.info("⚡ API router imported, including in app...")
-    app.include_router(api_router, prefix=settings.API_V1_STR)
-    api_router_included = True
-    logger.info("✅ API router included successfully - ALL Epic endpoints available")
-    logger.info("🎯 Authentication endpoints ready for £925K opportunity")
-except Exception as e:
-    api_router_error = str(e)
-    logger.error(f"❌ API router failed: {e}")
-    logger.warning("⚠️  Continuing with manual fallback endpoints")
+if database_ready:
+    try:
+        logger.info("⚡ Importing API router...")
+        from app.api.api_v1.api import api_router
+        logger.info("⚡ API router imported, including in app...")
+        app.include_router(api_router, prefix=settings.API_V1_STR)
+        api_router_included = True
+        logger.info("✅ API router included successfully - ALL Epic endpoints available")
+        logger.info("🎯 Authentication endpoints ready for £925K opportunity")
+    except Exception as e:
+        api_router_error = str(e)
+        logger.error(f"❌ API router failed: {e}")
+        logger.warning("⚠️  Continuing with manual fallback endpoints")
+else:
+    api_router_error = f"Database not ready: {database_error}"
+    logger.warning("⚠️  Database not ready - using fallback endpoints only")
     
     # Add critical auth endpoints as fallback
     @app.get(f"{settings.API_V1_STR}/auth/auth0-url")
@@ -144,6 +191,8 @@ async def health_check():
         "deployment_safe": True,
         "api_router_included": api_router_included,
         "api_router_error": api_router_error,
+        "database_ready": database_ready,
+        "database_error": database_error,
         "message": "Stable production mode - full API router with CORS optimization"
     }
 
