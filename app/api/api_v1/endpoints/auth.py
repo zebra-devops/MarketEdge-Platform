@@ -815,3 +815,81 @@ async def extend_session(
         "message": "Session is still valid",
         "expires_soon": False
     }
+
+
+@router.post("/emergency/fix-database-schema")
+async def emergency_fix_database_schema(db: Session = Depends(get_db)):
+    """EMERGENCY: Fix database schema for authentication - Add missing user columns"""
+    try:
+        logger.info("EMERGENCY: Starting database schema fix", extra={
+            "event": "emergency_schema_fix_start",
+            "missing_columns": ["department", "location", "phone"]
+        })
+        
+        # Check which columns are missing
+        result = db.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' 
+            AND column_name IN ('department', 'location', 'phone')
+        """)
+        existing_columns = [row[0] for row in result.fetchall()]
+        
+        logger.info(f"Existing columns check: {existing_columns}")
+        
+        # Add missing columns
+        columns_added = []
+        if 'department' not in existing_columns:
+            db.execute("ALTER TABLE users ADD COLUMN department VARCHAR(100)")
+            columns_added.append('department')
+            logger.info("Added department column")
+        
+        if 'location' not in existing_columns:
+            db.execute("ALTER TABLE users ADD COLUMN location VARCHAR(100)")
+            columns_added.append('location')
+            logger.info("Added location column")
+        
+        if 'phone' not in existing_columns:
+            db.execute("ALTER TABLE users ADD COLUMN phone VARCHAR(20)")
+            columns_added.append('phone')
+            logger.info("Added phone column")
+        
+        # Commit the changes
+        db.commit()
+        
+        # Verify the fix
+        result = db.execute("""
+            SELECT column_name, data_type, is_nullable 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' 
+            AND column_name IN ('department', 'location', 'phone')
+            ORDER BY column_name
+        """)
+        final_columns = [{"name": row[0], "type": row[1], "nullable": row[2]} for row in result.fetchall()]
+        
+        logger.info("EMERGENCY: Database schema fix completed successfully", extra={
+            "event": "emergency_schema_fix_success",
+            "columns_added": columns_added,
+            "final_schema": final_columns
+        })
+        
+        return {
+            "success": True,
+            "message": "Database schema fix completed successfully",
+            "columns_added": columns_added,
+            "existing_columns": existing_columns,
+            "final_schema": final_columns,
+            "timestamp": "2025-09-02T20:30:00Z"
+        }
+        
+    except Exception as e:
+        logger.error("EMERGENCY: Database schema fix failed", extra={
+            "event": "emergency_schema_fix_failed",
+            "error_type": type(e).__name__,
+            "error_message": str(e)
+        })
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database schema fix failed: {str(e)}"
+        )
