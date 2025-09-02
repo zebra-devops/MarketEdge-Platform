@@ -56,6 +56,6 @@ USER appuser
 # Pre-load application modules for faster worker startup
 RUN python -c "import app.core.lazy_startup; import app.core.startup_metrics" || echo "Optional modules not available"
 
-# PRODUCTION DEPLOYMENT: Mon 2 Sep 2025 - Critical fix for £925K opportunity
-# DEVOPS: Ensure app.main:app is used (not emergency mode)
-CMD gunicorn app.main:app --config gunicorn_production.conf.py
+# EMERGENCY PRODUCTION DEPLOYMENT: Mon 2 Sep 2025 - Critical fix for £925K opportunity
+# DEVOPS: Temporary switch to emergency production mode to resolve hanging service
+CMD gunicorn app.main_production_emergency:app --config gunicorn_production.conf.py
