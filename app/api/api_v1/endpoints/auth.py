@@ -901,3 +901,173 @@ async def emergency_fix_database_schema(db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Database schema fix failed: {str(e)}"
         )
+
+
+@router.post("/emergency/create-user-application-access-table")
+async def emergency_create_user_application_access_table(db: Session = Depends(get_db)):
+    """EMERGENCY: Create missing user_application_access table for authentication"""
+    try:
+        logger.info("EMERGENCY: Starting user_application_access table creation", extra={
+            "event": "emergency_table_creation_start",
+            "table": "user_application_access"
+        })
+        
+        import os
+        import psycopg2
+        from urllib.parse import urlparse
+        
+        # Get database URL from environment
+        database_url = os.getenv('DATABASE_URL')
+        if not database_url:
+            raise Exception("DATABASE_URL not found in environment")
+            
+        # Parse database URL
+        parsed = urlparse(database_url)
+        
+        # Connect directly with psycopg2
+        conn = psycopg2.connect(
+            host=parsed.hostname,
+            port=parsed.port or 5432,
+            database=parsed.path[1:],  # Remove leading slash
+            user=parsed.username, 
+            password=parsed.password,
+            sslmode='require'
+        )
+        
+        cur = conn.cursor()
+        operations = []
+        
+        # Check if table exists
+        cur.execute("""
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables 
+                WHERE table_name = 'user_application_access'
+            )
+        """)
+        table_exists = cur.fetchone()[0]
+        
+        if table_exists:
+            logger.info("user_application_access table already exists")
+            operations.append("table_already_exists")
+        else:
+            # Create enum types if they don't exist
+            try:
+                cur.execute("""
+                    DO $$ BEGIN
+                        CREATE TYPE applicationtype AS ENUM ('market_edge', 'causal_edge', 'value_edge');
+                    EXCEPTION
+                        WHEN duplicate_object THEN null;
+                    END $$
+                """)
+                operations.append("applicationtype_enum_created")
+                logger.info("Created applicationtype enum")
+            except Exception as e:
+                logger.info(f"ApplicationType enum: {str(e)}")
+                
+            try:
+                cur.execute("""
+                    DO $$ BEGIN
+                        CREATE TYPE invitationstatus AS ENUM ('pending', 'accepted', 'expired');
+                    EXCEPTION
+                        WHEN duplicate_object THEN null;
+                    END $$
+                """)
+                operations.append("invitationstatus_enum_created")
+                logger.info("Created invitationstatus enum")
+            except Exception as e:
+                logger.info(f"InvitationStatus enum: {str(e)}")
+            
+            # Create user_application_access table
+            cur.execute("""
+                CREATE TABLE user_application_access (
+                    id UUID NOT NULL DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                    user_id UUID NOT NULL,
+                    application applicationtype NOT NULL,
+                    has_access BOOLEAN NOT NULL DEFAULT FALSE,
+                    granted_by UUID,
+                    granted_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                    CONSTRAINT user_application_access_pkey PRIMARY KEY (id),
+                    CONSTRAINT user_application_access_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    CONSTRAINT user_application_access_granted_by_fkey FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL,
+                    CONSTRAINT user_application_access_user_id_application_key UNIQUE (user_id, application)
+                )
+            """)
+            operations.append("user_application_access_table_created")
+            logger.info("Created user_application_access table")
+            
+            # Create indexes for performance
+            cur.execute("CREATE INDEX idx_user_application_access_user_id ON user_application_access (user_id)")
+            cur.execute("CREATE INDEX idx_user_application_access_application ON user_application_access (application)")
+            operations.append("indexes_created")
+            logger.info("Created indexes for user_application_access")
+            
+        # Check if user_invitations table exists, create if needed
+        cur.execute("""
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables 
+                WHERE table_name = 'user_invitations'
+            )
+        """)
+        invitations_table_exists = cur.fetchone()[0]
+        
+        if not invitations_table_exists:
+            # Create user_invitations table
+            cur.execute("""
+                CREATE TABLE user_invitations (
+                    id UUID NOT NULL DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                    user_id UUID NOT NULL,
+                    invitation_token VARCHAR(255) NOT NULL UNIQUE,
+                    status invitationstatus NOT NULL DEFAULT 'pending',
+                    invited_by UUID NOT NULL,
+                    invited_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                    accepted_at TIMESTAMP WITH TIME ZONE,
+                    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                    CONSTRAINT user_invitations_pkey PRIMARY KEY (id),
+                    CONSTRAINT user_invitations_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    CONSTRAINT user_invitations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES users(id) ON DELETE CASCADE
+                )
+            """)
+            operations.append("user_invitations_table_created")
+            logger.info("Created user_invitations table")
+            
+            # Create indexes for user_invitations
+            cur.execute("CREATE INDEX idx_user_invitations_user_id ON user_invitations (user_id)")
+            cur.execute("CREATE INDEX idx_user_invitations_token ON user_invitations (invitation_token)")
+            cur.execute("CREATE INDEX idx_user_invitations_status ON user_invitations (status)")
+            cur.execute("CREATE INDEX idx_user_invitations_expires_at ON user_invitations (expires_at)")
+            operations.append("user_invitations_indexes_created")
+            logger.info("Created indexes for user_invitations")
+        else:
+            operations.append("user_invitations_table_already_exists")
+            
+        # Commit changes
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        logger.info("EMERGENCY: User application access table creation completed successfully", extra={
+            "event": "emergency_table_creation_success",
+            "operations": operations
+        })
+        
+        return {
+            "success": True,
+            "message": "User application access tables created successfully",
+            "operations": operations,
+            "timestamp": "2025-09-02T20:45:00Z"
+        }
+        
+    except Exception as e:
+        logger.error("EMERGENCY: User application access table creation failed", extra={
+            "event": "emergency_table_creation_failed",
+            "error_type": type(e).__name__,
+            "error_message": str(e)
+        })
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"User application access table creation failed: {str(e)}"
+        )
