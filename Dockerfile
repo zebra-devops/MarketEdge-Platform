@@ -1,6 +1,7 @@
 FROM python:3.11-slim
 
-# Lazy Initialization Architecture: Optimized base image for fast cold starts
+# Production Deployment Fix: Optimized base image for fast cold starts
+# DEVOPS: Updated 2025-09-02 to resolve deployment issues for £925K opportunity
 # Security: Create non-root user early for proper ownership
 RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
 
@@ -55,5 +56,6 @@ USER appuser
 # Pre-load application modules for faster worker startup
 RUN python -c "import app.core.lazy_startup; import app.core.startup_metrics" || echo "Optional modules not available"
 
-# Build timestamp: Mon 1 Sep 2025 - Lazy Initialization Architecture deployment
+# PRODUCTION DEPLOYMENT: Mon 2 Sep 2025 - Critical fix for £925K opportunity
+# DEVOPS: Ensure app.main:app is used (not emergency mode)
 CMD gunicorn app.main:app --config gunicorn_production.conf.py
