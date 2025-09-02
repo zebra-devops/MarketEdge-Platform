@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Form
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import text
 from pydantic import BaseModel, ValidationError as PydanticValidationError
 from typing import Dict, Any, Optional
 from datetime import timedelta
@@ -826,7 +827,6 @@ async def emergency_fix_database_schema(db: Session = Depends(get_db)):
             "missing_columns": ["department", "location", "phone"]
         })
         
-        from sqlalchemy import text
         
         # Check which columns are missing
         result = db.execute(text("""
