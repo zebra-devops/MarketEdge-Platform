@@ -36,6 +36,11 @@ services:
         value: false
       - key: LOG_LEVEL
         value: INFO
+      # Ensure production mode and disable emergency fallbacks
+      - key: EMERGENCY_MODE
+        value: false
+      - key: PRODUCTION_MODE
+        value: true
       - key: PROJECT_NAME
         value: Platform Wrapper
       - key: PROJECT_VERSION
@@ -75,11 +80,15 @@ services:
       - key: REFRESH_TOKEN_EXPIRE_DAYS
         value: 7
       
-      # ===== CORS Configuration =====
+      # ===== CORS Configuration - CRITICAL FOR £925K OPPORTUNITY =====
       - key: CORS_ORIGINS
         value: '["https://app.zebra.associates","https://marketedge-frontend.onrender.com","http://localhost:3000","http://localhost:3001"]'
       - key: CORS_ALLOWED_ORIGINS
         value: https://app.zebra.associates,https://marketedge-frontend.onrender.com,http://localhost:3000,http://localhost:3001
+      - key: CORS_ALLOW_CREDENTIALS
+        value: true
+      - key: ZEBRA_ASSOCIATES_ORIGIN
+        value: https://app.zebra.associates
       
       # ===== Rate Limiting =====
       - key: RATE_LIMIT_ENABLED
