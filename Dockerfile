@@ -56,6 +56,6 @@ USER appuser
 # Pre-load application modules for faster worker startup
 RUN python -c "import app.core.lazy_startup; import app.core.startup_metrics" || echo "Optional modules not available"
 
-# PRODUCTION DEPLOYMENT: Mon 2 Sep 2025 - Full API router with lazy initialization
-# DEVOPS: Using main application with complete API endpoints for authentication
-CMD gunicorn app.main:app --config gunicorn_production.conf.py
+# STABLE PRODUCTION DEPLOYMENT: Mon 2 Sep 2025 - Option 2 implementation
+# DEVOPS: Using stable production version with full API router and minimal dependencies
+CMD gunicorn app.main_stable_production:app --config gunicorn_production.conf.py

@@ -1,0 +1,97 @@
+# Render Blueprint for MarketEdge API Service (Option 2)
+# Purpose: New service with full API router endpoints for authentication
+# Created: 2025-09-02 for £925K Zebra Associates opportunity
+
+services:
+  # Main API service with full router
+  - type: web
+    name: marketedge-api-service
+    runtime: docker
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    startCommand: gunicorn app.main:app --config gunicorn_production.conf.py
+    
+    # Resource allocation
+    plan: standard
+    
+    # Health check configuration
+    healthCheckPath: /health
+    numInstances: 1
+    
+    # Environment variables - full API configuration
+    envVars:
+      # Core Application Settings
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: LOG_LEVEL
+        value: INFO
+      - key: EMERGENCY_MODE
+        value: false
+      - key: PRODUCTION_MODE
+        value: true
+      - key: PROJECT_NAME
+        value: MarketEdge API Service
+      - key: PROJECT_VERSION
+        value: 2.0.0-full-api
+      - key: API_V1_STR
+        value: /api/v1
+      
+      # CORS Configuration for Zebra Associates
+      - key: CORS_ORIGINS
+        value: '["https://app.zebra.associates","https://marketedge-frontend.onrender.com","http://localhost:3000","http://localhost:3001"]'
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://app.zebra.associates,https://marketedge-frontend.onrender.com,http://localhost:3000,http://localhost:3001
+      - key: CORS_ALLOW_CREDENTIALS
+        value: true
+      - key: ZEBRA_ASSOCIATES_ORIGIN
+        value: https://app.zebra.associates
+      
+      # Auth0 Configuration
+      - key: AUTH0_DOMAIN
+        value: dev-g8trhgbfdq2sk2m8.us.auth0.com
+      - key: AUTH0_CLIENT_ID
+        value: mQG01Z4lNhTTN081GHbR9R9C4fBQdPNr
+      - key: AUTH0_CLIENT_SECRET
+        sync: false  # Set manually in dashboard
+      - key: AUTH0_CALLBACK_URL
+        value: https://marketedge-api-service.onrender.com/callback
+      
+      # JWT Configuration
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+      
+      # Feature Flags
+      - key: FEATURE_USER_MANAGEMENT
+        value: true
+      - key: FEATURE_ADMIN_PANEL
+        value: true
+      - key: FEATURE_MARKET_EDGE
+        value: true
+      - key: FEATURE_CAUSAL_EDGE
+        value: true
+      - key: FEATURE_VALUE_EDGE
+        value: true
+      
+      # Multi-tenant Configuration
+      - key: MULTI_TENANT_ENABLED
+        value: true
+      - key: DEFAULT_TENANT_ID
+        value: default
+
+# Build configuration
+buildFilter:
+  paths:
+    - ./**
+  ignoredPaths:
+    - tests/**
+    - docs/**
+    - .pytest_cache/**
+    - __pycache__/**
