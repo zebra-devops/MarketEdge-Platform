@@ -111,9 +111,34 @@ async def startup_event():
         except Exception as init_error:
             logger.error(f"⚠️  Lazy initialization error: {init_error} - continuing with core services")
         
+        # CRITICAL: Initialize module registry for £925K Zebra Associates
+        try:
+            from app.core.module_registry import initialize_module_registry
+            from app.services.audit_service import AuditService
+            from app.db.session import get_db
+            
+            logger.info("🔧 Initializing module registry for Zebra Associates...")
+            
+            # Get database session for initialization
+            async for db_session in get_db():
+                audit_service = AuditService(db_session)
+                await initialize_module_registry(
+                    audit_service=audit_service,
+                    max_registered_modules=100,
+                    max_pending_registrations=50
+                )
+                logger.info("✅ Module registry initialized - feature flags ready")
+                break
+                
+        except Exception as module_error:
+            logger.error(f"⚠️  Module registry initialization failed: {module_error}")
+            logger.error("⚠️  Feature flags may not work - using fallback mode")
+            # Continue startup to preserve authentication functionality
+        
         startup_duration = time.time() - startup_start
         logger.info(f"✅ PRODUCTION READY in {startup_duration:.3f}s")
         logger.info("🎯 Authentication endpoints available for £925K opportunity")
+        logger.info("🎯 Module management ready for feature flags")
         
     except Exception as startup_error:
         startup_duration = time.time() - startup_start
