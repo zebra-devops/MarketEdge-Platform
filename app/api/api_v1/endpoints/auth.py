@@ -230,7 +230,7 @@ async def login_oauth2(
                 "email": user.email,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "role": user.role,
+                "role": user.role.value,
                 "is_active": user.is_active,
                 "created_at": user.created_at.isoformat() if user.created_at else None,
                 "updated_at": user.updated_at.isoformat() if user.updated_at else None
@@ -239,9 +239,9 @@ async def login_oauth2(
                 "id": str(user.organisation.id),
                 "name": user.organisation.name,
                 "industry": user.organisation.industry,
-                "subscription_plan": user.organisation.subscription_plan
+                "subscription_plan": user.organisation.subscription_plan.value
             } if user.organisation else None,
-            permissions=get_user_permissions(user.role)
+            permissions=get_user_permissions(user.role.value)
         )
         
     except HTTPException:
@@ -688,6 +688,7 @@ async def login(
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
+        token_type="bearer",
         expires_in=3600,  # 1 hour in seconds
         user={
             "id": str(user.id),
@@ -695,19 +696,16 @@ async def login(
             "first_name": user.first_name,
             "last_name": user.last_name,
             "role": user.role.value,
-            "organisation_id": str(user.organisation_id),
             "is_active": user.is_active,
-            "application_access": [
-                {"application": access.application.value, "has_access": access.has_access}
-                for access in user.application_access
-            ] if user.application_access else []
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None
         },
         tenant={
-            "id": str(user.organisation_id),
-            "name": user.organisation.name if user.organisation else "Default",
-            "industry": user.organisation.industry if user.organisation else "Technology",
-            "subscription_plan": user.organisation.subscription_plan.value if user.organisation else "basic"
-        },
+            "id": str(user.organisation.id),
+            "name": user.organisation.name,
+            "industry": user.organisation.industry,
+            "subscription_plan": user.organisation.subscription_plan.value
+        } if user.organisation else None,
         permissions=permissions
     )
 
@@ -843,6 +841,7 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
     return TokenResponse(
         access_token=new_access_token,
         refresh_token=new_refresh_token,
+        token_type="bearer",
         expires_in=3600,
         user={
             "id": str(user.id),
@@ -850,19 +849,16 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
             "first_name": user.first_name,
             "last_name": user.last_name,
             "role": user.role.value,
-            "organisation_id": str(user.organisation_id),
             "is_active": user.is_active,
-            "application_access": [
-                {"application": access.application.value, "has_access": access.has_access}
-                for access in user.application_access
-            ] if user.application_access else []
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None
         },
         tenant={
-            "id": str(user.organisation_id),
-            "name": user.organisation.name if user.organisation else "Default",
-            "industry": user.organisation.industry if user.organisation else "Technology",
-            "subscription_plan": user.organisation.subscription_plan.value if user.organisation else "basic"
-        },
+            "id": str(user.organisation.id),
+            "name": user.organisation.name,
+            "industry": user.organisation.industry,
+            "subscription_plan": user.organisation.subscription_plan.value
+        } if user.organisation else None,
         permissions=permissions
     )
 
