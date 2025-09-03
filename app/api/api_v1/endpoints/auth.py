@@ -225,8 +225,22 @@ async def login_oauth2(
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=3600,
-            user=user,
-            tenant=user.organisation,
+            user={
+                "id": str(user.id),
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": user.role,
+                "is_active": user.is_active,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+                "updated_at": user.updated_at.isoformat() if user.updated_at else None
+            },
+            tenant={
+                "id": str(user.organisation.id),
+                "name": user.organisation.name,
+                "industry": user.organisation.industry,
+                "subscription_plan": user.organisation.subscription_plan
+            } if user.organisation else None,
             permissions=get_user_permissions(user.role)
         )
         
