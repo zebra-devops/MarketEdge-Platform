@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Form, Body
 from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
@@ -144,7 +144,7 @@ async def login(
     request: Request, 
     db: Session = Depends(get_db),
     # Support both JSON and form data
-    login_data: Optional[LoginRequest] = None,
+    login_data: Optional[LoginRequest] = Body(None),
     code: Optional[str] = Form(None),
     redirect_uri: Optional[str] = Form(None),
     state: Optional[str] = Form(None)
