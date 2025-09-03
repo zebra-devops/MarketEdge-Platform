@@ -239,7 +239,7 @@ async def emergency_admin_setup(
             # Check if access record exists
             existing_access = db.query(UserApplicationAccess).filter(
                 UserApplicationAccess.user_id == user.id,
-                UserApplicationAccess.application == app_type
+                UserApplicationAccess.application == app_type.value
             ).first()
             
             if existing_access:
@@ -255,7 +255,7 @@ async def emergency_admin_setup(
                 # Create new access record
                 new_access = UserApplicationAccess(
                     user_id=user.id,
-                    application=app_type,
+                    application=app_type.value,
                     has_access=True,
                     granted_by=user.id  # Self-granted for emergency
                 )
