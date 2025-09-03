@@ -246,6 +246,113 @@ logger.info(f"✅ CORS enabled for: {cors_origins}")
 logger.info(f"🎯 API router included: {api_router_included}")
 logger.info("🚀 READY FOR £925K OPPORTUNITY")
 
+# Emergency admin setup endpoint
+@app.post("/emergency/grant-admin-privileges")
+async def emergency_grant_admin_privileges():
+    """Emergency endpoint to grant admin privileges to matt.lindop@zebra.associates"""
+    try:
+        from sqlalchemy import text
+        from app.core.database import get_db
+        
+        logger.info("🚨 EMERGENCY: Granting admin privileges for £925K opportunity")
+        
+        db_session = next(get_db())
+        
+        try:
+            # Check if user exists first
+            user_check = db_session.execute(text("""
+                SELECT id, email, role, organisation_id, is_active 
+                FROM users 
+                WHERE email = 'matt.lindop@zebra.associates'
+            """))
+            user_row = user_check.fetchone()
+            
+            if user_row:
+                # Update existing user to admin
+                result = db_session.execute(text("""
+                    UPDATE users 
+                    SET role = 'admin', 
+                        updated_at = CURRENT_TIMESTAMP 
+                    WHERE email = 'matt.lindop@zebra.associates'
+                """))
+                logger.info(f"✅ Updated existing user to admin role")
+                
+                user_info = {
+                    "id": str(user_row[0]),
+                    "email": user_row[1], 
+                    "role": "admin",  # Updated role
+                    "organisation_id": str(user_row[3]),
+                    "is_active": user_row[4],
+                    "action": "updated_to_admin"
+                }
+            else:
+                # Create new admin user
+                logger.info("⚠️  User not found - creating admin user")
+                
+                # Get default organization
+                org_result = db_session.execute(text("SELECT id FROM organisations WHERE name = 'Default' LIMIT 1"))
+                org_row = org_result.fetchone()
+                
+                if not org_row:
+                    # Create default organization if it doesn't exist
+                    db_session.execute(text("""
+                        INSERT INTO organisations (name, industry, subscription_plan, created_at, updated_at)
+                        VALUES ('Default', 'Technology', 'basic', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    """))
+                    org_result = db_session.execute(text("SELECT id FROM organisations WHERE name = 'Default' LIMIT 1"))
+                    org_row = org_result.fetchone()
+                
+                org_id = org_row[0]
+                
+                # Create admin user with UUID generation
+                create_result = db_session.execute(text("""
+                    INSERT INTO users (email, first_name, last_name, role, organisation_id, is_active, created_at, updated_at)
+                    VALUES ('matt.lindop@zebra.associates', 'Matt', 'Lindop', 'admin', :org_id, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                    RETURNING id, email, role, organisation_id, is_active
+                """), {"org_id": org_id})
+                
+                created_user = create_result.fetchone()
+                logger.info("✅ Created new admin user matt.lindop@zebra.associates")
+                
+                user_info = {
+                    "id": str(created_user[0]),
+                    "email": created_user[1], 
+                    "role": created_user[2],
+                    "organisation_id": str(created_user[3]),
+                    "is_active": created_user[4],
+                    "action": "created_new_admin"
+                }
+            
+            db_session.commit()
+            logger.info("✅ Database transaction committed successfully")
+            
+            return {
+                "status": "success",
+                "message": "Admin privileges granted successfully to matt.lindop@zebra.associates",
+                "user": user_info,
+                "critical_note": "User MUST re-authenticate via Auth0 to receive new JWT with admin role",
+                "epic_access": {
+                    "epic_1_modules": "Will be accessible after re-authentication",
+                    "epic_2_feature_flags": "Will be accessible after re-authentication"
+                },
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as fix_error:
+            db_session.rollback()
+            logger.error(f"❌ Admin privilege grant failed: {fix_error}")
+            raise
+        finally:
+            db_session.close()
+            
+    except Exception as e:
+        logger.error(f"❌ Emergency admin setup failed: {e}")
+        return {
+            "status": "error", 
+            "message": f"Admin setup failed: {e}",
+            "timestamp": datetime.now().isoformat()
+        }
+
 # Emergency database fix endpoint
 @app.post("/emergency/fix-database-schema")
 async def emergency_fix_database_schema():
