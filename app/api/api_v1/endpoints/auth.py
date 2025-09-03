@@ -143,7 +143,7 @@ async def login(
     response: Response, 
     request: Request, 
     db: Session = Depends(get_db),
-    # Support both JSON and form data
+    # Support JSON body (OAuth2) or form data (legacy)
     login_data: Optional[LoginRequest] = Body(None),
     code: Optional[str] = Form(None),
     redirect_uri: Optional[str] = Form(None),
