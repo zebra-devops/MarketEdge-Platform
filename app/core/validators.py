@@ -208,6 +208,18 @@ class AuthParameterValidator(BaseModel):
                 raise ValueError("State contains potentially malicious content")
         
         return v
+    
+    def is_valid(self) -> bool:
+        """Check if the validator instance is valid (no validation errors during creation)"""
+        # If we reach this point, Pydantic validation passed during model creation
+        return True
+    
+    @property
+    def errors(self) -> List[str]:
+        """Return list of validation errors (empty if valid)"""
+        # Since Pydantic validation happens during model creation,
+        # if we have a valid instance, there are no errors
+        return []
 
 
 def sanitize_string_input(value: str, max_length: int = 1000, allow_html: bool = False) -> str:
