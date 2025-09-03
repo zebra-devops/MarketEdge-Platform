@@ -235,11 +235,14 @@ async def emergency_admin_setup(
         # Step 3: Ensure application access for all applications
         applications_granted = []
         
-        for app_type in ApplicationType:
+        # Use string values directly to avoid enum issues
+        application_names = ["market_edge", "causal_edge", "value_edge"]
+        
+        for app_name in application_names:
             # Check if access record exists
             existing_access = db.query(UserApplicationAccess).filter(
                 UserApplicationAccess.user_id == user.id,
-                UserApplicationAccess.application == app_type.value
+                UserApplicationAccess.application == app_name
             ).first()
             
             if existing_access:
@@ -247,21 +250,21 @@ async def emergency_admin_setup(
                 if not existing_access.has_access:
                     existing_access.has_access = True
                     existing_access.granted_by = user.id  # Self-granted for emergency
-                    applications_granted.append(f"Updated {app_type.value}")
-                    logger.info(f"✅ Updated application access for {app_type.value}")
+                    applications_granted.append(f"Updated {app_name}")
+                    logger.info(f"✅ Updated application access for {app_name}")
                 else:
-                    applications_granted.append(f"Already had {app_type.value}")
+                    applications_granted.append(f"Already had {app_name}")
             else:
                 # Create new access record
                 new_access = UserApplicationAccess(
                     user_id=user.id,
-                    application=app_type.value,
+                    application=app_name,
                     has_access=True,
                     granted_by=user.id  # Self-granted for emergency
                 )
                 db.add(new_access)
-                applications_granted.append(f"Granted {app_type.value}")
-                logger.info(f"✅ Granted application access for {app_type.value}")
+                applications_granted.append(f"Granted {app_name}")
+                logger.info(f"✅ Granted application access for {app_name}")
         
         # Step 4: Commit all changes
         try:
@@ -289,7 +292,7 @@ async def emergency_admin_setup(
             UserApplicationAccess.has_access == True
         ).all()
         
-        accessible_apps = [access.application.value for access in user_app_access]
+        accessible_apps = [access.application for access in user_app_access]
         
         success_response = {
             "status": "SUCCESS",
@@ -364,7 +367,7 @@ async def verify_admin_access(
             UserApplicationAccess.has_access == True
         ).all()
         
-        accessible_apps = [access.application.value for access in user_app_access]
+        accessible_apps = [access.application for access in user_app_access]
         
         # Verify Epic access requirements
         epic_access_check = {
@@ -374,6 +377,10 @@ async def verify_admin_access(
             "can_access_feature_flags": is_admin,
             "epic_endpoints_accessible": is_admin
         }
+        
+        # Check for missing applications
+        expected_apps = ["market_edge", "causal_edge", "value_edge"]
+        missing_apps = [app for app in expected_apps if app not in accessible_apps]
         
         verification_result = {
             "status": "verified",
@@ -387,10 +394,7 @@ async def verify_admin_access(
             "application_access": {
                 "accessible_applications": accessible_apps,
                 "has_all_applications": len(accessible_apps) == 3,
-                "missing_applications": [
-                    app.value for app in ApplicationType 
-                    if app.value not in accessible_apps
-                ]
+                "missing_applications": missing_apps
             },
             "epic_access_verification": epic_access_check,
             "admin_endpoints_check": {
