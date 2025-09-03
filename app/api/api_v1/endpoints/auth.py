@@ -240,14 +240,117 @@ async def login_oauth2(
         raise HTTPException(status_code=500, detail="Internal server error during authentication")
 
 
+async def _create_or_update_user_from_auth0(db: Session, user_info: dict, client_ip: str) -> User:
+    """Create or update user from Auth0 user info"""
+    # Enhanced user info validation with sanitization
+    required_fields = ["email", "sub"]
+    missing_fields = [field for field in required_fields if not user_info.get(field)]
+    if missing_fields:
+        logger.error("Missing required fields in user info", extra={
+            "event": "userinfo_missing_fields",
+            "missing_fields": missing_fields,
+            "user_sub": user_info.get("sub"),
+            "client_ip": client_ip
+        })
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid user information: missing {', '.join(missing_fields)}"
+        )
+    
+    # Sanitize user info fields to prevent injection
+    try:
+        sanitized_email = sanitize_string_input(user_info["email"], max_length=254)
+        sanitized_sub = sanitize_string_input(user_info["sub"], max_length=100)
+        sanitized_given_name = sanitize_string_input(user_info.get("given_name", ""), max_length=100) if user_info.get("given_name") else ""
+        sanitized_family_name = sanitize_string_input(user_info.get("family_name", ""), max_length=100) if user_info.get("family_name") else ""
+    except ValidationError as e:
+        logger.error("User info sanitization failed", extra={
+            "event": "userinfo_sanitization_failed", 
+            "error": str(e),
+            "violation_type": e.violation_type,
+            "client_ip": client_ip
+        })
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid user information format"
+        )
+    
+    # Find or create user in database using sanitized email
+    try:
+        user = db.query(User).filter(User.email == sanitized_email).first()
+        if not user:
+            # Create user with default organization
+            default_org = db.query(Organisation).filter(Organisation.name == "Default").first()
+            if not default_org:
+                from ....models.organisation import SubscriptionPlan
+                from ....core.rate_limit_config import Industry
+                default_org = Organisation(
+                    name="Default",
+                    industry=Industry.DEFAULT.value,
+                    industry_type=Industry.DEFAULT,
+                    subscription_plan=SubscriptionPlan.basic
+                )
+                db.add(default_org)
+                db.commit()
+                db.refresh(default_org)
+                
+                # Set up default tool access for the Default organization
+                _setup_default_tool_access(db, default_org.id)
+            
+            from ....models.user import UserRole
+            user = User(
+                email=sanitized_email,
+                first_name=sanitized_given_name,
+                last_name=sanitized_family_name,
+                organisation_id=default_org.id,
+                role=UserRole.viewer
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            
+            logger.info("New user created", extra={
+                "event": "user_created",
+                "user_id": str(user.id),
+                "email": user.email,
+                "organisation_id": str(user.organisation_id)
+            })
+        
+        return user
+        
+    except Exception as e:
+        logger.error("Database error during user creation/lookup", extra={
+            "event": "database_error",
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "email": sanitized_email
+        })
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Database error during authentication"
+        )
+
+
+async def login_json_body(request: Request) -> Optional[LoginRequest]:
+    """Helper to parse JSON body for OAuth2 requests"""
+    try:
+        body = await request.body()
+        if body and request.headers.get('content-type') == 'application/json':
+            import json
+            json_data = json.loads(body.decode('utf-8'))
+            if 'code' in json_data and 'redirect_uri' in json_data:
+                return LoginRequest(**json_data)
+    except Exception:
+        pass
+    return None
+
 @router.post("/login", response_model=TokenResponse)
 async def login(
     response: Response, 
     request: Request, 
     db: Session = Depends(get_db),
-    # Primary: JSON body for OAuth2
-    login_data: Optional[LoginRequest] = None,
-    # Fallback: Form data for legacy
+    # Form data parameters for legacy support
     code: Optional[str] = Form(None),
     redirect_uri: Optional[str] = Form(None),
     state: Optional[str] = Form(None)
