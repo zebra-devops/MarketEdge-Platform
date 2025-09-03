@@ -182,9 +182,10 @@ async def login_oauth2(
             raise HTTPException(status_code=400, detail="Invalid authentication parameters")
         
         # Exchange authorization code for tokens
-        tokens = await auth0_client.exchange_code_for_tokens(
+        tokens = await auth0_client.exchange_code_for_token(
             code=validated_code,
-            redirect_uri=validated_redirect_uri
+            redirect_uri=validated_redirect_uri,
+            state=validated_state
         )
         
         if not tokens or not tokens.get('access_token'):
