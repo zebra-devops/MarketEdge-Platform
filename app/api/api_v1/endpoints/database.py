@@ -5,6 +5,7 @@ Provides endpoints for testing database connectivity, user creation flows, and d
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import Dict, Any, Optional
 import logging
 from app.core.database import get_db
@@ -201,21 +202,23 @@ async def emergency_admin_setup(
     EMERGENCY: Set up admin privileges for matt.lindop@zebra.associates
     
     This endpoint:
-    1. Finds or creates the user matt.lindop@zebra.associates
-    2. Sets their role to UserRole.admin 
-    3. Grants access to all applications (market_edge, causal_edge, value_edge)
+    1. Finds the user matt.lindop@zebra.associates
+    2. Sets their role to UserRole.admin using direct SQL 
+    3. Grants access to all applications using direct SQL
     4. Ensures they can access Epic admin endpoints
     
     Critical for £925K opportunity - Epic endpoints need admin privileges.
+    Uses direct SQL to avoid SQLAlchemy enum issues.
     """
     try:
         admin_email = "matt.lindop@zebra.associates"
         logger.info(f"🚨 EMERGENCY: Setting up admin privileges for {admin_email}")
         
         # Step 1: Check if user exists
-        user = db.query(user_models.User).filter(user_models.User.email == admin_email).first()
+        result = db.execute(text("SELECT id, email, role FROM users WHERE email = :email"), {"email": admin_email})
+        user_row = result.fetchone()
         
-        if not user:
+        if not user_row:
             logger.warning(f"❌ User {admin_email} not found in database")
             return {
                 "status": "error",
@@ -227,42 +230,42 @@ async def emergency_admin_setup(
                 ]
             }
         
-        # Step 2: Set admin role
-        original_role = user.role
-        user.role = UserRole.admin
-        logger.info(f"📝 Changed user role from {original_role} to {UserRole.admin}")
+        user_id, email, original_role = user_row
+        logger.info(f"✅ User found: ID={user_id}, Current Role={original_role}")
         
-        # Step 3: Ensure application access for all applications
+        # Step 2: Set admin role using direct SQL
+        db.execute(text("UPDATE users SET role = :role WHERE id = :user_id"), {"role": "admin", "user_id": user_id})
+        logger.info(f"📝 Changed user role from {original_role} to admin")
+        
+        # Step 3: Set up application access using direct SQL
         applications_granted = []
         
-        # Use string values directly to avoid enum issues
-        application_names = ["market_edge", "causal_edge", "value_edge"]
-        
-        for app_name in application_names:
+        for app_name in ["market_edge", "causal_edge", "value_edge"]:
             # Check if access record exists
-            existing_access = db.query(UserApplicationAccess).filter(
-                UserApplicationAccess.user_id == user.id,
-                UserApplicationAccess.application == app_name
-            ).first()
+            result = db.execute(
+                text("SELECT id, has_access FROM user_application_access WHERE user_id = :user_id AND application = :app_name"),
+                {"user_id": user_id, "app_name": app_name}
+            )
+            existing_access = result.fetchone()
             
             if existing_access:
-                # Update existing record to grant access
-                if not existing_access.has_access:
-                    existing_access.has_access = True
-                    existing_access.granted_by = user.id  # Self-granted for emergency
+                access_id, has_access = existing_access
+                if not has_access:
+                    # Update existing record
+                    db.execute(
+                        text("UPDATE user_application_access SET has_access = TRUE, granted_by = :user_id, granted_at = NOW() WHERE id = :access_id"),
+                        {"user_id": user_id, "access_id": access_id}
+                    )
                     applications_granted.append(f"Updated {app_name}")
                     logger.info(f"✅ Updated application access for {app_name}")
                 else:
                     applications_granted.append(f"Already had {app_name}")
             else:
                 # Create new access record
-                new_access = UserApplicationAccess(
-                    user_id=user.id,
-                    application=app_name,
-                    has_access=True,
-                    granted_by=user.id  # Self-granted for emergency
+                db.execute(
+                    text("INSERT INTO user_application_access (user_id, application, has_access, granted_by, granted_at) VALUES (:user_id, :app_name, TRUE, :granted_by, NOW())"),
+                    {"user_id": user_id, "app_name": app_name, "granted_by": user_id}
                 )
-                db.add(new_access)
                 applications_granted.append(f"Granted {app_name}")
                 logger.info(f"✅ Granted application access for {app_name}")
         
@@ -283,16 +286,15 @@ async def emergency_admin_setup(
             )
         
         # Step 5: Verify the changes
-        db.refresh(user)
-        final_role = user.role
+        result = db.execute(text("SELECT role FROM users WHERE id = :user_id"), {"user_id": user_id})
+        final_role = result.fetchone()[0]
         
-        # Verify application access
-        user_app_access = db.query(UserApplicationAccess).filter(
-            UserApplicationAccess.user_id == user.id,
-            UserApplicationAccess.has_access == True
-        ).all()
-        
-        accessible_apps = [access.application for access in user_app_access]
+        # Get accessible applications
+        result = db.execute(
+            text("SELECT application FROM user_application_access WHERE user_id = :user_id AND has_access = TRUE"),
+            {"user_id": user_id}
+        )
+        accessible_apps = [row[0] for row in result.fetchall()]
         
         success_response = {
             "status": "SUCCESS",
@@ -300,15 +302,15 @@ async def emergency_admin_setup(
             "changes_made": {
                 "user_found": True,
                 "role_changed": {
-                    "from": original_role.value,
-                    "to": final_role.value
+                    "from": original_role,
+                    "to": final_role
                 },
                 "application_access_granted": applications_granted,
                 "accessible_applications": accessible_apps
             },
             "epic_access_verification": {
-                "can_access_module_management": final_role == UserRole.admin,
-                "can_access_feature_flags": final_role == UserRole.admin,
+                "can_access_module_management": final_role == "admin",
+                "can_access_feature_flags": final_role == "admin",
                 "admin_endpoints_available": True
             },
             "next_steps": [
