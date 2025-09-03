@@ -233,12 +233,15 @@ async def login_oauth2(
     except HTTPException:
         raise
     except Exception as e:
+        import traceback
         logger.error(f"OAuth2 authentication error: {e}", extra={
             "event": "oauth2_auth_error",
             "error_type": type(e).__name__,
+            "error_message": str(e),
+            "traceback": traceback.format_exc(),
             "client_ip": client_ip
         })
-        raise HTTPException(status_code=500, detail="Internal server error during authentication")
+        raise HTTPException(status_code=500, detail=f"Internal server error during authentication: {type(e).__name__}: {str(e)}")
 
 
 async def _create_or_update_user_from_auth0(db: Session, user_info: dict, client_ip: str) -> User:
@@ -364,6 +367,9 @@ async def login(
     
     # Rate limiting check - prevent brute force attacks
     client_ip = request.client.host if request.client else "unknown"
+    
+    # Initialize login_data to None for proper handling
+    login_data = None
     
     # Handle both JSON and form data
     if login_data is None:
