@@ -143,8 +143,9 @@ async def login(
     response: Response, 
     request: Request, 
     db: Session = Depends(get_db),
-    # Support JSON body (OAuth2) or form data (legacy)
-    login_data: Optional[LoginRequest] = Body(None),
+    # Primary: JSON body for OAuth2
+    login_data: Optional[LoginRequest] = None,
+    # Fallback: Form data for legacy
     code: Optional[str] = Form(None),
     redirect_uri: Optional[str] = Form(None),
     state: Optional[str] = Form(None)
@@ -159,9 +160,39 @@ async def login(
     client_ip = request.client.host if request.client else "unknown"
     
     # Handle both JSON and form data
+    if login_data is None:
+        # Try to parse JSON body manually if FastAPI didn't bind it
+        try:
+            body = await request.body()
+            if body:
+                import json
+                json_data = json.loads(body.decode('utf-8'))
+                if 'code' in json_data and 'redirect_uri' in json_data:
+                    login_data = LoginRequest(**json_data)
+                    logger.info("Successfully parsed JSON body manually", extra={
+                        "event": "manual_json_parse",
+                        "has_code": bool(json_data.get('code')),
+                        "has_redirect_uri": bool(json_data.get('redirect_uri'))
+                    })
+        except Exception as json_error:
+            logger.warning(f"Failed to parse JSON body: {json_error}", extra={
+                "event": "json_parse_error",
+                "error": str(json_error)
+            })
+    
+    # Fallback to form data if JSON parsing failed
     if login_data is None and code is not None:
         login_data = LoginRequest(code=code, redirect_uri=redirect_uri, state=state)
+        logger.info("Using form data for authentication", extra={
+            "event": "form_data_auth",
+            "has_code": bool(code),
+            "has_redirect_uri": bool(redirect_uri)
+        })
     elif login_data is None:
+        logger.error("No authentication data provided", extra={
+            "event": "missing_auth_data",
+            "content_type": request.headers.get("content-type")
+        })
         raise HTTPException(status_code=400, detail="Missing authentication data")
     
     # Additional input validation and sanitization
