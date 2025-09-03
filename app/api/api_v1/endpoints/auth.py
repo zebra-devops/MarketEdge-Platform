@@ -138,6 +138,108 @@ class LogoutRequest(BaseModel):
     all_devices: bool = False
 
 
+@router.post("/login-oauth2", response_model=TokenResponse)
+async def login_oauth2(
+    login_data: LoginRequest,
+    response: Response,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """OAuth2 authentication endpoint for JSON requests"""
+    # Add security headers
+    security_headers = create_security_headers()
+    for key, value in security_headers.items():
+        response.headers[key] = value
+    
+    # Rate limiting check
+    client_ip = request.client.host if request.client else "unknown"
+    
+    logger.info("OAuth2 authentication request received", extra={
+        "event": "oauth2_auth_start",
+        "client_ip": client_ip,
+        "has_code": bool(login_data.code),
+        "redirect_uri": login_data.redirect_uri
+    })
+    
+    try:
+        # Validate and sanitize input parameters
+        validated_code = sanitize_string_input(login_data.code, max_length=500)
+        validated_redirect_uri = sanitize_string_input(login_data.redirect_uri, max_length=200)
+        validated_state = sanitize_string_input(login_data.state, max_length=100) if login_data.state else None
+        
+        validator = AuthParameterValidator(
+            code=validated_code,
+            redirect_uri=validated_redirect_uri,
+            state=validated_state
+        )
+        
+        if not validator.is_valid():
+            logger.warning("OAuth2 validation failed", extra={
+                "event": "oauth2_validation_failed",
+                "errors": validator.errors,
+                "client_ip": client_ip
+            })
+            raise HTTPException(status_code=400, detail="Invalid authentication parameters")
+        
+        # Exchange authorization code for tokens
+        tokens = await auth0_client.exchange_code_for_tokens(
+            code=validated_code,
+            redirect_uri=validated_redirect_uri
+        )
+        
+        if not tokens or not tokens.get('access_token'):
+            logger.error("OAuth2 token exchange failed", extra={
+                "event": "oauth2_token_exchange_failed",
+                "client_ip": client_ip
+            })
+            raise HTTPException(status_code=401, detail="Authentication failed")
+        
+        # Get user info from Auth0
+        user_info = await auth0_client.get_user_info(tokens['access_token'])
+        if not user_info:
+            logger.error("Failed to retrieve user info from Auth0", extra={
+                "event": "oauth2_user_info_failed",
+                "client_ip": client_ip
+            })
+            raise HTTPException(status_code=401, detail="Failed to retrieve user information")
+        
+        # Create or update user in database
+        user = await _create_or_update_user_from_auth0(db, user_info, client_ip)
+        
+        # Create tokens
+        access_token = create_access_token(
+            data={"sub": str(user.id), "tenant_id": str(user.organisation_id), "role": user.role}
+        )
+        refresh_token = create_refresh_token(data={"sub": str(user.id)})
+        
+        logger.info("OAuth2 authentication successful", extra={
+            "event": "oauth2_auth_success",
+            "user_id": str(user.id),
+            "tenant_id": str(user.organisation_id),
+            "client_ip": client_ip
+        })
+        
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=3600,
+            user=user,
+            tenant=user.organisation,
+            permissions=get_user_permissions(user.role)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"OAuth2 authentication error: {e}", extra={
+            "event": "oauth2_auth_error",
+            "error_type": type(e).__name__,
+            "client_ip": client_ip
+        })
+        raise HTTPException(status_code=500, detail="Internal server error during authentication")
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(
     response: Response, 

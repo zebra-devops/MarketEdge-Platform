@@ -75,19 +75,24 @@ export class AuthService {
     console.log('OAuth2: Exchanging authorization code for tokens')
     
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
-    const authUrl = `${baseUrl}/api/v1/auth/login`
+    const authUrl = `${baseUrl}/api/v1/auth/login-oauth2`
+    
+    const requestBody = {
+      code: loginData.code,
+      redirect_uri: loginData.redirect_uri,
+      ...(loginData.state && { state: loginData.state })
+    }
+    
+    console.log('OAuth2: Sending request body:', requestBody)
     
     const response = await fetch(authUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       credentials: 'include',
-      body: JSON.stringify({
-        code: loginData.code,
-        redirect_uri: loginData.redirect_uri,
-        state: loginData.state
-      })
+      body: JSON.stringify(requestBody)
     })
     
     if (!response.ok) {
