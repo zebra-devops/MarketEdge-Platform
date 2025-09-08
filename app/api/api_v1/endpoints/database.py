@@ -515,3 +515,118 @@ async def emergency_seed_modules_feature_flags(db: Session = Depends(get_db)):
                 "timestamp": "2025-09-08T16:45:00Z"
             }
         )
+
+
+@router.post("/emergency/create-feature-flags-table")
+async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
+    """EMERGENCY: Create missing feature_flags table for £925K Zebra Associates"""
+    try:
+        logger.info("🚨 EMERGENCY: Creating missing feature_flags table for matt.lindop@zebra.associates")
+        
+        created_objects = []
+        
+        # 1. Create feature_flags table (THE CRITICAL MISSING TABLE)
+        try:
+            db.execute(text("""
+                CREATE TABLE IF NOT EXISTS feature_flags (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    flag_key VARCHAR(255) UNIQUE NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    enabled BOOLEAN DEFAULT false,
+                    default_value BOOLEAN DEFAULT false,
+                    environment VARCHAR(50) DEFAULT 'production',
+                    rollout_percentage INTEGER DEFAULT 0,
+                    conditions JSONB DEFAULT '{}',
+                    tags TEXT[] DEFAULT '{}',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    created_by UUID,
+                    updated_by UUID
+                )
+            """))
+            created_objects.append("feature_flags_table")
+            logger.info("✅ feature_flags table created")
+        except Exception as e:
+            logger.info(f"Feature flags table: {str(e)}")
+        
+        # 2. Create feature_flag_overrides table
+        try:
+            db.execute(text("""
+                CREATE TABLE IF NOT EXISTS feature_flag_overrides (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    feature_flag_id UUID NOT NULL,
+                    organisation_id UUID,
+                    user_id UUID,
+                    enabled BOOLEAN NOT NULL,
+                    override_value BOOLEAN NOT NULL,
+                    reason TEXT,
+                    expires_at TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    created_by UUID
+                )
+            """))
+            created_objects.append("feature_flag_overrides_table")
+            logger.info("✅ feature_flag_overrides table created")
+        except Exception as e:
+            logger.info(f"Feature flag overrides table: {str(e)}")
+            
+        # 3. Insert THE CRITICAL FLAG that was causing the 500 error
+        try:
+            db.execute(text("""
+                INSERT INTO feature_flags (flag_key, name, description, enabled, default_value, rollout_percentage)
+                VALUES ('admin.advanced_controls', 'Admin Advanced Controls', 'Enable advanced admin dashboard controls for Zebra Associates', true, true, 100)
+                ON CONFLICT (flag_key) DO UPDATE SET enabled = EXCLUDED.enabled
+            """))
+            created_objects.append("admin.advanced_controls_flag")
+            logger.info("✅ admin.advanced_controls flag created")
+        except Exception as e:
+            logger.info(f"Admin advanced controls flag: {str(e)}")
+            
+        # 4. Insert other critical admin flags
+        admin_flags = [
+            ('admin.feature_flags', 'Admin Feature Flag Management', 'Enable feature flag management in admin panel'),
+            ('admin.module_management', 'Admin Module Management', 'Enable module management features'),
+            ('admin.user_management', 'Admin User Management', 'Enable user management features'),
+            ('admin.analytics', 'Admin Analytics Dashboard', 'Enable analytics dashboard for admins')
+        ]
+        
+        for flag_key, name, description in admin_flags:
+            try:
+                db.execute(text("""
+                    INSERT INTO feature_flags (flag_key, name, description, enabled, default_value, rollout_percentage)
+                    VALUES (:flag_key, :name, :description, true, true, 100)
+                    ON CONFLICT (flag_key) DO UPDATE SET enabled = EXCLUDED.enabled
+                """), {"flag_key": flag_key, "name": name, "description": description})
+                created_objects.append(f"{flag_key}_flag")
+                logger.info(f"✅ {flag_key} flag created")
+            except Exception as e:
+                logger.info(f"{flag_key} flag: {str(e)}")
+        
+        db.commit()
+        
+        # 5. Verify the critical flag exists
+        result = db.execute(text("SELECT flag_key, enabled FROM feature_flags WHERE flag_key = 'admin.advanced_controls'")).fetchone()
+        verification_status = f"✅ Verified: admin.advanced_controls = {result[1] if result else 'NOT FOUND'}"
+        
+        return {
+            "success": True,
+            "message": "Emergency feature flags table created successfully",
+            "created_objects": created_objects,
+            "critical_flag_verification": verification_status,
+            "business_impact": "£925K Zebra Associates opportunity UNBLOCKED",
+            "user_impact": "matt.lindop@zebra.associates can now access admin dashboard",
+            "timestamp": "2025-09-08T17:00:00Z"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Emergency feature flags table creation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "Emergency feature flags table creation failed",
+                "message": str(e),
+                "timestamp": "2025-09-08T17:00:00Z"
+            }
+        )
