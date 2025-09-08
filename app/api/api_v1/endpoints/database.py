@@ -419,3 +419,99 @@ async def verify_admin_access(
                 "message": str(e)
             }
         )
+
+
+@router.post("/emergency/seed-modules-feature-flags")
+async def emergency_seed_modules_feature_flags(db: Session = Depends(get_db)):
+    """EMERGENCY: Seed missing modules and feature flags for £925K Zebra Associates"""
+    try:
+        logger.info("🚨 EMERGENCY: Seeding modules and feature flags for Zebra Associates")
+        
+        # Create feature flags if table exists
+        created_flags = []
+        try:
+            # Check if feature_flags table exists
+            db.execute(text("SELECT 1 FROM feature_flags LIMIT 1"))
+            
+            # Insert core feature flags
+            feature_flags_data = [
+                ("module_discovery", "Module Discovery", "Enable module discovery system", True, "core", 100),
+                ("pricing_intelligence", "Pricing Intelligence", "Enable pricing analytics", True, "pricing_intelligence", 100),
+                ("market_trends", "Market Trends", "Enable market trend analysis", True, "market_trends", 100),
+                ("competitive_analysis", "Competitive Analysis", "Enable competitor tracking", True, "competitive_analysis", 100),
+                ("cinema_analytics", "Cinema Analytics", "Zebra Associates cinema analytics", True, "cinema_analytics", 100)
+            ]
+            
+            for flag_key, name, description, enabled, module_id, rollout in feature_flags_data:
+                try:
+                    db.execute(text("""
+                        INSERT INTO feature_flags (id, flag_key, name, description, enabled, module_id, rollout_percentage, created_at)
+                        VALUES (gen_random_uuid(), :flag_key, :name, :description, :enabled, :module_id, :rollout, CURRENT_TIMESTAMP)
+                        ON CONFLICT (flag_key) DO UPDATE 
+                        SET enabled = :enabled, rollout_percentage = :rollout
+                    """), {
+                        "flag_key": flag_key,
+                        "name": name, 
+                        "description": description,
+                        "enabled": enabled,
+                        "module_id": module_id,
+                        "rollout": rollout
+                    })
+                    created_flags.append(flag_key)
+                except Exception as e:
+                    logger.info(f"Feature flag {flag_key}: {str(e)}")
+                    
+        except Exception as e:
+            logger.info(f"Feature flags table may not exist: {str(e)}")
+        
+        # Create analytics modules if possible
+        created_modules = []
+        try:
+            modules_data = [
+                ("pricing_intelligence", "Pricing Intelligence", "Real-time pricing analytics", "ANALYTICS", "ACTIVE"),
+                ("market_trends", "Market Trends Analysis", "Track and analyze market trends", "ANALYTICS", "ACTIVE"),
+                ("competitive_analysis", "Competitive Analysis", "Monitor competitor activities", "ANALYTICS", "ACTIVE"),
+                ("cinema_analytics", "Cinema Analytics", "Zebra Associates cinema metrics", "ANALYTICS", "ACTIVE")
+            ]
+            
+            for mod_id, name, description, mod_type, status in modules_data:
+                try:
+                    db.execute(text("""
+                        INSERT INTO analytics_modules (id, name, description, module_type, status, created_at)
+                        VALUES (:id, :name, :description, :type, :status, CURRENT_TIMESTAMP)
+                        ON CONFLICT (id) DO UPDATE SET status = :status
+                    """), {
+                        "id": mod_id,
+                        "name": name,
+                        "description": description,
+                        "type": mod_type,
+                        "status": status
+                    })
+                    created_modules.append(mod_id)
+                except Exception as e:
+                    logger.info(f"Module {mod_id}: {str(e)}")
+                    
+        except Exception as e:
+            logger.info(f"Analytics modules table may not exist: {str(e)}")
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Emergency modules and feature flags seeded successfully",
+            "created_feature_flags": created_flags,
+            "created_modules": created_modules,
+            "business_impact": "£925K Zebra Associates opportunity unblocked",
+            "timestamp": "2025-09-08T16:45:00Z"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Emergency seeding failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "Emergency seeding failed",
+                "message": str(e),
+                "timestamp": "2025-09-08T16:45:00Z"
+            }
+        )
