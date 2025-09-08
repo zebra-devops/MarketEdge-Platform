@@ -445,10 +445,10 @@ async def emergency_seed_modules_feature_flags(db: Session = Depends(get_db)):
             for flag_key, name, description, enabled, module_id, rollout in feature_flags_data:
                 try:
                     db.execute(text("""
-                        INSERT INTO feature_flags (id, flag_key, name, description, enabled, module_id, rollout_percentage, created_at)
+                        INSERT INTO feature_flags (id, flag_key, name, description, is_enabled, module_id, rollout_percentage, created_at)
                         VALUES (gen_random_uuid(), :flag_key, :name, :description, :enabled, :module_id, :rollout, CURRENT_TIMESTAMP)
                         ON CONFLICT (flag_key) DO UPDATE 
-                        SET enabled = :enabled, rollout_percentage = :rollout
+                        SET is_enabled = :enabled, rollout_percentage = :rollout
                     """), {
                         "flag_key": flag_key,
                         "name": name, 
@@ -533,7 +533,7 @@ async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
                     flag_key VARCHAR(255) UNIQUE NOT NULL,
                     name VARCHAR(255) NOT NULL,
                     description TEXT,
-                    enabled BOOLEAN DEFAULT false,
+                    is_enabled BOOLEAN DEFAULT false,
                     default_value BOOLEAN DEFAULT false,
                     environment VARCHAR(50) DEFAULT 'production',
                     rollout_percentage INTEGER DEFAULT 0,
@@ -549,6 +549,18 @@ async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
             logger.info("✅ feature_flags table created")
         except Exception as e:
             logger.info(f"Feature flags table: {str(e)}")
+            
+        # 1.5. Fix column name mismatch if table already exists with 'enabled' column
+        try:
+            # Check if we have 'enabled' column instead of 'is_enabled'
+            result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'feature_flags' AND column_name = 'enabled'")).fetchone()
+            if result:
+                logger.info("🔧 Found 'enabled' column, renaming to 'is_enabled' to fix application mismatch")
+                db.execute(text("ALTER TABLE feature_flags RENAME COLUMN enabled TO is_enabled"))
+                created_objects.append("renamed_enabled_to_is_enabled")
+                logger.info("✅ Column renamed from 'enabled' to 'is_enabled'")
+        except Exception as e:
+            logger.info(f"Column rename check: {str(e)}")
         
         # 2. Create feature_flag_overrides table
         try:
@@ -575,9 +587,9 @@ async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
         # 3. Insert THE CRITICAL FLAG that was causing the 500 error
         try:
             db.execute(text("""
-                INSERT INTO feature_flags (flag_key, name, description, enabled, default_value, rollout_percentage)
+                INSERT INTO feature_flags (flag_key, name, description, is_enabled, default_value, rollout_percentage)
                 VALUES ('admin.advanced_controls', 'Admin Advanced Controls', 'Enable advanced admin dashboard controls for Zebra Associates', true, true, 100)
-                ON CONFLICT (flag_key) DO UPDATE SET enabled = EXCLUDED.enabled
+                ON CONFLICT (flag_key) DO UPDATE SET is_enabled = EXCLUDED.is_enabled
             """))
             created_objects.append("admin.advanced_controls_flag")
             logger.info("✅ admin.advanced_controls flag created")
@@ -595,9 +607,9 @@ async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
         for flag_key, name, description in admin_flags:
             try:
                 db.execute(text("""
-                    INSERT INTO feature_flags (flag_key, name, description, enabled, default_value, rollout_percentage)
+                    INSERT INTO feature_flags (flag_key, name, description, is_enabled, default_value, rollout_percentage)
                     VALUES (:flag_key, :name, :description, true, true, 100)
-                    ON CONFLICT (flag_key) DO UPDATE SET enabled = EXCLUDED.enabled
+                    ON CONFLICT (flag_key) DO UPDATE SET is_enabled = EXCLUDED.is_enabled
                 """), {"flag_key": flag_key, "name": name, "description": description})
                 created_objects.append(f"{flag_key}_flag")
                 logger.info(f"✅ {flag_key} flag created")
@@ -607,7 +619,7 @@ async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
         db.commit()
         
         # 5. Verify the critical flag exists
-        result = db.execute(text("SELECT flag_key, enabled FROM feature_flags WHERE flag_key = 'admin.advanced_controls'")).fetchone()
+        result = db.execute(text("SELECT flag_key, is_enabled FROM feature_flags WHERE flag_key = 'admin.advanced_controls'")).fetchone()
         verification_status = f"✅ Verified: admin.advanced_controls = {result[1] if result else 'NOT FOUND'}"
         
         return {
