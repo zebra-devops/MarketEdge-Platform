@@ -9,6 +9,7 @@ import {
   ExclamationTriangleIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
+import { apiService } from '@/services/api';
 
 interface AdminStatsData {
   feature_flags: {
@@ -105,20 +106,12 @@ export const AdminStats: React.FC = () => {
   const fetchStats = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/v1/admin/dashboard/stats', {
-        headers: {
-          'Authorization': `Bearer ${document.cookie.split('access_token=')[1]?.split(';')[0]}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch admin statistics');
-      }
-
-      const data = await response.json();
+      // Use the properly configured API service instead of fetch with relative URL
+      const data = await apiService.get<AdminStatsData>('/admin/dashboard/stats');
       setStats(data);
       setError(null);
     } catch (err) {
+      console.error('Failed to fetch admin stats:', err);
       setError(err instanceof Error ? err.message : 'Failed to load statistics');
     } finally {
       setIsLoading(false);

@@ -58,7 +58,13 @@ export function useModuleFeatureFlags(
     staleTime: mergedOptions.staleTime,
     refetchInterval: mergedOptions.refetchInterval,
     onError: (error) => {
-      console.warn('Module feature flags check failed:', error)
+      console.error('🚨 EMERGENCY: Module feature flags check failed for Zebra Associates:', error)
+      // Log additional debug info for emergency troubleshooting
+      console.error('Error details:', {
+        message: error?.message,
+        status: error?.status,
+        response: error?.response
+      })
     },
   })
 
@@ -76,14 +82,34 @@ export function useModuleFeatureFlags(
 
   if (query.data) {
     query.data.forEach(moduleData => {
-      const moduleId = moduleData.module.id
-      const hasRequiredFlags = moduleData.module.required_flags.every(
-        flagKey => moduleData.enabled_flags[flagKey]?.enabled
-      )
+      // EMERGENCY FIX: Handle both new format (from getModulesWithFlags) and legacy format
+      let moduleId: string
+      let hasRequiredFlags = true // Default to true for emergency modules
+      let healthStatus = 'healthy'
+      let availableCapabilities: string[] = []
+      
+      if (moduleData.module && moduleData.module.id) {
+        // New expected format
+        moduleId = moduleData.module.id
+        hasRequiredFlags = moduleData.module.required_flags?.every(
+          flagKey => moduleData.enabled_flags[flagKey]?.enabled
+        ) ?? true
+        healthStatus = moduleData.health_status || 'healthy'
+        availableCapabilities = moduleData.available_capabilities || []
+      } else if (moduleData.module_id) {
+        // Fallback format from API service
+        moduleId = moduleData.module_id
+        healthStatus = moduleData.health_status || 'healthy'
+        availableCapabilities = moduleData.available_capabilities || []
+      } else {
+        // Emergency fallback - treat as simple string or object
+        console.warn('Unknown module data format, using emergency handling:', moduleData)
+        moduleId = typeof moduleData === 'string' ? moduleData : 
+                  moduleData.id || moduleData.module_id || 'unknown_module'
+      }
 
       // Module is enabled if all required flags are enabled
-      const moduleEnabled = hasRequiredFlags && 
-        moduleData.health_status !== 'unavailable'
+      const moduleEnabled = hasRequiredFlags && healthStatus !== 'unavailable'
 
       moduleFlags[moduleId] = moduleEnabled
       
@@ -93,14 +119,18 @@ export function useModuleFeatureFlags(
         disabledModules.push(moduleId)
       }
 
-      // Collect module configurations
+      // Collect module configurations with safe access
       moduleConfigs[moduleId] = {}
-      Object.entries(moduleData.enabled_flags).forEach(([flagKey, flagData]) => {
-        moduleConfigs[moduleId][flagKey] = flagData.config || {}
-      })
+      if (moduleData.enabled_flags && typeof moduleData.enabled_flags === 'object') {
+        Object.entries(moduleData.enabled_flags).forEach(([flagKey, flagData]) => {
+          if (flagData && typeof flagData === 'object') {
+            moduleConfigs[moduleId][flagKey] = flagData.config || {}
+          }
+        })
+      }
 
       // Collect capabilities
-      moduleCapabilities[moduleId] = moduleData.available_capabilities
+      moduleCapabilities[moduleId] = availableCapabilities
     })
   }
 
@@ -141,7 +171,14 @@ export function useModuleDiscovery(
     staleTime: mergedOptions.staleTime,
     refetchInterval: mergedOptions.refetchInterval,
     onError: (error) => {
-      console.warn('Module discovery failed:', error)
+      console.error('🚨 CRITICAL: Module discovery failed for Zebra Associates:', error)
+      // Enhanced error logging for emergency troubleshooting
+      console.error('Discovery error details:', {
+        message: error?.message,
+        status: error?.response?.status,
+        url: error?.config?.url,
+        data: error?.response?.data
+      })
     },
   })
 
@@ -151,12 +188,12 @@ export function useModuleDiscovery(
   }
 
   return {
-    enabledModules: query.data?.enabled_modules || [],
-    disabledModules: query.data?.disabled_modules || [],
+    enabledModules: query.data?.available_modules?.filter(m => m.enabled) || query.data?.enabled_modules || [],
+    disabledModules: query.data?.available_modules?.filter(m => !m.enabled) || query.data?.disabled_modules || [],
     isLoading: query.isLoading,
     error: query.error instanceof Error ? query.error : null,
-    totalAvailable: query.data?.total_available || 0,
-    userAccessible: query.data?.user_accessible || 0,
+    totalAvailable: query.data?.total_modules || query.data?.total_available || 0,
+    userAccessible: query.data?.enabled_modules || query.data?.user_accessible || 0,
     refresh,
     lastUpdated: query.dataUpdatedAt ? new Date(query.dataUpdatedAt) : undefined,
   }

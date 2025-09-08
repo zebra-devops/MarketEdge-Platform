@@ -535,6 +535,7 @@ async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
                     description TEXT,
                     is_enabled BOOLEAN DEFAULT false,
                     default_value BOOLEAN DEFAULT false,
+                    scope VARCHAR(50) DEFAULT 'global',
                     environment VARCHAR(50) DEFAULT 'production',
                     rollout_percentage INTEGER DEFAULT 0,
                     conditions JSONB DEFAULT '{}',
@@ -561,6 +562,17 @@ async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
                 logger.info("✅ Column renamed from 'enabled' to 'is_enabled'")
         except Exception as e:
             logger.info(f"Column rename check: {str(e)}")
+        
+        # 1.6. Add missing 'scope' column if it doesn't exist
+        try:
+            result = db.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'feature_flags' AND column_name = 'scope'")).fetchone()
+            if not result:
+                logger.info("🔧 Missing 'scope' column detected, adding to fix feature flag queries")
+                db.execute(text("ALTER TABLE feature_flags ADD COLUMN IF NOT EXISTS scope VARCHAR(50) DEFAULT 'global'"))
+                created_objects.append("added_scope_column")
+                logger.info("✅ Column 'scope' added to feature_flags table")
+        except Exception as e:
+            logger.info(f"Scope column check: {str(e)}")
         
         # 2. Create feature_flag_overrides table
         try:
