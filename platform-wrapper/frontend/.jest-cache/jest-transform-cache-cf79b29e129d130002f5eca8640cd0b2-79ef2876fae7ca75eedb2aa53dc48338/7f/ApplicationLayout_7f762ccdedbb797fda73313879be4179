@@ -1,0 +1,637 @@
+0d775b17292b7cdfed2fb286fd3cbe84
+"use client";
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "default", {
+    enumerable: true,
+    get: function() {
+        return ApplicationLayout;
+    }
+});
+const _jsxruntime = require("react/jsx-runtime");
+const _style = /*#__PURE__*/ _interop_require_default(require("styled-jsx/style"));
+const _react = /*#__PURE__*/ _interop_require_wildcard(require("react"));
+const _useAuth = require("../../hooks/useAuth");
+const _navigation = require("next/navigation");
+const _outline = require("@heroicons/react/24/outline");
+const _react1 = require("@headlessui/react");
+const _ApplicationIcons = /*#__PURE__*/ _interop_require_default(require("../ui/ApplicationIcons"));
+const _AccountMenu = require("../ui/AccountMenu");
+const _applicationaccess = require("../../utils/application-access");
+function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}
+function _getRequireWildcardCache(nodeInterop) {
+    if (typeof WeakMap !== "function") return null;
+    var cacheBabelInterop = new WeakMap();
+    var cacheNodeInterop = new WeakMap();
+    return (_getRequireWildcardCache = function(nodeInterop) {
+        return nodeInterop ? cacheNodeInterop : cacheBabelInterop;
+    })(nodeInterop);
+}
+function _interop_require_wildcard(obj, nodeInterop) {
+    if (!nodeInterop && obj && obj.__esModule) {
+        return obj;
+    }
+    if (obj === null || typeof obj !== "object" && typeof obj !== "function") {
+        return {
+            default: obj
+        };
+    }
+    var cache = _getRequireWildcardCache(nodeInterop);
+    if (cache && cache.has(obj)) {
+        return cache.get(obj);
+    }
+    var newObj = {
+        __proto__: null
+    };
+    var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor;
+    for(var key in obj){
+        if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) {
+            var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null;
+            if (desc && (desc.get || desc.set)) {
+                Object.defineProperty(newObj, key, desc);
+            } else {
+                newObj[key] = obj[key];
+            }
+        }
+    }
+    newObj.default = obj;
+    if (cache) {
+        cache.set(obj, newObj);
+    }
+    return newObj;
+}
+const applicationIcons = {
+    market_edge: _outline.ChartBarIcon,
+    causal_edge: _outline.CogIcon,
+    value_edge: _outline.EyeIcon
+};
+function ApplicationLayout({ children, application, className = "" }) {
+    const { user, isLoading } = (0, _useAuth.useAuthContext)();
+    const router = (0, _navigation.useRouter)();
+    const pathname = (0, _navigation.usePathname)();
+    const [mobileMenuOpen, setMobileMenuOpen] = (0, _react.useState)(false);
+    // Get application info
+    const appInfo = (0, _applicationaccess.getApplicationInfo)(application);
+    const IconComponent = applicationIcons[application];
+    // Check if user has access to this application
+    const hasAccess = (0, _applicationaccess.hasApplicationAccess)(user?.application_access, application);
+    // Redirect if no access
+    _react.default.useEffect(()=>{
+        if (!isLoading && user && !hasAccess) {
+            router.push("/dashboard");
+        }
+    }, [
+        user,
+        hasAccess,
+        isLoading,
+        router
+    ]);
+    if (isLoading || !user || !hasAccess) {
+        return /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+            className: "flex items-center justify-center min-h-screen",
+            children: /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                className: "animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"
+            })
+        });
+    }
+    return /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+        className: _style.default.dynamic([
+            [
+                "12c78c4aeadf61fc",
+                [
+                    appInfo.themeColor,
+                    appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                    appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                    appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                ]
+            ]
+        ]) + " " + `min-h-screen bg-gray-50 app-theme-${appInfo.themeColor} transition-theme ${className}`,
+        children: [
+            /*#__PURE__*/ (0, _jsxruntime.jsx)(_react1.Transition.Root, {
+                show: mobileMenuOpen,
+                as: _react.Fragment,
+                children: /*#__PURE__*/ (0, _jsxruntime.jsxs)(_react1.Dialog, {
+                    as: "div",
+                    className: "relative z-50 lg:hidden",
+                    onClose: setMobileMenuOpen,
+                    children: [
+                        /*#__PURE__*/ (0, _jsxruntime.jsx)(_react1.Transition.Child, {
+                            as: _react.Fragment,
+                            enter: "transition-opacity ease-linear duration-300",
+                            enterFrom: "opacity-0",
+                            enterTo: "opacity-100",
+                            leave: "transition-opacity ease-linear duration-300",
+                            leaveFrom: "opacity-100",
+                            leaveTo: "opacity-0",
+                            children: /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                className: _style.default.dynamic([
+                                    [
+                                        "12c78c4aeadf61fc",
+                                        [
+                                            appInfo.themeColor,
+                                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                        ]
+                                    ]
+                                ]) + " " + "fixed inset-0 bg-gray-900/80"
+                            })
+                        }),
+                        /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                            className: _style.default.dynamic([
+                                [
+                                    "12c78c4aeadf61fc",
+                                    [
+                                        appInfo.themeColor,
+                                        appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                        appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                        appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                    ]
+                                ]
+                            ]) + " " + "fixed inset-0 flex",
+                            children: /*#__PURE__*/ (0, _jsxruntime.jsx)(_react1.Transition.Child, {
+                                as: _react.Fragment,
+                                enter: "transition ease-in-out duration-300 transform",
+                                enterFrom: "-translate-x-full",
+                                enterTo: "translate-x-0",
+                                leave: "transition ease-in-out duration-300 transform",
+                                leaveFrom: "translate-x-0",
+                                leaveTo: "-translate-x-full",
+                                children: /*#__PURE__*/ (0, _jsxruntime.jsxs)(_react1.Dialog.Panel, {
+                                    className: "relative mr-16 flex w-full max-w-xs flex-1",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxruntime.jsx)(_react1.Transition.Child, {
+                                            as: _react.Fragment,
+                                            enter: "ease-in-out duration-300",
+                                            enterFrom: "opacity-0",
+                                            enterTo: "opacity-100",
+                                            leave: "ease-in-out duration-300",
+                                            leaveFrom: "opacity-100",
+                                            leaveTo: "opacity-0",
+                                            children: /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                                className: _style.default.dynamic([
+                                                    [
+                                                        "12c78c4aeadf61fc",
+                                                        [
+                                                            appInfo.themeColor,
+                                                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                        ]
+                                                    ]
+                                                ]) + " " + "absolute left-full top-0 flex w-16 justify-center pt-5",
+                                                children: /*#__PURE__*/ (0, _jsxruntime.jsxs)("button", {
+                                                    type: "button",
+                                                    onClick: ()=>setMobileMenuOpen(false),
+                                                    className: _style.default.dynamic([
+                                                        [
+                                                            "12c78c4aeadf61fc",
+                                                            [
+                                                                appInfo.themeColor,
+                                                                appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                            ]
+                                                        ]
+                                                    ]) + " " + "-m-2.5 p-2.5",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, _jsxruntime.jsx)("span", {
+                                                            className: _style.default.dynamic([
+                                                                [
+                                                                    "12c78c4aeadf61fc",
+                                                                    [
+                                                                        appInfo.themeColor,
+                                                                        appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                        appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                        appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                                    ]
+                                                                ]
+                                                            ]) + " " + "sr-only",
+                                                            children: "Close sidebar"
+                                                        }),
+                                                        /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.XMarkIcon, {
+                                                            className: "h-6 w-6 text-white",
+                                                            "aria-hidden": "true"
+                                                        })
+                                                    ]
+                                                })
+                                            })
+                                        }),
+                                        /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                            className: _style.default.dynamic([
+                                                [
+                                                    "12c78c4aeadf61fc",
+                                                    [
+                                                        appInfo.themeColor,
+                                                        appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                        appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                        appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                    ]
+                                                ]
+                                            ]) + " " + "flex grow flex-col gap-y-5 overflow-y-auto bg-white px-6 pb-4",
+                                            children: [
+                                                /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                                    className: _style.default.dynamic([
+                                                        [
+                                                            "12c78c4aeadf61fc",
+                                                            [
+                                                                appInfo.themeColor,
+                                                                appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                            ]
+                                                        ]
+                                                    ]) + " " + "flex h-16 shrink-0 items-center",
+                                                    children: /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                                        className: _style.default.dynamic([
+                                                            [
+                                                                "12c78c4aeadf61fc",
+                                                                [
+                                                                    appInfo.themeColor,
+                                                                    appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                    appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                    appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                                ]
+                                                            ]
+                                                        ]) + " " + "flex items-center",
+                                                        children: [
+                                                            /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                                                className: _style.default.dynamic([
+                                                                    [
+                                                                        "12c78c4aeadf61fc",
+                                                                        [
+                                                                            appInfo.themeColor,
+                                                                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                                        ]
+                                                                    ]
+                                                                ]) + " " + `w-8 h-8 rounded-lg bg-gradient-to-br ${appInfo.color} flex items-center justify-center shadow-sm`,
+                                                                children: /*#__PURE__*/ (0, _jsxruntime.jsx)(IconComponent, {
+                                                                    className: _style.default.dynamic([
+                                                                        [
+                                                                            "12c78c4aeadf61fc",
+                                                                            [
+                                                                                appInfo.themeColor,
+                                                                                appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                                appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                                appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                                            ]
+                                                                        ]
+                                                                    ]) + " " + "h-5 w-5 text-white"
+                                                                })
+                                                            }),
+                                                            /*#__PURE__*/ (0, _jsxruntime.jsx)("h1", {
+                                                                className: _style.default.dynamic([
+                                                                    [
+                                                                        "12c78c4aeadf61fc",
+                                                                        [
+                                                                            appInfo.themeColor,
+                                                                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                                        ]
+                                                                    ]
+                                                                ]) + " " + "ml-3 text-lg font-bold text-gray-900",
+                                                                children: appInfo.name
+                                                            })
+                                                        ]
+                                                    })
+                                                }),
+                                                /*#__PURE__*/ (0, _jsxruntime.jsx)("nav", {
+                                                    className: _style.default.dynamic([
+                                                        [
+                                                            "12c78c4aeadf61fc",
+                                                            [
+                                                                appInfo.themeColor,
+                                                                appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                            ]
+                                                        ]
+                                                    ]) + " " + "flex flex-1 flex-col",
+                                                    children: /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                                        className: _style.default.dynamic([
+                                                            [
+                                                                "12c78c4aeadf61fc",
+                                                                [
+                                                                    appInfo.themeColor,
+                                                                    appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                    appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                    appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                                ]
+                                                            ]
+                                                        ]) + " " + "mb-4",
+                                                        children: /*#__PURE__*/ (0, _jsxruntime.jsx)(_ApplicationIcons.default, {
+                                                            userApplicationAccess: user?.application_access,
+                                                            className: "justify-start"
+                                                        })
+                                                    })
+                                                })
+                                            ]
+                                        })
+                                    ]
+                                })
+                            })
+                        })
+                    ]
+                })
+            }),
+            /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                className: _style.default.dynamic([
+                    [
+                        "12c78c4aeadf61fc",
+                        [
+                            appInfo.themeColor,
+                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                        ]
+                    ]
+                ]) + " " + "sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm",
+                children: /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                    className: _style.default.dynamic([
+                        [
+                            "12c78c4aeadf61fc",
+                            [
+                                appInfo.themeColor,
+                                appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                            ]
+                        ]
+                    ]) + " " + "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+                    children: /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                        className: _style.default.dynamic([
+                            [
+                                "12c78c4aeadf61fc",
+                                [
+                                    appInfo.themeColor,
+                                    appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                    appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                    appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                ]
+                            ]
+                        ]) + " " + "flex items-center justify-between h-16",
+                        children: [
+                            /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                className: _style.default.dynamic([
+                                    [
+                                        "12c78c4aeadf61fc",
+                                        [
+                                            appInfo.themeColor,
+                                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                        ]
+                                    ]
+                                ]) + " " + "flex items-center",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxruntime.jsxs)("button", {
+                                        type: "button",
+                                        onClick: ()=>setMobileMenuOpen(true),
+                                        className: _style.default.dynamic([
+                                            [
+                                                "12c78c4aeadf61fc",
+                                                [
+                                                    appInfo.themeColor,
+                                                    appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                    appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                    appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                ]
+                                            ]
+                                        ]) + " " + "-m-2.5 p-2.5 text-gray-700 lg:hidden",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)("span", {
+                                                className: _style.default.dynamic([
+                                                    [
+                                                        "12c78c4aeadf61fc",
+                                                        [
+                                                            appInfo.themeColor,
+                                                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                        ]
+                                                    ]
+                                                ]) + " " + "sr-only",
+                                                children: "Open main menu"
+                                            }),
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.Bars3Icon, {
+                                                className: "h-6 w-6",
+                                                "aria-hidden": "true"
+                                            })
+                                        ]
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                        className: _style.default.dynamic([
+                                            [
+                                                "12c78c4aeadf61fc",
+                                                [
+                                                    appInfo.themeColor,
+                                                    appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                    appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                    appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                ]
+                                            ]
+                                        ]) + " " + "hidden lg:flex lg:items-center",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                                className: _style.default.dynamic([
+                                                    [
+                                                        "12c78c4aeadf61fc",
+                                                        [
+                                                            appInfo.themeColor,
+                                                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                        ]
+                                                    ]
+                                                ]) + " " + `w-10 h-10 rounded-xl bg-gradient-to-br ${appInfo.color} flex items-center justify-center shadow-md`,
+                                                children: /*#__PURE__*/ (0, _jsxruntime.jsx)(IconComponent, {
+                                                    className: _style.default.dynamic([
+                                                        [
+                                                            "12c78c4aeadf61fc",
+                                                            [
+                                                                appInfo.themeColor,
+                                                                appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                            ]
+                                                        ]
+                                                    ]) + " " + "h-6 w-6 text-white"
+                                                })
+                                            }),
+                                            /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                                className: _style.default.dynamic([
+                                                    [
+                                                        "12c78c4aeadf61fc",
+                                                        [
+                                                            appInfo.themeColor,
+                                                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                        ]
+                                                    ]
+                                                ]) + " " + "ml-4",
+                                                children: [
+                                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("h1", {
+                                                        className: _style.default.dynamic([
+                                                            [
+                                                                "12c78c4aeadf61fc",
+                                                                [
+                                                                    appInfo.themeColor,
+                                                                    appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                    appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                    appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                                ]
+                                                            ]
+                                                        ]) + " " + "text-xl font-bold text-gray-900",
+                                                        children: appInfo.name
+                                                    }),
+                                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("p", {
+                                                        className: _style.default.dynamic([
+                                                            [
+                                                                "12c78c4aeadf61fc",
+                                                                [
+                                                                    appInfo.themeColor,
+                                                                    appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                                    appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                                    appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                                ]
+                                                            ]
+                                                        ]) + " " + "text-sm text-gray-600",
+                                                        children: appInfo.description
+                                                    })
+                                                ]
+                                            })
+                                        ]
+                                    })
+                                ]
+                            }),
+                            /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                className: _style.default.dynamic([
+                                    [
+                                        "12c78c4aeadf61fc",
+                                        [
+                                            appInfo.themeColor,
+                                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                        ]
+                                    ]
+                                ]) + " " + "flex items-center gap-4",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                        className: _style.default.dynamic([
+                                            [
+                                                "12c78c4aeadf61fc",
+                                                [
+                                                    appInfo.themeColor,
+                                                    appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                                    appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                                    appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                                ]
+                                            ]
+                                        ]) + " " + "hidden lg:block",
+                                        children: /*#__PURE__*/ (0, _jsxruntime.jsx)(_ApplicationIcons.default, {
+                                            userApplicationAccess: user?.application_access
+                                        })
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)(_AccountMenu.AccountMenu, {})
+                                ]
+                            })
+                        ]
+                    })
+                })
+            }),
+            /*#__PURE__*/ (0, _jsxruntime.jsx)("main", {
+                className: _style.default.dynamic([
+                    [
+                        "12c78c4aeadf61fc",
+                        [
+                            appInfo.themeColor,
+                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                        ]
+                    ]
+                ]) + " " + "flex-1",
+                children: children
+            }),
+            /*#__PURE__*/ (0, _jsxruntime.jsx)(_style.default, {
+                id: "12c78c4aeadf61fc",
+                dynamic: [
+                    appInfo.themeColor,
+                    appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                    appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                    appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                ],
+                children: `.app-theme-${appInfo.themeColor}{--primary-50:${appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)"};--primary-500:${appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)"};--primary-600:${appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"}}.transition-theme{-webkit-transition:background-color.3s ease,border-color.3s ease,color.3s ease;-moz-transition:background-color.3s ease,border-color.3s ease,color.3s ease;-o-transition:background-color.3s ease,border-color.3s ease,color.3s ease;transition:background-color.3s ease,border-color.3s ease,color.3s ease}`
+            }),
+            /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                id: "app-indicator",
+                className: _style.default.dynamic([
+                    [
+                        "12c78c4aeadf61fc",
+                        [
+                            appInfo.themeColor,
+                            appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                            appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                            appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                        ]
+                    ]
+                ]) + " " + `fixed bottom-4 left-4 px-3 py-2 rounded-full bg-gradient-to-r ${appInfo.color} text-white text-xs font-medium shadow-lg transition-all duration-500 transform translate-y-0 opacity-100`,
+                children: /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                    className: _style.default.dynamic([
+                        [
+                            "12c78c4aeadf61fc",
+                            [
+                                appInfo.themeColor,
+                                appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                            ]
+                        ]
+                    ]) + " " + "flex items-center space-x-2",
+                    children: [
+                        /*#__PURE__*/ (0, _jsxruntime.jsx)(IconComponent, {
+                            className: _style.default.dynamic([
+                                [
+                                    "12c78c4aeadf61fc",
+                                    [
+                                        appInfo.themeColor,
+                                        appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                        appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                        appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                    ]
+                                ]
+                            ]) + " " + "h-3 w-3"
+                        }),
+                        /*#__PURE__*/ (0, _jsxruntime.jsx)("span", {
+                            className: _style.default.dynamic([
+                                [
+                                    "12c78c4aeadf61fc",
+                                    [
+                                        appInfo.themeColor,
+                                        appInfo.themeColor === "blue" ? "rgb(239 246 255)" : appInfo.themeColor === "green" ? "rgb(240 253 244)" : "rgb(250 245 255)",
+                                        appInfo.themeColor === "blue" ? "rgb(59 130 246)" : appInfo.themeColor === "green" ? "rgb(34 197 94)" : "rgb(168 85 247)",
+                                        appInfo.themeColor === "blue" ? "rgb(37 99 235)" : appInfo.themeColor === "green" ? "rgb(22 163 74)" : "rgb(147 51 234)"
+                                    ]
+                                ]
+                            ]),
+                            children: appInfo.name
+                        })
+                    ]
+                })
+            })
+        ]
+    });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy9tYXR0L1NpdGVzL01hcmtldEVkZ2UvcGxhdGZvcm0td3JhcHBlci9mcm9udGVuZC9zcmMvY29tcG9uZW50cy9sYXlvdXQvQXBwbGljYXRpb25MYXlvdXQudHN4Il0sInNvdXJjZXNDb250ZW50IjpbIid1c2UgY2xpZW50J1xuXG5pbXBvcnQgUmVhY3QgZnJvbSAncmVhY3QnXG5pbXBvcnQgeyB1c2VBdXRoQ29udGV4dCB9IGZyb20gJ0AvaG9va3MvdXNlQXV0aCdcbmltcG9ydCB7IHVzZVJvdXRlciwgdXNlUGF0aG5hbWUgfSBmcm9tICduZXh0L25hdmlnYXRpb24nXG5pbXBvcnQgeyBcbiAgQ2hhcnRCYXJJY29uLFxuICBDb2dJY29uLFxuICBFeWVJY29uLFxuICBCYXJzM0ljb24sXG4gIFhNYXJrSWNvblxufSBmcm9tICdAaGVyb2ljb25zL3JlYWN0LzI0L291dGxpbmUnXG5pbXBvcnQgeyBGcmFnbWVudCwgdXNlU3RhdGUgfSBmcm9tICdyZWFjdCdcbmltcG9ydCB7IERpYWxvZywgVHJhbnNpdGlvbiB9IGZyb20gJ0BoZWFkbGVzc3VpL3JlYWN0J1xuaW1wb3J0IEFwcGxpY2F0aW9uSWNvbnMgZnJvbSAnQC9jb21wb25lbnRzL3VpL0FwcGxpY2F0aW9uSWNvbnMnXG5pbXBvcnQgeyBBY2NvdW50TWVudSB9IGZyb20gJ0AvY29tcG9uZW50cy91aS9BY2NvdW50TWVudSdcbmltcG9ydCB7IFxuICBoYXNBcHBsaWNhdGlvbkFjY2VzcywgXG4gIGdldEFwcGxpY2F0aW9uSW5mbyxcbiAgQXBwbGljYXRpb25OYW1lIFxufSBmcm9tICdAL3V0aWxzL2FwcGxpY2F0aW9uLWFjY2VzcydcblxuaW50ZXJmYWNlIEFwcGxpY2F0aW9uTGF5b3V0UHJvcHMge1xuICBjaGlsZHJlbjogUmVhY3QuUmVhY3ROb2RlXG4gIGFwcGxpY2F0aW9uOiBBcHBsaWNhdGlvbk5hbWVcbiAgY2xhc3NOYW1lPzogc3RyaW5nXG59XG5cbmNvbnN0IGFwcGxpY2F0aW9uSWNvbnMgPSB7XG4gIG1hcmtldF9lZGdlOiBDaGFydEJhckljb24sXG4gIGNhdXNhbF9lZGdlOiBDb2dJY29uLFxuICB2YWx1ZV9lZGdlOiBFeWVJY29uXG59XG5cbmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIEFwcGxpY2F0aW9uTGF5b3V0KHsgXG4gIGNoaWxkcmVuLCBcbiAgYXBwbGljYXRpb24sIFxuICBjbGFzc05hbWUgPSAnJyBcbn06IEFwcGxpY2F0aW9uTGF5b3V0UHJvcHMpIHtcbiAgY29uc3QgeyB1c2VyLCBpc0xvYWRpbmcgfSA9IHVzZUF1dGhDb250ZXh0KClcbiAgY29uc3Qgcm91dGVyID0gdXNlUm91dGVyKClcbiAgY29uc3QgcGF0aG5hbWUgPSB1c2VQYXRobmFtZSgpXG4gIGNvbnN0IFttb2JpbGVNZW51T3Blbiwgc2V0TW9iaWxlTWVudU9wZW5dID0gdXNlU3RhdGUoZmFsc2UpXG5cbiAgLy8gR2V0IGFwcGxpY2F0aW9uIGluZm9cbiAgY29uc3QgYXBwSW5mbyA9IGdldEFwcGxpY2F0aW9uSW5mbyhhcHBsaWNhdGlvbilcbiAgY29uc3QgSWNvbkNvbXBvbmVudCA9IGFwcGxpY2F0aW9uSWNvbnNbYXBwbGljYXRpb25dXG5cbiAgLy8gQ2hlY2sgaWYgdXNlciBoYXMgYWNjZXNzIHRvIHRoaXMgYXBwbGljYXRpb25cbiAgY29uc3QgaGFzQWNjZXNzID0gaGFzQXBwbGljYXRpb25BY2Nlc3ModXNlcj8uYXBwbGljYXRpb25fYWNjZXNzLCBhcHBsaWNhdGlvbilcblxuICAvLyBSZWRpcmVjdCBpZiBubyBhY2Nlc3NcbiAgUmVhY3QudXNlRWZmZWN0KCgpID0+IHtcbiAgICBpZiAoIWlzTG9hZGluZyAmJiB1c2VyICYmICFoYXNBY2Nlc3MpIHtcbiAgICAgIHJvdXRlci5wdXNoKCcvZGFzaGJvYXJkJylcbiAgICB9XG4gIH0sIFt1c2VyLCBoYXNBY2Nlc3MsIGlzTG9hZGluZywgcm91dGVyXSlcblxuICBpZiAoaXNMb2FkaW5nIHx8ICF1c2VyIHx8ICFoYXNBY2Nlc3MpIHtcbiAgICByZXR1cm4gKFxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBtaW4taC1zY3JlZW5cIj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJhbmltYXRlLXNwaW4gcm91bmRlZC1mdWxsIGgtMzIgdy0zMiBib3JkZXItYi0yIGJvcmRlci1pbmRpZ28tNjAwXCI+PC9kaXY+XG4gICAgICA8L2Rpdj5cbiAgICApXG4gIH1cblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPXtgbWluLWgtc2NyZWVuIGJnLWdyYXktNTAgYXBwLXRoZW1lLSR7YXBwSW5mby50aGVtZUNvbG9yfSB0cmFuc2l0aW9uLXRoZW1lICR7Y2xhc3NOYW1lfWB9PlxuICAgICAgey8qIE1vYmlsZSBtZW51ICovfVxuICAgICAgPFRyYW5zaXRpb24uUm9vdCBzaG93PXttb2JpbGVNZW51T3Blbn0gYXM9e0ZyYWdtZW50fT5cbiAgICAgICAgPERpYWxvZyBhcz1cImRpdlwiIGNsYXNzTmFtZT1cInJlbGF0aXZlIHotNTAgbGc6aGlkZGVuXCIgb25DbG9zZT17c2V0TW9iaWxlTWVudU9wZW59PlxuICAgICAgICAgIDxUcmFuc2l0aW9uLkNoaWxkXG4gICAgICAgICAgICBhcz17RnJhZ21lbnR9XG4gICAgICAgICAgICBlbnRlcj1cInRyYW5zaXRpb24tb3BhY2l0eSBlYXNlLWxpbmVhciBkdXJhdGlvbi0zMDBcIlxuICAgICAgICAgICAgZW50ZXJGcm9tPVwib3BhY2l0eS0wXCJcbiAgICAgICAgICAgIGVudGVyVG89XCJvcGFjaXR5LTEwMFwiXG4gICAgICAgICAgICBsZWF2ZT1cInRyYW5zaXRpb24tb3BhY2l0eSBlYXNlLWxpbmVhciBkdXJhdGlvbi0zMDBcIlxuICAgICAgICAgICAgbGVhdmVGcm9tPVwib3BhY2l0eS0xMDBcIlxuICAgICAgICAgICAgbGVhdmVUbz1cIm9wYWNpdHktMFwiXG4gICAgICAgICAgPlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmaXhlZCBpbnNldC0wIGJnLWdyYXktOTAwLzgwXCIgLz5cbiAgICAgICAgICA8L1RyYW5zaXRpb24uQ2hpbGQ+XG5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZpeGVkIGluc2V0LTAgZmxleFwiPlxuICAgICAgICAgICAgPFRyYW5zaXRpb24uQ2hpbGRcbiAgICAgICAgICAgICAgYXM9e0ZyYWdtZW50fVxuICAgICAgICAgICAgICBlbnRlcj1cInRyYW5zaXRpb24gZWFzZS1pbi1vdXQgZHVyYXRpb24tMzAwIHRyYW5zZm9ybVwiXG4gICAgICAgICAgICAgIGVudGVyRnJvbT1cIi10cmFuc2xhdGUteC1mdWxsXCJcbiAgICAgICAgICAgICAgZW50ZXJUbz1cInRyYW5zbGF0ZS14LTBcIlxuICAgICAgICAgICAgICBsZWF2ZT1cInRyYW5zaXRpb24gZWFzZS1pbi1vdXQgZHVyYXRpb24tMzAwIHRyYW5zZm9ybVwiXG4gICAgICAgICAgICAgIGxlYXZlRnJvbT1cInRyYW5zbGF0ZS14LTBcIlxuICAgICAgICAgICAgICBsZWF2ZVRvPVwiLXRyYW5zbGF0ZS14LWZ1bGxcIlxuICAgICAgICAgICAgPlxuICAgICAgICAgICAgICA8RGlhbG9nLlBhbmVsIGNsYXNzTmFtZT1cInJlbGF0aXZlIG1yLTE2IGZsZXggdy1mdWxsIG1heC13LXhzIGZsZXgtMVwiPlxuICAgICAgICAgICAgICAgIDxUcmFuc2l0aW9uLkNoaWxkXG4gICAgICAgICAgICAgICAgICBhcz17RnJhZ21lbnR9XG4gICAgICAgICAgICAgICAgICBlbnRlcj1cImVhc2UtaW4tb3V0IGR1cmF0aW9uLTMwMFwiXG4gICAgICAgICAgICAgICAgICBlbnRlckZyb209XCJvcGFjaXR5LTBcIlxuICAgICAgICAgICAgICAgICAgZW50ZXJUbz1cIm9wYWNpdHktMTAwXCJcbiAgICAgICAgICAgICAgICAgIGxlYXZlPVwiZWFzZS1pbi1vdXQgZHVyYXRpb24tMzAwXCJcbiAgICAgICAgICAgICAgICAgIGxlYXZlRnJvbT1cIm9wYWNpdHktMTAwXCJcbiAgICAgICAgICAgICAgICAgIGxlYXZlVG89XCJvcGFjaXR5LTBcIlxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiYWJzb2x1dGUgbGVmdC1mdWxsIHRvcC0wIGZsZXggdy0xNiBqdXN0aWZ5LWNlbnRlciBwdC01XCI+XG4gICAgICAgICAgICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgICAgICAgICAgICB0eXBlPVwiYnV0dG9uXCJcbiAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCItbS0yLjUgcC0yLjVcIlxuICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldE1vYmlsZU1lbnVPcGVuKGZhbHNlKX1cbiAgICAgICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInNyLW9ubHlcIj5DbG9zZSBzaWRlYmFyPC9zcGFuPlxuICAgICAgICAgICAgICAgICAgICAgIDxYTWFya0ljb24gY2xhc3NOYW1lPVwiaC02IHctNiB0ZXh0LXdoaXRlXCIgYXJpYS1oaWRkZW49XCJ0cnVlXCIgLz5cbiAgICAgICAgICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICA8L1RyYW5zaXRpb24uQ2hpbGQ+XG5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZ3JvdyBmbGV4LWNvbCBnYXAteS01IG92ZXJmbG93LXktYXV0byBiZy13aGl0ZSBweC02IHBiLTRcIj5cbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBoLTE2IHNocmluay0wIGl0ZW1zLWNlbnRlclwiPlxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyXCI+XG4gICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9e2B3LTggaC04IHJvdW5kZWQtbGcgYmctZ3JhZGllbnQtdG8tYnIgJHthcHBJbmZvLmNvbG9yfSBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBzaGFkb3ctc21gfT5cbiAgICAgICAgICAgICAgICAgICAgICAgIDxJY29uQ29tcG9uZW50IGNsYXNzTmFtZT1cImgtNSB3LTUgdGV4dC13aGl0ZVwiIC8+XG4gICAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICAgICAgPGgxIGNsYXNzTmFtZT1cIm1sLTMgdGV4dC1sZyBmb250LWJvbGQgdGV4dC1ncmF5LTkwMFwiPnthcHBJbmZvLm5hbWV9PC9oMT5cbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgIFxuICAgICAgICAgICAgICAgICAgPG5hdiBjbGFzc05hbWU9XCJmbGV4IGZsZXgtMSBmbGV4LWNvbFwiPlxuICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm1iLTRcIj5cbiAgICAgICAgICAgICAgICAgICAgICA8QXBwbGljYXRpb25JY29ucyBcbiAgICAgICAgICAgICAgICAgICAgICAgIHVzZXJBcHBsaWNhdGlvbkFjY2Vzcz17dXNlcj8uYXBwbGljYXRpb25fYWNjZXNzfVxuICAgICAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwianVzdGlmeS1zdGFydFwiXG4gICAgICAgICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICA8L25hdj5cbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgPC9EaWFsb2cuUGFuZWw+XG4gICAgICAgICAgICA8L1RyYW5zaXRpb24uQ2hpbGQ+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgIDwvRGlhbG9nPlxuICAgICAgPC9UcmFuc2l0aW9uLlJvb3Q+XG5cbiAgICAgIHsvKiBIZWFkZXIgKi99XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cInN0aWNreSB0b3AtMCB6LTQwIGJnLXdoaXRlIGJvcmRlci1iIGJvcmRlci1ncmF5LTIwMCBzaGFkb3ctc21cIj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtYXgtdy03eGwgbXgtYXV0byBweC00IHNtOnB4LTYgbGc6cHgtOFwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIGgtMTZcIj5cbiAgICAgICAgICAgIHsvKiBMZWZ0IHNpZGUgLSBBcHAgYnJhbmRpbmcgKi99XG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyXCI+XG4gICAgICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgICAgICB0eXBlPVwiYnV0dG9uXCJcbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCItbS0yLjUgcC0yLjUgdGV4dC1ncmF5LTcwMCBsZzpoaWRkZW5cIlxuICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldE1vYmlsZU1lbnVPcGVuKHRydWUpfVxuICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwic3Itb25seVwiPk9wZW4gbWFpbiBtZW51PC9zcGFuPlxuICAgICAgICAgICAgICAgIDxCYXJzM0ljb24gY2xhc3NOYW1lPVwiaC02IHctNlwiIGFyaWEtaGlkZGVuPVwidHJ1ZVwiIC8+XG4gICAgICAgICAgICAgIDwvYnV0dG9uPlxuICAgICAgICAgICAgICBcbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJoaWRkZW4gbGc6ZmxleCBsZzppdGVtcy1jZW50ZXJcIj5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT17YHctMTAgaC0xMCByb3VuZGVkLXhsIGJnLWdyYWRpZW50LXRvLWJyICR7YXBwSW5mby5jb2xvcn0gZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgc2hhZG93LW1kYH0+XG4gICAgICAgICAgICAgICAgICA8SWNvbkNvbXBvbmVudCBjbGFzc05hbWU9XCJoLTYgdy02IHRleHQtd2hpdGVcIiAvPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWwtNFwiPlxuICAgICAgICAgICAgICAgICAgPGgxIGNsYXNzTmFtZT1cInRleHQteGwgZm9udC1ib2xkIHRleHQtZ3JheS05MDBcIj57YXBwSW5mby5uYW1lfTwvaDE+XG4gICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXNtIHRleHQtZ3JheS02MDBcIj57YXBwSW5mby5kZXNjcmlwdGlvbn08L3A+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgIHsvKiBSaWdodCBzaWRlIC0gTmF2aWdhdGlvbiBhbmQgdXNlciBtZW51ICovfVxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtNFwiPlxuICAgICAgICAgICAgICB7LyogRGVza3RvcCBBcHBsaWNhdGlvbiBJY29ucyAqL31cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJoaWRkZW4gbGc6YmxvY2tcIj5cbiAgICAgICAgICAgICAgICA8QXBwbGljYXRpb25JY29ucyBcbiAgICAgICAgICAgICAgICAgIHVzZXJBcHBsaWNhdGlvbkFjY2Vzcz17dXNlcj8uYXBwbGljYXRpb25fYWNjZXNzfVxuICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICBcbiAgICAgICAgICAgICAgey8qIEFjY291bnQgTWVudSAqL31cbiAgICAgICAgICAgICAgPEFjY291bnRNZW51IC8+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgPC9kaXY+XG4gICAgICA8L2Rpdj5cblxuICAgICAgey8qIE1haW4gY29udGVudCAqL31cbiAgICAgIDxtYWluIGNsYXNzTmFtZT1cImZsZXgtMVwiPlxuICAgICAgICB7Y2hpbGRyZW59XG4gICAgICA8L21haW4+XG5cbiAgICAgIHsvKiBBcHBsaWNhdGlvbiB0aGVtZSBzdHlsZXMgKi99XG4gICAgICA8c3R5bGUganN4PntgXG4gICAgICAgIDpnbG9iYWwoLmFwcC10aGVtZS0ke2FwcEluZm8udGhlbWVDb2xvcn0pIHtcbiAgICAgICAgICAtLXByaW1hcnktNTA6ICR7YXBwSW5mby50aGVtZUNvbG9yID09PSAnYmx1ZScgPyAncmdiKDIzOSAyNDYgMjU1KScgOiBcbiAgICAgICAgICAgICAgICAgICAgICAgICBhcHBJbmZvLnRoZW1lQ29sb3IgPT09ICdncmVlbicgPyAncmdiKDI0MCAyNTMgMjQ0KScgOiBcbiAgICAgICAgICAgICAgICAgICAgICAgICAncmdiKDI1MCAyNDUgMjU1KSd9O1xuICAgICAgICAgIC0tcHJpbWFyeS01MDA6ICR7YXBwSW5mby50aGVtZUNvbG9yID09PSAnYmx1ZScgPyAncmdiKDU5IDEzMCAyNDYpJyA6IFxuICAgICAgICAgICAgICAgICAgICAgICAgICBhcHBJbmZvLnRoZW1lQ29sb3IgPT09ICdncmVlbicgPyAncmdiKDM0IDE5NyA5NCknIDogXG4gICAgICAgICAgICAgICAgICAgICAgICAgICdyZ2IoMTY4IDg1IDI0NyknfTtcbiAgICAgICAgICAtLXByaW1hcnktNjAwOiAke2FwcEluZm8udGhlbWVDb2xvciA9PT0gJ2JsdWUnID8gJ3JnYigzNyA5OSAyMzUpJyA6IFxuICAgICAgICAgICAgICAgICAgICAgICAgICBhcHBJbmZvLnRoZW1lQ29sb3IgPT09ICdncmVlbicgPyAncmdiKDIyIDE2MyA3NCknIDogXG4gICAgICAgICAgICAgICAgICAgICAgICAgICdyZ2IoMTQ3IDUxIDIzNCknfTtcbiAgICAgICAgfVxuICAgICAgICBcbiAgICAgICAgOmdsb2JhbCgudHJhbnNpdGlvbi10aGVtZSkge1xuICAgICAgICAgIHRyYW5zaXRpb246IGJhY2tncm91bmQtY29sb3IgMC4zcyBlYXNlLCBib3JkZXItY29sb3IgMC4zcyBlYXNlLCBjb2xvciAwLjNzIGVhc2U7XG4gICAgICAgIH1cbiAgICAgIGB9PC9zdHlsZT5cblxuICAgICAgey8qIEFwcGxpY2F0aW9uIGluZGljYXRvciBmb3Igc21vb3RoIHRyYW5zaXRpb25zICovfVxuICAgICAgPGRpdiBcbiAgICAgICAgY2xhc3NOYW1lPXtgZml4ZWQgYm90dG9tLTQgbGVmdC00IHB4LTMgcHktMiByb3VuZGVkLWZ1bGwgYmctZ3JhZGllbnQtdG8tciAke2FwcEluZm8uY29sb3J9IHRleHQtd2hpdGUgdGV4dC14cyBmb250LW1lZGl1bSBzaGFkb3ctbGcgdHJhbnNpdGlvbi1hbGwgZHVyYXRpb24tNTAwIHRyYW5zZm9ybSB0cmFuc2xhdGUteS0wIG9wYWNpdHktMTAwYH1cbiAgICAgICAgaWQ9XCJhcHAtaW5kaWNhdG9yXCJcbiAgICAgID5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBzcGFjZS14LTJcIj5cbiAgICAgICAgICA8SWNvbkNvbXBvbmVudCBjbGFzc05hbWU9XCJoLTMgdy0zXCIgLz5cbiAgICAgICAgICA8c3Bhbj57YXBwSW5mby5uYW1lfTwvc3Bhbj5cbiAgICAgICAgPC9kaXY+XG4gICAgICA8L2Rpdj5cbiAgICA8L2Rpdj5cbiAgKVxufSJdLCJuYW1lcyI6WyJBcHBsaWNhdGlvbkxheW91dCIsImFwcGxpY2F0aW9uSWNvbnMiLCJtYXJrZXRfZWRnZSIsIkNoYXJ0QmFySWNvbiIsImNhdXNhbF9lZGdlIiwiQ29nSWNvbiIsInZhbHVlX2VkZ2UiLCJFeWVJY29uIiwiY2hpbGRyZW4iLCJhcHBsaWNhdGlvbiIsImNsYXNzTmFtZSIsInVzZXIiLCJpc0xvYWRpbmciLCJ1c2VBdXRoQ29udGV4dCIsInJvdXRlciIsInVzZVJvdXRlciIsInBhdGhuYW1lIiwidXNlUGF0aG5hbWUiLCJtb2JpbGVNZW51T3BlbiIsInNldE1vYmlsZU1lbnVPcGVuIiwidXNlU3RhdGUiLCJhcHBJbmZvIiwiZ2V0QXBwbGljYXRpb25JbmZvIiwiSWNvbkNvbXBvbmVudCIsImhhc0FjY2VzcyIsImhhc0FwcGxpY2F0aW9uQWNjZXNzIiwiYXBwbGljYXRpb25fYWNjZXNzIiwiUmVhY3QiLCJ1c2VFZmZlY3QiLCJwdXNoIiwiZGl2IiwidGhlbWVDb2xvciIsIlRyYW5zaXRpb24iLCJSb290Iiwic2hvdyIsImFzIiwiRnJhZ21lbnQiLCJEaWFsb2ciLCJvbkNsb3NlIiwiQ2hpbGQiLCJlbnRlciIsImVudGVyRnJvbSIsImVudGVyVG8iLCJsZWF2ZSIsImxlYXZlRnJvbSIsImxlYXZlVG8iLCJQYW5lbCIsImJ1dHRvbiIsInR5cGUiLCJvbkNsaWNrIiwic3BhbiIsIlhNYXJrSWNvbiIsImFyaWEtaGlkZGVuIiwiY29sb3IiLCJoMSIsIm5hbWUiLCJuYXYiLCJBcHBsaWNhdGlvbkljb25zIiwidXNlckFwcGxpY2F0aW9uQWNjZXNzIiwiQmFyczNJY29uIiwicCIsImRlc2NyaXB0aW9uIiwiQWNjb3VudE1lbnUiLCJtYWluIiwiaWQiXSwibWFwcGluZ3MiOiJBQUFBOzs7OzsrQkFrQ0E7OztlQUF3QkE7Ozs7OytEQWhDTjt5QkFDYTs0QkFDUTt5QkFPaEM7d0JBRTRCO3lFQUNOOzZCQUNEO21DQUtyQjs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7QUFRUCxNQUFNQyxtQkFBbUI7SUFDdkJDLGFBQWFDLHFCQUFZO0lBQ3pCQyxhQUFhQyxnQkFBTztJQUNwQkMsWUFBWUMsZ0JBQU87QUFDckI7QUFFZSxTQUFTUCxrQkFBa0IsRUFDeENRLFFBQVEsRUFDUkMsV0FBVyxFQUNYQyxZQUFZLEVBQUUsRUFDUztJQUN2QixNQUFNLEVBQUVDLElBQUksRUFBRUMsU0FBUyxFQUFFLEdBQUdDLElBQUFBLHVCQUFjO0lBQzFDLE1BQU1DLFNBQVNDLElBQUFBLHFCQUFTO0lBQ3hCLE1BQU1DLFdBQVdDLElBQUFBLHVCQUFXO0lBQzVCLE1BQU0s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

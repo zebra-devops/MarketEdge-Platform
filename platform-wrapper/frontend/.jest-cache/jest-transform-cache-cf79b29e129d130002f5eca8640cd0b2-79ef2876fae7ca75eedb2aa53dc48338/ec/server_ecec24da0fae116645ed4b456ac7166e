@@ -1,0 +1,32 @@
+62e68910ab87a7c1f263e4bbfe84b161
+/**
+ * MSW server setup for testing
+ */ "use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "server", {
+    enumerable: true,
+    get: function() {
+        return server;
+    }
+});
+const _node = require("msw/node");
+const _handlers = require("./handlers");
+const server = (0, _node.setupServer)(..._handlers.handlers);
+// Establish API mocking before all tests
+beforeAll(()=>{
+    server.listen({
+        onUnhandledRequest: "error"
+    });
+});
+// Reset any request handlers that are declared as a part of our tests
+afterEach(()=>{
+    server.resetHandlers();
+});
+// Clean up after tests are finished
+afterAll(()=>{
+    server.close();
+});
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy9tYXR0L1NpdGVzL01hcmtldEVkZ2UvcGxhdGZvcm0td3JhcHBlci9mcm9udGVuZC9zcmMvX190ZXN0c19fL21vY2tzL3NlcnZlci50cyJdLCJzb3VyY2VzQ29udGVudCI6WyIvKipcbiAqIE1TVyBzZXJ2ZXIgc2V0dXAgZm9yIHRlc3RpbmdcbiAqL1xuXG5pbXBvcnQgeyBzZXR1cFNlcnZlciB9IGZyb20gJ21zdy9ub2RlJ1xuaW1wb3J0IHsgaGFuZGxlcnMgfSBmcm9tICcuL2hhbmRsZXJzJ1xuXG4vLyBTZXR1cCBNU1cgc2VydmVyIGZvciB0ZXN0aW5nXG5leHBvcnQgY29uc3Qgc2VydmVyID0gc2V0dXBTZXJ2ZXIoLi4uaGFuZGxlcnMpXG5cbi8vIEVzdGFibGlzaCBBUEkgbW9ja2luZyBiZWZvcmUgYWxsIHRlc3RzXG5iZWZvcmVBbGwoKCkgPT4ge1xuICBzZXJ2ZXIubGlzdGVuKHtcbiAgICBvblVuaGFuZGxlZFJlcXVlc3Q6ICdlcnJvcicsXG4gIH0pXG59KVxuXG4vLyBSZXNldCBhbnkgcmVxdWVzdCBoYW5kbGVycyB0aGF0IGFyZSBkZWNsYXJlZCBhcyBhIHBhcnQgb2Ygb3VyIHRlc3RzXG5hZnRlckVhY2goKCkgPT4ge1xuICBzZXJ2ZXIucmVzZXRIYW5kbGVycygpXG59KVxuXG4vLyBDbGVhbiB1cCBhZnRlciB0ZXN0cyBhcmUgZmluaXNoZWRcbmFmdGVyQWxsKCgpID0+IHtcbiAgc2VydmVyLmNsb3NlKClcbn0pIl0sIm5hbWVzIjpbInNlcnZlciIsInNldHVwU2VydmVyIiwiaGFuZGxlcnMiLCJiZWZvcmVBbGwiLCJsaXN0ZW4iLCJvblVuaGFuZGxlZFJlcXVlc3QiLCJhZnRlckVhY2giLCJyZXNldEhhbmRsZXJzIiwiYWZ0ZXJBbGwiLCJjbG9zZSJdLCJtYXBwaW5ncyI6IkFBQUE7O0NBRUM7Ozs7K0JBTVlBOzs7ZUFBQUE7OztzQkFKZTswQkFDSDtBQUdsQixNQUFNQSxTQUFTQyxJQUFBQSxpQkFBVyxLQUFJQyxrQkFBUTtBQUU3Qyx5Q0FBeUM7QUFDekNDLFVBQVU7SUFDUkgsT0FBT0ksTUFBTSxDQUFDO1FBQ1pDLG9CQUFvQjtJQUN0QjtBQUNGO0FBRUEsc0VBQXNFO0FBQ3RFQyxVQUFVO0lBQ1JOLE9BQU9PLGFBQWE7QUFDdEI7QUFFQSxvQ0FBb0M7QUFDcENDLFNBQVM7SUFDUFIsT0FBT1MsS0FBSztBQUNkIn0=

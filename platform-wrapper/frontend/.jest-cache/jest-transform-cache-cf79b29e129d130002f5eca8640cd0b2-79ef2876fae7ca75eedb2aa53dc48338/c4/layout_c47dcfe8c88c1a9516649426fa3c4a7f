@@ -1,0 +1,393 @@
+ee4f755c0a0f52518810b0bb33594a95
+"use strict";
+
+/* istanbul ignore next */
+function cov_v8abda9ej() {
+  var path = "/Users/matt/Sites/MarketEdge/platform-wrapper/frontend/src/app/layout.tsx";
+  var hash = "bd564a8dcc3f6a7b5f0f15d67d265cccbf39216f";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "/Users/matt/Sites/MarketEdge/platform-wrapper/frontend/src/app/layout.tsx",
+    statementMap: {
+      "0": {
+        start: {
+          line: 2,
+          column: 0
+        },
+        end: {
+          line: 4,
+          column: 3
+        }
+      },
+      "1": {
+        start: {
+          line: 6,
+          column: 4
+        },
+        end: {
+          line: 9,
+          column: 7
+        }
+      },
+      "2": {
+        start: {
+          line: 6,
+          column: 24
+        },
+        end: {
+          line: 9,
+          column: 7
+        }
+      },
+      "3": {
+        start: {
+          line: 11,
+          column: 0
+        },
+        end: {
+          line: 18,
+          column: 3
+        }
+      },
+      "4": {
+        start: {
+          line: 13,
+          column: 8
+        },
+        end: {
+          line: 13,
+          column: 26
+        }
+      },
+      "5": {
+        start: {
+          line: 16,
+          column: 8
+        },
+        end: {
+          line: 16,
+          column: 24
+        }
+      },
+      "6": {
+        start: {
+          line: 19,
+          column: 20
+        },
+        end: {
+          line: 19,
+          column: 48
+        }
+      },
+      "7": {
+        start: {
+          line: 20,
+          column: 16
+        },
+        end: {
+          line: 20,
+          column: 43
+        }
+      },
+      "8": {
+        start: {
+          line: 21,
+          column: 0
+        },
+        end: {
+          line: 21,
+          column: 25
+        }
+      },
+      "9": {
+        start: {
+          line: 22,
+          column: 22
+        },
+        end: {
+          line: 22,
+          column: 69
+        }
+      },
+      "10": {
+        start: {
+          line: 23,
+          column: 23
+        },
+        end: {
+          line: 23,
+          column: 71
+        }
+      },
+      "11": {
+        start: {
+          line: 24,
+          column: 23
+        },
+        end: {
+          line: 24,
+          column: 71
+        }
+      },
+      "12": {
+        start: {
+          line: 25,
+          column: 14
+        },
+        end: {
+          line: 29,
+          column: 2
+        }
+      },
+      "13": {
+        start: {
+          line: 30,
+          column: 17
+        },
+        end: {
+          line: 33,
+          column: 1
+        }
+      },
+      "14": {
+        start: {
+          line: 35,
+          column: 4
+        },
+        end: {
+          line: 47,
+          column: 7
+        }
+      }
+    },
+    fnMap: {
+      "0": {
+        name: "_export",
+        decl: {
+          start: {
+            line: 5,
+            column: 9
+          },
+          end: {
+            line: 5,
+            column: 16
+          }
+        },
+        loc: {
+          start: {
+            line: 5,
+            column: 30
+          },
+          end: {
+            line: 10,
+            column: 1
+          }
+        },
+        line: 5
+      },
+      "1": {
+        name: "(anonymous_1)",
+        decl: {
+          start: {
+            line: 12,
+            column: 13
+          },
+          end: {
+            line: 12,
+            column: 14
+          }
+        },
+        loc: {
+          start: {
+            line: 12,
+            column: 24
+          },
+          end: {
+            line: 14,
+            column: 5
+          }
+        },
+        line: 12
+      },
+      "2": {
+        name: "(anonymous_2)",
+        decl: {
+          start: {
+            line: 15,
+            column: 14
+          },
+          end: {
+            line: 15,
+            column: 15
+          }
+        },
+        loc: {
+          start: {
+            line: 15,
+            column: 25
+          },
+          end: {
+            line: 17,
+            column: 5
+          }
+        },
+        line: 15
+      },
+      "3": {
+        name: "RootLayout",
+        decl: {
+          start: {
+            line: 34,
+            column: 9
+          },
+          end: {
+            line: 34,
+            column: 19
+          }
+        },
+        loc: {
+          start: {
+            line: 34,
+            column: 34
+          },
+          end: {
+            line: 48,
+            column: 1
+          }
+        },
+        line: 34
+      }
+    },
+    branchMap: {},
+    s: {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "9": 0,
+      "10": 0,
+      "11": 0,
+      "12": 0,
+      "13": 0,
+      "14": 0
+    },
+    f: {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 0
+    },
+    b: {},
+    inputSourceMap: {
+      version: 3,
+      sources: ["/Users/matt/Sites/MarketEdge/platform-wrapper/frontend/src/app/layout.tsx"],
+      sourcesContent: ["import type { Metadata } from 'next'\nimport { Inter } from 'next/font/google'\nimport './globals.css'\nimport { AuthProvider } from '@/components/providers/AuthProvider'\nimport { QueryProvider } from '@/components/providers/QueryProvider'\nimport { ToastProvider } from '@/components/providers/ToastProvider'\n\nconst inter = Inter({ subsets: ['latin'] })\n\nexport const metadata: Metadata = {\n  title: 'Platform Wrapper - Business Intelligence Suite',\n  description: 'Multi-tenant platform for business intelligence tools',\n}\n\nexport default function RootLayout({\n  children,\n}: {\n  children: React.ReactNode\n}) {\n  return (\n    <html lang=\"en\">\n      <body className={inter.className}>\n        <QueryProvider>\n          <AuthProvider>\n            <ToastProvider>\n              {children}\n            </ToastProvider>\n          </AuthProvider>\n        </QueryProvider>\n      </body>\n    </html>\n  )\n}"],
+      names: ["RootLayout", "metadata", "inter", "Inter", "subsets", "title", "description", "children", "html", "lang", "body", "className", "QueryProvider", "AuthProvider", "ToastProvider"],
+      mappings: ";;;;;;;;;;;IAcA,OAkBC;eAlBuBA;;IALXC,QAAQ;eAARA;;;;wBARS;QACf;8BACsB;+BACC;+BACA;AAE9B,MAAMC,QAAQC,IAAAA,aAAK,EAAC;IAAEC,SAAS;QAAC;KAAQ;AAAC;AAElC,MAAMH,WAAqB;IAChCI,OAAO;IACPC,aAAa;AACf;AAEe,SAASN,WAAW,EACjCO,QAAQ,EAGT;IACC,qBACE,qBAACC;QAAKC,MAAK;kBACT,cAAA,qBAACC;YAAKC,WAAWT,MAAMS,SAAS;sBAC9B,cAAA,qBAACC,4BAAa;0BACZ,cAAA,qBAACC,0BAAY;8BACX,cAAA,qBAACC,4BAAa;kCACXP;;;;;;AAOf"
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "bd564a8dcc3f6a7b5f0f15d67d265cccbf39216f"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_v8abda9ej = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_v8abda9ej();
+cov_v8abda9ej().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+function _export(target, all) {
+  /* istanbul ignore next */
+  cov_v8abda9ej().f[0]++;
+  cov_v8abda9ej().s[1]++;
+  for (var name in all) {
+    /* istanbul ignore next */
+    cov_v8abda9ej().s[2]++;
+    Object.defineProperty(target, name, {
+      enumerable: true,
+      get: all[name]
+    });
+  }
+}
+/* istanbul ignore next */
+cov_v8abda9ej().s[3]++;
+_export(exports, {
+  default: function () {
+    /* istanbul ignore next */
+    cov_v8abda9ej().f[1]++;
+    cov_v8abda9ej().s[4]++;
+    return RootLayout;
+  },
+  metadata: function () {
+    /* istanbul ignore next */
+    cov_v8abda9ej().f[2]++;
+    cov_v8abda9ej().s[5]++;
+    return metadata;
+  }
+});
+const _jsxruntime =
+/* istanbul ignore next */
+(cov_v8abda9ej().s[6]++, require("react/jsx-runtime"));
+const _google =
+/* istanbul ignore next */
+(cov_v8abda9ej().s[7]++, require("next/font/google"));
+/* istanbul ignore next */
+cov_v8abda9ej().s[8]++;
+require("./globals.css");
+const _AuthProvider =
+/* istanbul ignore next */
+(cov_v8abda9ej().s[9]++, require("../components/providers/AuthProvider"));
+const _QueryProvider =
+/* istanbul ignore next */
+(cov_v8abda9ej().s[10]++, require("../components/providers/QueryProvider"));
+const _ToastProvider =
+/* istanbul ignore next */
+(cov_v8abda9ej().s[11]++, require("../components/providers/ToastProvider"));
+const inter =
+/* istanbul ignore next */
+(cov_v8abda9ej().s[12]++, (0, _google.Inter)({
+  subsets: ["latin"]
+}));
+const metadata =
+/* istanbul ignore next */
+(cov_v8abda9ej().s[13]++, {
+  title: "Platform Wrapper - Business Intelligence Suite",
+  description: "Multi-tenant platform for business intelligence tools"
+});
+function RootLayout({
+  children
+}) {
+  /* istanbul ignore next */
+  cov_v8abda9ej().f[3]++;
+  cov_v8abda9ej().s[14]++;
+  return /*#__PURE__*/(0, _jsxruntime.jsx)("html", {
+    lang: "en",
+    children: /*#__PURE__*/(0, _jsxruntime.jsx)("body", {
+      className: inter.className,
+      children: /*#__PURE__*/(0, _jsxruntime.jsx)(_QueryProvider.QueryProvider, {
+        children: /*#__PURE__*/(0, _jsxruntime.jsx)(_AuthProvider.AuthProvider, {
+          children: /*#__PURE__*/(0, _jsxruntime.jsx)(_ToastProvider.ToastProvider, {
+            children: children
+          })
+        })
+      })
+    })
+  });
+}
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJkZWZhdWx0IiwiY292X3Y4YWJkYTllaiIsImYiLCJzIiwiUm9vdExheW91dCIsIm1ldGFkYXRhIiwiaW50ZXIiLCJfZ29vZ2xlIiwiSW50ZXIiLCJzdWJzZXRzIiwidGl0bGUiLCJkZXNjcmlwdGlvbiIsImNoaWxkcmVuIiwiX2pzeHJ1bnRpbWUiLCJqc3giLCJsYW5nIiwiY2xhc3NOYW1lIiwiX1F1ZXJ5UHJvdmlkZXIiLCJRdWVyeVByb3ZpZGVyIiwiX0F1dGhQcm92aWRlciIsIkF1dGhQcm92aWRlciIsIl9Ub2FzdFByb3ZpZGVyIiwiVG9hc3RQcm92aWRlciJdLCJzb3VyY2VzIjpbIi9Vc2Vycy9tYXR0L1NpdGVzL01hcmtldEVkZ2UvcGxhdGZvcm0td3JhcHBlci9mcm9udGVuZC9zcmMvYXBwL2xheW91dC50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHR5cGUgeyBNZXRhZGF0YSB9IGZyb20gJ25leHQnXG5pbXBvcnQgeyBJbnRlciB9IGZyb20gJ25leHQvZm9udC9nb29nbGUnXG5pbXBvcnQgJy4vZ2xvYmFscy5jc3MnXG5pbXBvcnQgeyBBdXRoUHJvdmlkZXIgfSBmcm9tICdAL2NvbXBvbmVudHMvcHJvdmlkZXJzL0F1dGhQcm92aWRlcidcbmltcG9ydCB7IFF1ZXJ5UHJvdmlkZXIgfSBmcm9tICdAL2NvbXBvbmVudHMvcHJvdmlkZXJzL1F1ZXJ5UHJvdmlkZXInXG5pbXBvcnQgeyBUb2FzdFByb3ZpZGVyIH0gZnJvbSAnQC9jb21wb25lbnRzL3Byb3ZpZGVycy9Ub2FzdFByb3ZpZGVyJ1xuXG5jb25zdCBpbnRlciA9IEludGVyKHsgc3Vic2V0czogWydsYXRpbiddIH0pXG5cbmV4cG9ydCBjb25zdCBtZXRhZGF0YTogTWV0YWRhdGEgPSB7XG4gIHRpdGxlOiAnUGxhdGZvcm0gV3JhcHBlciAtIEJ1c2luZXNzIEludGVsbGlnZW5jZSBTdWl0ZScsXG4gIGRlc2NyaXB0aW9uOiAnTXVsdGktdGVuYW50IHBsYXRmb3JtIGZvciBidXNpbmVzcyBpbnRlbGxpZ2VuY2UgdG9vbHMnLFxufVxuXG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBSb290TGF5b3V0KHtcbiAgY2hpbGRyZW4sXG59OiB7XG4gIGNoaWxkcmVuOiBSZWFjdC5SZWFjdE5vZGVcbn0pIHtcbiAgcmV0dXJuIChcbiAgICA8aHRtbCBsYW5nPVwiZW5cIj5cbiAgICAgIDxib2R5IGNsYXNzTmFtZT17aW50ZXIuY2xhc3NOYW1lfT5cbiAgICAgICAgPFF1ZXJ5UHJvdmlkZXI+XG4gICAgICAgICAgPEF1dGhQcm92aWRlcj5cbiAgICAgICAgICAgIDxUb2FzdFByb3ZpZGVyPlxuICAgICAgICAgICAgICB7Y2hpbGRyZW59XG4gICAgICAgICAgICA8L1RvYXN0UHJvdmlkZXI+XG4gICAgICAgICAgPC9BdXRoUHJvdmlkZXI+XG4gICAgICAgIDwvUXVlcnlQcm92aWRlcj5cbiAgICAgIDwvYm9keT5cbiAgICA8L2h0bWw+XG4gIClcbn0iXSwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7O0VBY0FBLE9Ba0JDLFdBQUFBLENBQUE7SUFBQTtJQUFBQyxhQUFBLEdBQUFDLENBQUE7SUFBQUQsYUFBQSxHQUFBRSxDQUFBO1dBbEJ1QkMsVUFBQTs7RUFMWEMsUUFBUSxXQUFBQSxDQUFBO0lBQUE7SUFBQUosYUFBQSxHQUFBQyxDQUFBO0lBQUFELGFBQUEsR0FBQUUsQ0FBQTtXQUFSRSxRQUFBOzs7Ozs7OztpQ0FSUztBQUFBO0FBQUFKLGFBQUEsR0FBQUUsQ0FBQTtRQUNmOzs7aUNBQ3NCOzs7a0NBQ0M7OztrQ0FDQTtBQUU5QixNQUFNRyxLQUFBO0FBQUE7QUFBQSxDQUFBTCxhQUFBLEdBQUFFLENBQUEsUUFBUSxJQUFBSSxPQUFBLENBQUFDLEtBQUssRUFBQztFQUFFQyxPQUFBLEVBQVMsQ0FBQztBQUFTO0FBRWxDLE1BQU1KLFFBQUE7QUFBQTtBQUFBLENBQUFKLGFBQUEsR0FBQUUsQ0FBQSxRQUFxQjtFQUNoQ08sS0FBQSxFQUFPO0VBQ1BDLFdBQUEsRUFBYTtBQUNmO0FBRWUsU0FBU1AsV0FBVztFQUNqQ1E7QUFBUSxDQUdUO0VBQUE7RUFBQVgsYUFBQSxHQUFBQyxDQUFBO0VBQUFELGFBQUEsR0FBQUUsQ0FBQTtFQUNDLG9CQUNFLElBQUFVLFdBQUEsQ0FBQUMsR0FBQSxFQUFDO0lBQUtDLElBQUEsRUFBSztjQUNULGlCQUFBRixXQUFBLENBQUFDLEdBQUEsRUFBQztNQUFLRSxTQUFBLEVBQVdWLEtBQUEsQ0FBTVUsU0FBUztnQkFDOUIsaUJBQUFILFdBQUEsQ0FBQUMsR0FBQSxFQUFDRyxjQUFBLENBQUFDLGFBQWE7a0JBQ1osaUJBQUFMLFdBQUEsQ0FBQUMsR0FBQSxFQUFDSyxhQUFBLENBQUFDLFlBQVk7b0JBQ1gsaUJBQUFQLFdBQUEsQ0FBQUMsR0FBQSxFQUFDTyxjQUFBLENBQUFDLGFBQWE7c0JBQ1hWOzs7Ozs7QUFPZiIsImlnbm9yZUxpc3QiOltdfQ==

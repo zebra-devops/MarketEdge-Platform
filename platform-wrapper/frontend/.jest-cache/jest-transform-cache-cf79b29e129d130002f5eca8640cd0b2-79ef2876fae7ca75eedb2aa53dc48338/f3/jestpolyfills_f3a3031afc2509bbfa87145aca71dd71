@@ -1,0 +1,73 @@
+eca4cee73aab8793efa3c6a2cda4e5bc
+// Jest polyfills for browser APIs
+// TextEncoder/TextDecoder polyfill for Node.js
+"use strict";
+const { TextEncoder, TextDecoder } = require("util");
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
+// Fetch polyfill
+require("whatwg-fetch");
+// URL polyfill
+const { URL, URLSearchParams } = require("url");
+global.URL = URL;
+global.URLSearchParams = URLSearchParams;
+// Web Streams polyfill
+try {
+    const { ReadableStream, WritableStream, TransformStream } = require("node:stream/web");
+    if (!global.ReadableStream) global.ReadableStream = ReadableStream;
+    if (!global.WritableStream) global.WritableStream = WritableStream;
+    if (!global.TransformStream) global.TransformStream = TransformStream;
+} catch (e) {
+    // Fallback for older Node versions - provide minimal implementations
+    console.warn("Web streams not available, using minimal polyfills");
+    if (!global.ReadableStream) {
+        global.ReadableStream = class ReadableStream {
+        };
+    }
+    if (!global.TransformStream) {
+        global.TransformStream = class TransformStream {
+        };
+    }
+}
+// AbortController polyfill
+if (!global.AbortController) {
+    global.AbortController = require("abort-controller").AbortController;
+}
+// BroadcastChannel polyfill (minimal implementation for testing)
+if (!global.BroadcastChannel) {
+    global.BroadcastChannel = class BroadcastChannel {
+        constructor(name){
+            this.name = name;
+        }
+        postMessage() {}
+        close() {}
+        addEventListener() {}
+        removeEventListener() {}
+    };
+}
+// Timer functions polyfill - essential for Auth Service activity tracking
+// Ensure timer functions are available globally before Jest setup runs
+if (typeof global.setInterval === "undefined") {
+    global.setInterval = function(callback, delay, ...args) {
+        // Return a mock ID for testing
+        return Math.random();
+    };
+}
+if (typeof global.setTimeout === "undefined") {
+    global.setTimeout = function(callback, delay, ...args) {
+        // Return a mock ID for testing
+        return Math.random();
+    };
+}
+if (typeof global.clearInterval === "undefined") {
+    global.clearInterval = function(id) {
+    // No-op for testing
+    };
+}
+if (typeof global.clearTimeout === "undefined") {
+    global.clearTimeout = function(id) {
+    // No-op for testing
+    };
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy9tYXR0L1NpdGVzL01hcmtldEVkZ2UvcGxhdGZvcm0td3JhcHBlci9mcm9udGVuZC9qZXN0LnBvbHlmaWxscy5qcyJdLCJzb3VyY2VzQ29udGVudCI6WyIvLyBKZXN0IHBvbHlmaWxscyBmb3IgYnJvd3NlciBBUElzXG5cbi8vIFRleHRFbmNvZGVyL1RleHREZWNvZGVyIHBvbHlmaWxsIGZvciBOb2RlLmpzXG5jb25zdCB7IFRleHRFbmNvZGVyLCBUZXh0RGVjb2RlciB9ID0gcmVxdWlyZSgndXRpbCcpXG5nbG9iYWwuVGV4dEVuY29kZXIgPSBUZXh0RW5jb2RlclxuZ2xvYmFsLlRleHREZWNvZGVyID0gVGV4dERlY29kZXJcblxuLy8gRmV0Y2ggcG9seWZpbGxcbnJlcXVpcmUoJ3doYXR3Zy1mZXRjaCcpXG5cbi8vIFVSTCBwb2x5ZmlsbFxuY29uc3QgeyBVUkwsIFVSTFNlYXJjaFBhcmFtcyB9ID0gcmVxdWlyZSgndXJsJylcbmdsb2JhbC5VUkwgPSBVUkxcbmdsb2JhbC5VUkxTZWFyY2hQYXJhbXMgPSBVUkxTZWFyY2hQYXJhbXNcblxuLy8gV2ViIFN0cmVhbXMgcG9seWZpbGxcbnRyeSB7XG4gIGNvbnN0IHsgUmVhZGFibGVTdHJlYW0sIFdyaXRhYmxlU3RyZWFtLCBUcmFuc2Zvcm1TdHJlYW0gfSA9IHJlcXVpcmUoJ25vZGU6c3RyZWFtL3dlYicpXG4gIGlmICghZ2xvYmFsLlJlYWRhYmxlU3RyZWFtKSBnbG9iYWwuUmVhZGFibGVTdHJlYW0gPSBSZWFkYWJsZVN0cmVhbVxuICBpZiAoIWdsb2JhbC5Xcml0YWJsZVN0cmVhbSkgZ2xvYmFsLldyaXRhYmxlU3RyZWFtID0gV3JpdGFibGVTdHJlYW1cbiAgaWYgKCFnbG9iYWwuVHJhbnNmb3JtU3RyZWFtKSBnbG9iYWwuVHJhbnNmb3JtU3RyZWFtID0gVHJhbnNmb3JtU3RyZWFtXG59IGNhdGNoIChlKSB7XG4gIC8vIEZhbGxiYWNrIGZvciBvbGRlciBOb2RlIHZlcnNpb25zIC0gcHJvdmlkZSBtaW5pbWFsIGltcGxlbWVudGF0aW9uc1xuICBjb25zb2xlLndhcm4oJ1dlYiBzdHJlYW1zIG5vdCBhdmFpbGFibGUsIHVzaW5nIG1pbmltYWwgcG9seWZpbGxzJylcbiAgaWYgKCFnbG9iYWwuUmVhZGFibGVTdHJlYW0pIHtcbiAgICBnbG9iYWwuUmVhZGFibGVTdHJlYW0gPSBjbGFzcyBSZWFkYWJsZVN0cmVhbSB7fVxuICB9XG4gIGlmICghZ2xvYmFsLlRyYW5zZm9ybVN0cmVhbSkge1xuICAgIGdsb2JhbC5UcmFuc2Zvcm1TdHJlYW0gPSBjbGFzcyBUcmFuc2Zvcm1TdHJlYW0ge31cbiAgfVxufVxuXG4vLyBBYm9ydENvbnRyb2xsZXIgcG9seWZpbGxcbmlmICghZ2xvYmFsLkFib3J0Q29udHJvbGxlcikge1xuICBnbG9iYWwuQWJvcnRDb250cm9sbGVyID0gcmVxdWlyZSgnYWJvcnQtY29udHJvbGxlcicpLkFib3J0Q29udHJvbGxlclxufVxuXG4vLyBCcm9hZGNhc3RDaGFubmVsIHBvbHlmaWxsIChtaW5pbWFsIGltcGxlbWVudGF0aW9uIGZvciB0ZXN0aW5nKVxuaWYgKCFnbG9iYWwuQnJvYWRjYXN0Q2hhbm5lbCkge1xuICBnbG9iYWwuQnJvYWRjYXN0Q2hhbm5lbCA9IGNsYXNzIEJyb2FkY2FzdENoYW5uZWwge1xuICAgIGNvbnN0cnVjdG9yKG5hbWUpIHtcbiAgICAgIHRoaXMubmFtZSA9IG5hbWVcbiAgICB9XG4gICAgcG9zdE1lc3NhZ2UoKSB7fVxuICAgIGNsb3NlKCkge31cbiAgICBhZGRFdmVudExpc3RlbmVyKCkge31cbiAgICByZW1vdmVFdmVudExpc3RlbmVyKCkge31cbiAgfVxufVxuXG4vLyBUaW1lciBmdW5jdGlvbnMgcG9seWZpbGwgLSBlc3NlbnRpYWwgZm9yIEF1dGggU2VydmljZSBhY3Rpdml0eSB0cmFja2luZ1xuLy8gRW5zdXJlIHRpbWVyIGZ1bmN0aW9ucyBhcmUgYXZhaWxhYmxlIGdsb2JhbGx5IGJlZm9yZSBKZXN0IHNldHVwIHJ1bnNcbmlmICh0eXBlb2YgZ2xvYmFsLnNldEludGVydmFsID09PSAndW5kZWZpbmVkJykge1xuICBnbG9iYWwuc2V0SW50ZXJ2YWwgPSBmdW5jdGlvbihjYWxsYmFjaywgZGVsYXksIC4uLmFyZ3MpIHtcbiAgICAvLyBSZXR1cm4gYSBtb2NrIElEIGZvciB0ZXN0aW5nXG4gICAgcmV0dXJuIE1hdGgucmFuZG9tKClcbiAgfVxufVxuXG5pZiAodHlwZW9mIGdsb2JhbC5zZXRUaW1lb3V0ID09PSAndW5kZWZpbmVkJykge1xuICBnbG9iYWwuc2V0VGltZW91dCA9IGZ1bmN0aW9uKGNhbGxiYWNrLCBkZWxheSwgLi4uYXJncykge1xuICAgIC8vIFJldHVybiBhIG1vY2sgSUQgZm9yIHRlc3RpbmdcbiAgICByZXR1cm4gTWF0aC5yYW5kb20oKVxuICB9XG59XG5cbmlmICh0eXBlb2YgZ2xvYmFsLmNsZWFySW50ZXJ2YWwgPT09ICd1bmRlZmluZWQnKSB7XG4gIGdsb2JhbC5jbGVhckludGVydmFsID0gZnVuY3Rpb24oaWQpIHtcbiAgICAvLyBOby1vcCBmb3IgdGVzdGluZ1xuICB9XG59XG5cbmlmICh0eXBlb2YgZ2xvYmFsLmNsZWFyVGltZW91dCA9PT0gJ3VuZGVmaW5lZCcpIHtcbiAgZ2xvYmFsLmNsZWFyVGltZW91dCA9IGZ1bmN0aW9uKGlkKSB7XG4gICAgLy8gTm8tb3AgZm9yIHRlc3RpbmdcbiAgfVxufSJdLCJuYW1lcyI6WyJUZXh0RW5jb2RlciIsIlRleHREZWNvZGVyIiwicmVxdWlyZSIsImdsb2JhbCIsIlVSTCIsIlVSTFNlYXJjaFBhcmFtcyIsIlJlYWRhYmxlU3RyZWFtIiwiV3JpdGFibGVTdHJlYW0iLCJUcmFuc2Zvcm1TdHJlYW0iLCJlIiwiY29uc29sZSIsIndhcm4iLCJBYm9ydENvbnRyb2xsZXIiLCJCcm9hZGNhc3RDaGFubmVsIiwiY29uc3RydWN0b3IiLCJuYW1lIiwicG9zdE1lc3NhZ2UiLCJjbG9zZSIsImFkZEV2ZW50TGlzdGVuZXIiLCJyZW1vdmVFdmVudExpc3RlbmVyIiwic2V0SW50ZXJ2YWwiLCJjYWxsYmFjayIsImRlbGF5IiwiYXJncyIsIk1hdGgiLCJyYW5kb20iLCJzZXRUaW1lb3V0IiwiY2xlYXJJbnRlcnZhbCIsImlkIiwiY2xlYXJUaW1lb3V0Il0sIm1hcHBpbmdzIjoiQUFBQSxrQ0FBa0M7QUFFbEMsK0NBQStDOztBQUMvQyxNQUFNLEVBQUVBLFdBQVcsRUFBRUMsV0FBVyxFQUFFLEdBQUdDLFFBQVE7QUFDN0NDLE9BQU9ILFdBQVcsR0FBR0E7QUFDckJHLE9BQU9GLFdBQVcsR0FBR0E7QUFFckIsaUJBQWlCO0FBQ2pCQyxRQUFRO0FBRVIsZUFBZTtBQUNmLE1BQU0sRUFBRUUsR0FBRyxFQUFFQyxlQUFlLEVBQUUsR0FBR0gsUUFBUTtBQUN6Q0MsT0FBT0MsR0FBRyxHQUFHQTtBQUNiRCxPQUFPRSxlQUFlLEdBQUdBO0FBRXpCLHVCQUF1QjtBQUN2QixJQUFJO0lBQ0YsTUFBTSxFQUFFQyxjQUFjLEVBQUVDLGNBQWMsRUFBRUMsZUFBZSxFQUFFLEdBQUdOLFFBQVE7SUFDcEUsSUFBSSxDQUFDQyxPQUFPRyxjQUFjLEVBQUVILE9BQU9HLGNBQWMsR0FBR0E7SUFDcEQsSUFBSSxDQUFDSCxPQUFPSSxjQUFjLEVBQUVKLE9BQU9JLGNBQWMsR0FBR0E7SUFDcEQsSUFBSSxDQUFDSixPQUFPSyxlQUFlLEVBQUVMLE9BQU9LLGVBQWUsR0FBR0E7QUFDeEQsRUFBRSxPQUFPQyxHQUFHO0lBQ1YscUVBQXFFO0lBQ3JFQyxRQUFRQyxJQUFJLENBQUM7SUFDYixJQUFJLENBQUNSLE9BQU9HLGNBQWMsRUFBRTtRQUMxQkgsT0FBT0csY0FBYyxHQUFHLE1BQU1BO1FBQWdCO0lBQ2hEO0lBQ0EsSUFBSSxDQUFDSCxPQUFPSyxlQUFlLEVBQUU7UUFDM0JMLE9BQU9LLGVBQWUsR0FBRyxNQUFNQTtRQUFpQjtJQUNsRDtBQUNGO0FBRUEsMkJBQTJCO0FBQzNCLElBQUksQ0FBQ0wsT0FBT1MsZUFBZSxFQUFFO0lBQzNCVCxPQUFPUyxlQUFlLEdBQUdWLFFBQVEsb0JBQW9CVSxlQUFlO0FBQ3RFO0FBRUEsaUVBQWlFO0FBQ2pFLElBQUksQ0FBQ1QsT0FBT1UsZ0JBQWdCLEVBQUU7SUFDNUJWLE9BQU9VLGdCQUFnQixHQUFHLE1BQU1BO1FBQzlCQyxZQUFZQyxJQUFJLENBQUU7WUFDaEIsSUFBSSxDQUFDQSxJQUFJLEdBQUdBO1FBQ2Q7UUFDQUMsY0FBYyxDQUFDO1FBQ2ZDLFFBQVEsQ0FBQztRQUNUQyxtQkFBbUIsQ0FBQztRQUNwQkMsc0JBQXNCLENBQUM7SUFDekI7QUFDRjtBQUVBLDBFQUEwRTtBQUMxRSx1RUFBdUU7QUFDdkUsSUFBSSxPQUFPaEIsT0FBT2lCLFdBQVcsS0FBSyxhQUFhO0lBQzdDakIsT0FBT2lCLFdBQVcsR0FBRyxTQUFTQyxRQUFRLEVBQUVDLEtBQUssRUFBRSxHQUFHQyxJQUFJO1FBQ3BELCtCQUErQjtRQUMvQixPQUFPQyxLQUFLQyxNQUFNO0lBQ3BCO0FBQ0Y7QUFFQSxJQUFJLE9BQU90QixPQUFPdUIsVUFBVSxLQUFLLGFBQWE7SUFDNUN2QixPQUFPdUIsVUFBVSxHQUFHLFNBQVNMLFFBQVEsRUFBRUMsS0FBSyxFQUFFLEdBQUdDLElBQUk7UUFDbkQsK0JBQStCO1FBQy9CLE9BQU9DLEtBQUtDLE1BQU07SUFDcEI7QUFDRjtBQUVBLElBQUksT0FBT3RCLE9BQU93QixhQUFhLEtBQUssYUFBYTtJQUMvQ3hCLE9BQU93QixhQUFhLEdBQUcsU0FBU0MsRUFBRTtJQUNoQyxvQkFBb0I7SUFDdEI7QUFDRjtBQUVBLElBQUksT0FBT3pCLE9BQU8wQixZQUFZLEtBQUssYUFBYTtJQUM5QzFCLE9BQU8wQixZQUFZLEdBQUcsU0FBU0QsRUFBRTtJQUMvQixvQkFBb0I7SUFDdEI7QUFDRiJ9

@@ -1,0 +1,146 @@
+On branch epic-2-render-migration
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .jest-cache/haste-map-cf79b29e129d130002f5eca8640cd0b2-ee559122af2d49cc9fab78614a8736a5-c6c0e836d47f7d730972eea403cfe415
+	modified:   .jest-cache/perf-cache-cf79b29e129d130002f5eca8640cd0b2-da39a3ee5e6b4b0d3255bfef95601890
+	modified:   next.config.js
+	modified:   package-lock.json
+	modified:   package.json
+	modified:   src/app/admin/page.tsx
+	modified:   src/app/callback/page.tsx
+	modified:   src/app/causal-edge/page.tsx
+	modified:   src/app/dashboard/page.tsx
+	modified:   src/app/layout.tsx
+	modified:   src/app/market-edge/page.tsx
+	modified:   src/app/users/page.tsx
+	modified:   src/app/value-edge/page.tsx
+	modified:   src/components/admin/OrganisationCreateForm.tsx
+	modified:   src/components/admin/OrganisationEditForm.tsx
+	modified:   src/components/admin/OrganisationManager.tsx
+	modified:   src/components/admin/OrganisationsList.tsx
+	modified:   src/components/admin/OrganizationUserManagement.tsx
+	modified:   src/components/admin/SuperAdminUserProvisioning.tsx
+	modified:   src/components/layout/DashboardLayout.tsx
+	modified:   src/components/providers/OrganisationProvider.tsx
+	modified:   src/components/providers/QueryProvider.tsx
+	modified:   src/components/ui/AccountMenu.tsx
+	modified:   src/components/ui/ApplicationSwitcher.tsx
+	modified:   src/components/ui/Modal.tsx
+	modified:   src/hooks/useAuth.ts
+	modified:   src/hooks/useRouteProtection.ts
+	modified:   src/services/api.ts
+	modified:   src/services/auth.ts
+	modified:   src/types/auth.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.env.development
+	.env.staging
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/01/
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/03/DashboardLayout_03d4682b8e873569438b7207c919523e
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/03/DashboardLayout_03d4682b8e873569438b7207c919523e.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/10/FeatureFlaggedContent_10b1e22bec74ffde140ef310191b7c83
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/10/FeatureFlaggedContent_10b1e22bec74ffde140ef310191b7c83.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/1c/BulkUserImport_1cbd0522c7f9bfcc981921f8ff8996e8
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/1c/BulkUserImport_1cbd0522c7f9bfcc981921f8ff8996e8.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/2a/
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/2c/CompetitorTable_2c219d5de019e6e68f0be7581ca90c3b
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/2c/CompetitorTable_2c219d5de019e6e68f0be7581ca90c3b.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/2d/useModuleFeatureFlag_2d201beb60d0f0d0e9e15aa48849407c
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/2d/useModuleFeatureFlag_2d201beb60d0f0d0e9e15aa48849407c.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/38/marketedgeapi_386e0c25390540fdb6772bcec8c26841
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/38/marketedgeapi_386e0c25390540fdb6772bcec8c26841.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/41/AccountMenu_41901b785c8df45ae772ed0910129048
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/41/AccountMenu_41901b785c8df45ae772ed0910129048.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/44/
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/45/
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/51/ModuleFeatureFlagIntegrationtest_51f64a9a4430f6b5e45a5e4dd8423e2a
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/51/ModuleFeatureFlagIntegrationtest_51f64a9a4430f6b5e45a5e4dd8423e2a.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/53/applicationaccess_53a9f14498baf2b119336e8aee111516
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/53/applicationaccess_53a9f14498baf2b119336e8aee111516.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/55/
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/5b/Modal_5b8472bcba8856926ab789fe3bdc1096
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/5b/Modal_5b8472bcba8856926ab789fe3bdc1096.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/5b/featureflags_5b7fa660b30834da6451bd0978c97889
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/5b/featureflags_5b7fa660b30834da6451bd0978c97889.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/6d/ApplicationIcons_6d31cf17639f8408761aec58dc310c68
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/6d/ApplicationIcons_6d31cf17639f8408761aec58dc310c68.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/76/useFeatureFlagstest_760964b7a29fbd5db0109ea5662b9879
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/76/useFeatureFlagstest_760964b7a29fbd5db0109ea5662b9879.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/77/
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/7b/
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/7f/ApplicationLayout_7f762ccdedbb797fda73313879be4179
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/7f/ApplicationLayout_7f762ccdedbb797fda73313879be4179.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/84/CinemaMarketShareChart_84dee67ad7852e1affc82ae5500a6667
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/84/CinemaMarketShareChart_84dee67ad7852e1affc82ae5500a6667.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/9c/LiveDataContainer_9c6cbaf2a366ded2325e4d01eb29f4a7
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/9c/LiveDataContainer_9c6cbaf2a366ded2325e4d01eb29f4a7.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/a0/
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/b5/auth_b5e477fe48fc4ca97ee8fd2d24da3534
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/b5/auth_b5e477fe48fc4ca97ee8fd2d24da3534.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/be/modulefeatureflagapi_be72bb4aabbc558e039c0dbba8e3c8c0
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/be/modulefeatureflagapi_be72bb4aabbc558e039c0dbba8e3c8c0.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/cf/useFeatureFlags_cf43f5ff851fe66c9137d7db95e6caf5
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/cf/useFeatureFlags_cf43f5ff851fe66c9137d7db95e6caf5.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/d1/OrganisationProvider_d1751362bf81fbe3005fd3136895bdf8
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/d1/OrganisationProvider_d1751362bf81fbe3005fd3136895bdf8.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/d3/ApplicationRegistry_d3985c5fe3a6145ea51f64b71ab1b93d
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/d3/ApplicationRegistry_d3985c5fe3a6145ea51f64b71ab1b93d.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/dc/page_dcd6b8a5afe9f202b221b6100387421f
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/dc/page_dcd6b8a5afe9f202b221b6100387421f.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/de/
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/ea/
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/eb/FeatureFlaggedApplicationRegistry_eb28bb71ff0dac1bccbcd280711467d8
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/eb/FeatureFlaggedApplicationRegistry_eb28bb71ff0dac1bccbcd280711467d8.map
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/fc/featureflagapi_fc6e495bc72a96b96e614a0a1e53a3fb
+	.jest-cache/jest-transform-cache-cf79b29e129d130002f5eca8640cd0b2-79ef2876fae7ca75eedb2aa53dc48338/fc/featureflagapi_fc6e495bc72a96b96e614a0a1e53a3fb.map
+	LOCAL_DEVELOPMENT_FIXES_SUMMARY.md
+	LOCAL_DEVELOPMENT_SETUP.md
+	dev-output.log
+	dev-server.log
+	dev-startup.log
+	dev-test.log
+	frontend.log
+	scripts/test-auth-fix.js
+	scripts/test-local-auth.js
+	src/__tests__/integration/ModuleFeatureFlagIntegration.test.tsx
+	src/components/admin/BulkUserImport.tsx
+	src/components/admin/EnhancedModuleManager.tsx
+	src/components/admin/ModuleDiscovery.tsx
+	src/components/admin/ModuleFlagManager.tsx
+	src/components/admin/UserDetailsModal.tsx
+	src/components/admin/__tests__/BulkUserImport.test.tsx
+	src/components/applications/
+	src/components/dev/
+	src/components/layout/ApplicationLayout.tsx
+	src/components/providers/AuthContextProvider.tsx
+	src/components/providers/FeatureFlagProvider.tsx
+	src/components/ui/ApplicationIcons.tsx
+	src/components/ui/ApplicationRegistry.tsx
+	src/components/ui/DemoModeToggle.tsx
+	src/components/ui/FeatureFlaggedApplicationRegistry.tsx
+	src/components/ui/FeatureFlaggedContent.tsx
+	src/components/ui/LiveDataContainer.tsx
+	src/components/ui/PlaceholderContent.tsx
+	src/hooks/README.md
+	src/hooks/__tests__/useFeatureFlags.test.tsx
+	src/hooks/index.ts
+	src/hooks/useApplicationAccess.ts
+	src/hooks/useFeatureFlagUpdates.ts
+	src/hooks/useFeatureFlags.ts
+	src/hooks/useModuleFeatureFlag.ts
+	src/hooks/useModuleFeatureFlags.ts
+	src/hooks/useRouteProtection.ts.backup
+	src/services/feature-flag-api.ts
+	src/types/feature-flags.ts
+	src/types/index.ts
+	src/types/module-feature-flags.ts
+	src/utils/application-access.ts
+	src/utils/auth-redirect.ts
+	src/utils/feature-flags.ts
+	src/utils/module-feature-flag-integration.ts
+	tsconfig.tsbuildinfo
+	vercel-staging.json
+
+no changes added to commit (use "git add" and/or "git commit -a")

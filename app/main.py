@@ -81,6 +81,22 @@ logger.info(f"🎯 Including API router with prefix: {settings.API_V1_STR}")
 app.include_router(api_router, prefix=settings.API_V1_STR)
 logger.info("✅ API router included successfully - Epic 1 & 2 endpoints now available")
 
+# EMERGENCY CORS FIX: Add explicit OPTIONS handler for Zebra Associates
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """Handle CORS preflight requests for all routes - Critical for £925K opportunity"""
+    from fastapi.responses import Response
+    logger.info(f"🌐 CORS preflight request for: /{full_path}")
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "https://app.zebra.associates",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, X-Requested-With, Origin, X-Tenant-ID",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
+
 @app.on_event("startup")
 async def startup_event():
     """Production startup with graceful degradation for £925K opportunity"""

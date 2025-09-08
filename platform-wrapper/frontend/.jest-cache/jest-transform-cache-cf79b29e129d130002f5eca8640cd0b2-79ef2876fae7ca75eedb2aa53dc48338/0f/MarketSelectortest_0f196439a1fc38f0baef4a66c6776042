@@ -1,0 +1,308 @@
+60f03dcf882d8566ecbe3393518bf720
+/**
+ * Test file for MarketSelector component
+ * 
+ * Demonstrates multi-tenant testing patterns with industry-specific scenarios
+ */ "use strict";
+// Mock the MarketSelector component for testing
+jest.mock("../MarketSelector", ()=>({
+        MarketSelector: ({ onMarketChange, currentMarket, industry })=>/*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                "data-testid": "market-selector",
+                children: [
+                    /*#__PURE__*/ (0, _jsxruntime.jsxs)("select", {
+                        value: currentMarket || "",
+                        onChange: (e)=>onMarketChange?.(e.target.value),
+                        "data-testid": "market-select",
+                        children: [
+                            /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                value: "",
+                                children: "Select Market"
+                            }),
+                            industry === "cinema" && /*#__PURE__*/ (0, _jsxruntime.jsxs)(_jsxruntime.Fragment, {
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "cinema-downtown",
+                                        children: "Downtown Cinema"
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "cinema-mall",
+                                        children: "Mall Cinema"
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "cinema-suburban",
+                                        children: "Suburban Cinema"
+                                    })
+                                ]
+                            }),
+                            industry === "hotel" && /*#__PURE__*/ (0, _jsxruntime.jsxs)(_jsxruntime.Fragment, {
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "hotel-luxury",
+                                        children: "Luxury Hotels"
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "hotel-business",
+                                        children: "Business Hotels"
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "hotel-budget",
+                                        children: "Budget Hotels"
+                                    })
+                                ]
+                            }),
+                            industry === "gym" && /*#__PURE__*/ (0, _jsxruntime.jsxs)(_jsxruntime.Fragment, {
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "gym-premium",
+                                        children: "Premium Fitness"
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "gym-community",
+                                        children: "Community Gyms"
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "gym-24h",
+                                        children: "24/7 Gyms"
+                                    })
+                                ]
+                            }),
+                            (!industry || industry === "general") && /*#__PURE__*/ (0, _jsxruntime.jsxs)(_jsxruntime.Fragment, {
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "general-local",
+                                        children: "Local Market"
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "general-regional",
+                                        children: "Regional Market"
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsx)("option", {
+                                        value: "general-national",
+                                        children: "National Market"
+                                    })
+                                ]
+                            })
+                        ]
+                    }),
+                    /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                        "data-testid": "market-info",
+                        children: [
+                            "Current Industry: ",
+                            industry || "general"
+                        ]
+                    })
+                ]
+            })
+    }));
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+const _jsxruntime = require("react/jsx-runtime");
+const _react = /*#__PURE__*/ _interop_require_default(require("react"));
+const _react1 = require("@testing-library/react");
+const _testutils = require("../../../utils/test-utils");
+const _MarketSelector = require("../MarketSelector");
+function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}
+describe("MarketSelector Component", ()=>{
+    describe("Basic functionality", ()=>{
+        it("renders with default props", ()=>{
+            (0, _testutils.renderWithProviders)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}));
+            expect(_react1.screen.getByTestId("market-selector")).toBeInTheDocument();
+            expect(_react1.screen.getByTestId("market-select")).toBeInTheDocument();
+        });
+        it("displays current market selection", ()=>{
+            (0, _testutils.renderWithProviders)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {
+                currentMarket: "general-local"
+            }));
+            const select = _react1.screen.getByTestId("market-select");
+            expect(select.value).toBe("general-local");
+        });
+        it("calls onMarketChange when selection changes", async ()=>{
+            const onMarketChange = jest.fn();
+            const { user } = (0, _testutils.renderWithProviders)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {
+                onMarketChange: onMarketChange
+            }));
+            const select = _react1.screen.getByTestId("market-select");
+            await user.selectOptions(select, "general-regional");
+            expect(onMarketChange).toHaveBeenCalledWith("general-regional");
+        });
+    });
+    describe("Industry-specific behavior", ()=>{
+        it("shows cinema-specific markets for cinema industry", ()=>{
+            (0, _testutils.renderForIndustry)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}), "cinema");
+            expect(_react1.screen.getByText("Downtown Cinema")).toBeInTheDocument();
+            expect(_react1.screen.getByText("Mall Cinema")).toBeInTheDocument();
+            expect(_react1.screen.getByText("Suburban Cinema")).toBeInTheDocument();
+            expect(_react1.screen.getByText("Current Industry: cinema")).toBeInTheDocument();
+        });
+        it("shows hotel-specific markets for hotel industry", ()=>{
+            (0, _testutils.renderForIndustry)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}), "hotel");
+            expect(_react1.screen.getByText("Luxury Hotels")).toBeInTheDocument();
+            expect(_react1.screen.getByText("Business Hotels")).toBeInTheDocument();
+            expect(_react1.screen.getByText("Budget Hotels")).toBeInTheDocument();
+            expect(_react1.screen.getByText("Current Industry: hotel")).toBeInTheDocument();
+        });
+        it("shows gym-specific markets for gym industry", ()=>{
+            (0, _testutils.renderForIndustry)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}), "gym");
+            expect(_react1.screen.getByText("Premium Fitness")).toBeInTheDocument();
+            expect(_react1.screen.getByText("Community Gyms")).toBeInTheDocument();
+            expect(_react1.screen.getByText("24/7 Gyms")).toBeInTheDocument();
+            expect(_react1.screen.getByText("Current Industry: gym")).toBeInTheDocument();
+        });
+        it("shows general markets for unknown industry", ()=>{
+            (0, _testutils.renderForIndustry)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}), "general");
+            expect(_react1.screen.getByText("Local Market")).toBeInTheDocument();
+            expect(_react1.screen.getByText("Regional Market")).toBeInTheDocument();
+            expect(_react1.screen.getByText("National Market")).toBeInTheDocument();
+            expect(_react1.screen.getByText("Current Industry: general")).toBeInTheDocument();
+        });
+    });
+    describe("Multi-tenant isolation", ()=>{
+        it("preserves market selection across tenant switches", async ()=>{
+            const onMarketChange = jest.fn();
+            // Render for cinema tenant
+            const { rerender, user } = (0, _testutils.renderForIndustry)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {
+                onMarketChange: onMarketChange
+            }), "cinema");
+            // Select cinema market
+            const select = _react1.screen.getByTestId("market-select");
+            await user.selectOptions(select, "cinema-downtown");
+            expect(onMarketChange).toHaveBeenCalledWith("cinema-downtown");
+            // Switch to hotel tenant
+            rerender(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {
+                onMarketChange: onMarketChange,
+                currentMarket: "hotel-luxury"
+            }), {
+                industryType: "hotel"
+            });
+            // Should show hotel options now
+            expect(_react1.screen.getByText("Luxury Hotels")).toBeInTheDocument();
+            expect(_react1.screen.getByText("Current Industry: hotel")).toBeInTheDocument();
+        });
+    });
+    describe("Accessibility", ()=>{
+        it("has no accessibility violations", async ()=>{
+            const { container } = (0, _testutils.renderWithProviders)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {
+                currentMarket: "general-local"
+            }));
+            await (0, _testutils.testAccessibility)(container);
+        });
+        it("supports keyboard navigation", async ()=>{
+            const onMarketChange = jest.fn();
+            const { user } = (0, _testutils.renderWithProviders)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {
+                onMarketChange: onMarketChange
+            }));
+            const select = _react1.screen.getByTestId("market-select");
+            // Focus and navigate with keyboard
+            select.focus();
+            await user.keyboard("{ArrowDown}");
+            await user.keyboard("{Enter}");
+            expect(onMarketChange).toHaveBeenCalled();
+        });
+        it("has proper ARIA labels and descriptions", ()=>{
+            (0, _testutils.renderWithProviders)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}));
+            const select = _react1.screen.getByTestId("market-select");
+            expect(select).toBeInTheDocument();
+            // Should have accessible name
+            expect(select).toBeVisible();
+        });
+    });
+    describe("Loading states", ()=>{
+        it("handles loading state gracefully", async ()=>{
+            // Mock API delay
+            _testutils.mockApiEndpoints.mockMarketEdge();
+            const { container } = (0, _testutils.renderWithProviders)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}));
+            await (0, _testutils.waitForLoadingToFinish)(container);
+            expect(_react1.screen.getByTestId("market-selector")).toBeInTheDocument();
+        });
+    });
+    describe("Error handling", ()=>{
+        it("displays error state when API fails", async ()=>{
+            // Mock API failure
+            _testutils.mockApiEndpoints.mockMarketEdge();
+            (0, _testutils.renderWithProviders)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}));
+            // Component should still render with fallback options
+            expect(_react1.screen.getByTestId("market-selector")).toBeInTheDocument();
+        });
+    });
+    describe("Performance", ()=>{
+        it("renders efficiently with many market options", async ()=>{
+            const manyMarkets = _testutils.generateTestData.competitors(50);
+            const startTime = performance.now();
+            (0, _testutils.renderWithProviders)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}));
+            const endTime = performance.now();
+            const renderTime = endTime - startTime;
+            // Should render in reasonable time (< 100ms)
+            expect(renderTime).toBeLessThan(100);
+        });
+    });
+    describe("Integration scenarios", ()=>{
+        describe("Cinema industry", ()=>{
+            beforeEach(()=>{
+                _testutils.industryTestScenarios.cinema.ticketingSystem();
+            });
+            it("integrates with cinema ticketing data", async ()=>{
+                const onMarketChange = jest.fn();
+                const { user } = (0, _testutils.renderForIndustry)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {
+                    onMarketChange: onMarketChange
+                }), "cinema");
+                // Select cinema market
+                const select = _react1.screen.getByTestId("market-select");
+                await user.selectOptions(select, "cinema-downtown");
+                expect(onMarketChange).toHaveBeenCalledWith("cinema-downtown");
+                // Should trigger integration with ticketing system
+                await (0, _react1.waitFor)(()=>{
+                    expect(_react1.screen.getByText("Current Industry: cinema")).toBeInTheDocument();
+                });
+            });
+        });
+        describe("Hotel industry", ()=>{
+            beforeEach(()=>{
+                _testutils.industryTestScenarios.hotel.realTimePricing();
+            });
+            it("integrates with real-time pricing data", async ()=>{
+                const onMarketChange = jest.fn();
+                const { user } = (0, _testutils.renderForIndustry)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {
+                    onMarketChange: onMarketChange
+                }), "hotel");
+                const select = _react1.screen.getByTestId("market-select");
+                await user.selectOptions(select, "hotel-luxury");
+                expect(onMarketChange).toHaveBeenCalledWith("hotel-luxury");
+            });
+        });
+        describe("Gym industry", ()=>{
+            beforeEach(()=>{
+                _testutils.industryTestScenarios.gym.membershipTracking();
+            });
+            it("integrates with membership tracking", async ()=>{
+                const onMarketChange = jest.fn();
+                const { user } = (0, _testutils.renderForIndustry)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {
+                    onMarketChange: onMarketChange
+                }), "gym");
+                const select = _react1.screen.getByTestId("market-select");
+                await user.selectOptions(select, "gym-premium");
+                expect(onMarketChange).toHaveBeenCalledWith("gym-premium");
+            });
+        });
+    });
+    describe("Snapshot tests", ()=>{
+        it("matches snapshot for general industry", ()=>{
+            const { container } = (0, _testutils.renderWithProviders)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}));
+            expect(container.firstChild).toMatchSnapshot();
+        });
+        it("matches snapshot for cinema industry", ()=>{
+            const { container } = (0, _testutils.renderForIndustry)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}), "cinema");
+            expect(container.firstChild).toMatchSnapshot();
+        });
+        it("matches snapshot for hotel industry", ()=>{
+            const { container } = (0, _testutils.renderForIndustry)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_MarketSelector.MarketSelector, {}), "hotel");
+            expect(container.firstChild).toMatchSnapshot();
+        });
+    });
+});
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy9tYXR0L1NpdGVzL01hcmtldEVkZ2UvcGxhdGZvcm0td3JhcHBlci9mcm9udGVuZC9zcmMvY29tcG9uZW50cy9tYXJrZXQtZWRnZS9fX3Rlc3RzX18vTWFya2V0U2VsZWN0b3IudGVzdC50c3giXSwic291cmNlc0NvbnRlbnQiOlsiLyoqXG4gKiBUZXN0IGZpbGUgZm9yIE1hcmtldFNlbGVjdG9yIGNvbXBvbmVudFxuICogXG4gKiBEZW1vbnN0cmF0ZXMgbXVsdGktdGVuYW50IHRlc3RpbmcgcGF0dGVybnMgd2l0aCBpbmR1c3RyeS1zcGVjaWZpYyBzY2VuYXJpb3NcbiAqL1xuXG5pbXBvcnQgUmVhY3QgZnJvbSAncmVhY3QnXG5pbXBvcnQgeyBzY3JlZW4sIHdhaXRGb3IgfSBmcm9tICdAdGVzdGluZy1saWJyYXJ5L3JlYWN0J1xuaW1wb3J0IHVzZXJFdmVudCBmcm9tICdAdGVzdGluZy1saWJyYXJ5L3VzZXItZXZlbnQnXG5pbXBvcnQgeyBcbiAgcmVuZGVyV2l0aFByb3ZpZGVycyxcbiAgcmVuZGVyRm9ySW5kdXN0cnksXG4gIG1vY2tBcGlFbmRwb2ludHMsXG4gIHRlc3RBY2Nlc3NpYmlsaXR5LFxuICBpbmR1c3RyeVRlc3RTY2VuYXJpb3MsXG4gIGdlbmVyYXRlVGVzdERhdGEsXG4gIHdhaXRGb3JMb2FkaW5nVG9GaW5pc2gsXG59IGZyb20gJy4uLy4uLy4uL3V0aWxzL3Rlc3QtdXRpbHMnXG5pbXBvcnQgeyBNYXJrZXRTZWxlY3RvciB9IGZyb20gJy4uL01hcmtldFNlbGVjdG9yJ1xuXG4vLyBNb2NrIHRoZSBNYXJrZXRTZWxlY3RvciBjb21wb25lbnQgZm9yIHRlc3Rpbmdcbmplc3QubW9jaygnLi4vTWFya2V0U2VsZWN0b3InLCAoKSA9PiAoe1xuICBNYXJrZXRTZWxlY3RvcjogKHsgb25NYXJrZXRDaGFuZ2UsIGN1cnJlbnRNYXJrZXQsIGluZHVzdHJ5IH06IGFueSkgPT4gKFxuICAgIDxkaXYgZGF0YS10ZXN0aWQ9XCJtYXJrZXQtc2VsZWN0b3JcIj5cbiAgICAgIDxzZWxlY3RcbiAgICAgICAgdmFsdWU9e2N1cnJlbnRNYXJrZXQgfHwgJyd9XG4gICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gb25NYXJrZXRDaGFuZ2U/LihlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgIGRhdGEtdGVzdGlkPVwibWFya2V0LXNlbGVjdFwiXG4gICAgICA+XG4gICAgICAgIDxvcHRpb24gdmFsdWU9XCJcIj5TZWxlY3QgTWFya2V0PC9vcHRpb24+XG4gICAgICAgIHtpbmR1c3RyeSA9PT0gJ2NpbmVtYScgJiYgKFxuICAgICAgICAgIDw+XG4gICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiY2luZW1hLWRvd250b3duXCI+RG93bnRvd24gQ2luZW1hPC9vcHRpb24+XG4gICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiY2luZW1hLW1hbGxcIj5NYWxsIENpbmVtYTwvb3B0aW9uPlxuICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cImNpbmVtYS1zdWJ1cmJhblwiPlN1YnVyYmFuIENpbmVtYTwvb3B0aW9uPlxuICAgICAgICAgIDwvPlxuICAgICAgICApfVxuICAgICAgICB7aW5kdXN0cnkgPT09ICdob3RlbCcgJiYgKFxuICAgICAgICAgIDw+XG4gICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiaG90ZWwtbHV4dXJ5XCI+THV4dXJ5IEhvdGVsczwvb3B0aW9uPlxuICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cImhvdGVsLWJ1c2luZXNzXCI+QnVzaW5lc3MgSG90ZWxzPC9vcHRpb24+XG4gICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiaG90ZWwtYnVkZ2V0XCI+QnVkZ2V0IEhvdGVsczwvb3B0aW9uPlxuICAgICAgICAgIDwvPlxuICAgICAgICApfVxuICAgICAgICB7aW5kdXN0cnkgPT09ICdneW0nICYmIChcbiAgICAgICAgICA8PlxuICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cImd5bS1wcmVtaXVtXCI+UHJlbWl1bSBGaXRuZXNzPC9vcHRpb24+XG4gICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiZ3ltLWNvbW11bml0eVwiPkNvbW11bml0eSBHeW1zPC9vcHRpb24+XG4gICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiZ3ltLTI0aFwiPjI0LzcgR3ltczwvb3B0aW9uPlxuICAgICAgICAgIDwvPlxuICAgICAgICApfVxuICAgICAgICB7KCFpbmR1c3RyeSB8fCBpbmR1c3RyeSA9PT0gJ2dlbmVyYWwnKSAmJiAoXG4gICAgICAgICAgPD5cbiAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJnZW5lcmFsLWxvY2FsXCI+TG9jYWwgTWFya2V0PC9vcHRpb24+XG4gICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiZ2VuZXJhbC1yZWdpb25hbFwiPlJlZ2lvbmFsIE1hcmtldDwvb3B0aW9uPlxuICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cImdlbmVyYWwtbmF0aW9uYWxcIj5OYXRpb25hbCBNYXJrZXQ8L29wdGlvbj5cbiAgICAgICAgICA8Lz5cbiAgICAgICAgKX1cbiAgICAgIDwvc2VsZWN0PlxuICAgICAgPGRpdiBkYXRhLXRlc3RpZD1cIm1hcmtldC1pbmZvXCI+XG4gICAgICAgIEN1cnJlbnQgSW5kdXN0cnk6IHtpbmR1c3RyeSB8fCAnZ2VuZXJhbCd9XG4gICAgICA8L2Rpdj5cbiAgICA8L2Rpdj5cbiAgKSxcbn0pKVxuXG5kZXNjcmliZSgnTWFya2V0U2VsZWN0b3IgQ29tcG9uZW50JywgKCkgPT4ge1xuICBcbiAgZGVzY3JpYmUoJ0Jhc2ljIGZ1bmN0aW9uYWxpdHknLCAoKSA9PiB7XG4gICAgaXQoJ3JlbmRlcnMgd2l0aCBkZWZhdWx0IHByb3BzJywgKCkgPT4ge1xuICAgICAgcmVuZGVyV2l0aFByb3ZpZGVycyg8TWFya2V0U2VsZWN0b3IgLz4pXG4gICAgICBcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXN0SWQoJ21hcmtldC1zZWxlY3RvcicpKS50b0JlSW5UaGVEb2N1bWVudCgpXG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGVzdElkKCdtYXJrZXQtc2VsZWN0JykpLnRvQmVJblRoZURvY3VtZW50KClcbiAgICB9KVxuICAgIFxuICAgIGl0KCdkaXNwbGF5cyBjdXJyZW50IG1hcmtldCBzZWxlY3Rpb24nLCAoKSA9PiB7XG4gICAgICByZW5kZXJXaXRoUHJvdmlkZXJzKFxuICAgICAgICA8TWFya2V0U2VsZWN0b3IgY3VycmVudE1hcmtldD1cImdlbmVyYWwtbG9jYWxcIiAvPlxuICAgICAgKVxuICAgICAgXG4gICAgICBjb25zdCBzZWxlY3QgPSBzY3JlZW4uZ2V0QnlUZXN0SWQoJ21hcmtldC1zZWxlY3QnKSBhcyBIVE1MU2VsZWN0RWxlbWVudFxuICAgICAgZXhwZWN0KHNlbGVjdC52YWx1ZSkudG9CZSgnZ2VuZXJhbC1sb2NhbCcpXG4gICAgfSlcbiAgICBcbiAgICBpdCgnY2FsbHMgb25NYXJrZXRDaGFuZ2Ugd2hlbiBzZWxlY3Rpb24gY2hhbmdlcycsIGFzeW5jICgpID0+IHtcbiAgICAgIGNvbnN0IG9uTWFya2V0Q2hhbmdlID0gamVzdC5mbigpXG4gICAgICBjb25zdCB7IHVzZXIgfSA9IHJlbmRlcldpdGhQcm92aWRlcnMoXG4gICAgICAgIDxNYXJrZXRTZWxlY3RvciBvbk1hcmtldENoYW5nZT17b25NYXJrZXRDaGFuZ2V9IC8+XG4gICAgICApXG4gICAgICBcbiAgICAgIGNvbnN0IHNlbGVjdCA9IHNjcmVlbi5nZXRCeVRlc3RJZCgnbWFya2V0LXNlbGVjdCcpXG4gICAgICBhd2FpdCB1c2VyLnNlbGVjdE9wdGlvbnMoc2VsZWN0LCAnZ2VuZXJhbC1yZWdpb25hbCcpXG4gICAgICBcbiAgICAgIGV4cGVjdChvbk1hcmtldENoYW5nZSkudG9IYXZlQmVlbkNhbGxlZFdpdGgoJ2dlbmVyYWwtcmVnaW9uYWwnKVxuICAgIH0pXG4gIH0pXG4gIFxuICBkZXNjcmliZSgnSW5kdXN0cnktc3BlY2lmaWMgYmVoYXZpb3InLCAoKSA9PiB7XG4gICAgaXQoJ3Nob3dzIGNpbmVtYS1zcGVjaWZpYyBtYXJrZXRzIGZvciBjaW5lbWEgaW5kdXN0cnknLCAoKSA9PiB7XG4gICAgICByZW5kZXJGb3JJbmR1c3RyeShcbiAgICAgICAgPE1hcmtldFNlbGVjdG9yIC8+LFxuICAgICAgICAnY2luZW1hJ1xuICAgICAgKVxuICAgICAgXG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgnRG93bnRvd24gQ2luZW1hJykpLnRvQmVJblRoZURvY3VtZW50KClcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdNYWxsIENpbmVtYScpKS50b0JlSW5UaGVEb2N1bWVudCgpXG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgnU3VidXJiYW4gQ2luZW1hJykpLnRvQmVJblRoZURvY3VtZW50KClcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdDdXJyZW50IEluZHVzdHJ5OiBjaW5lbWEnKSkudG9CZUluVGhlRG9jdW1lbnQoKVxuICAgIH0pXG4gICAgXG4gICAgaXQoJ3Nob3dzIGhvdGVsLXNwZWNpZmljIG1hcmtldHMgZm9yIGhvdGVsIGluZHVzdHJ5JywgKCkgPT4ge1xuICAgICAgcmVuZGVyRm9ySW5kdXN0cnkoXG4gICAgICAgIDxNYXJrZXRTZWxlY3RvciAvPixcbiAgICAgICAgJ2hvdGVsJ1xuICAgICAgKVxuICAgICAgXG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgnTHV4dXJ5IEhvdGVscycpKS50b0JlSW5UaGVEb2N1bWVudCgpXG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgnQnVzaW5lc3MgSG90ZWxzJykpLnRvQmVJblRoZURvY3VtZW50KClcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdCdWRnZXQgSG90ZWxzJykpLnRvQmVJblRoZURvY3VtZW50KClcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdDdXJyZW50IEluZHVzdHJ5OiBob3RlbCcpKS50b0JlSW5UaGVEb2N1bWVudCgpXG4gICAgfSlcbiAgICBcbiAgICBpdCgnc2hvd3MgZ3ltLXNwZWNpZmljIG1hcmtldHMgZm9yIGd5bSBpbmR1c3RyeScsICgpID0+IHtcbiAgICAgIHJlbmRlckZvckluZHVzdHJ5KFxuICAgICAgICA8TWFya2V0U2VsZWN0b3IgLz4sXG4gICAgICAgICdneW0nXG4gICAgICApXG4gICAgICBcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdQcmVtaXVtIEZpdG5lc3MnKSkudG9CZUluVGhlRG9jdW1lbnQoKVxuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRleHQoJ0NvbW11bml0eSBHeW1zJykpLnRvQmVJblRoZURvY3VtZW50KClcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCcyNC83IEd5bXMnKSkudG9CZUluVGhlRG9jdW1lbnQoKVxuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRleHQoJ0N1cnJlbnQgSW5kdXN0cnk6IGd5bScpKS50b0JlSW5UaGVEb2N1bWVudCgpXG4gICAgfSlcbiAgICBcbiAgICBpdCgnc2hvd3MgZ2VuZXJhbCBtYXJrZXRzIGZvciB1bmtub3duIGluZHVzdHJ5JywgKCkgPT4ge1xuICAgICAgcmVuZGVyRm9ySW5kdXN0cnkoXG4gICAgICAgIDxNYXJrZXRTZWxlY3RvciAvPixcbiAgICAgICAgJ2dlbmVyYWwnXG4gICAgICApXG4gICAgICBcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdMb2NhbCBNYXJrZXQnKSkudG9CZUluVGhlRG9jdW1lbnQoKVxuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRleHQoJ1JlZ2lvbmFsIE1hcmtldCcpKS50b0JlSW5UaGVEb2N1bWVudCgpXG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dCgnTmF0aW9uYWwgTWFya2V0JykpLnRvQmVJblRoZURvY3VtZW50KClcbiAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdDdXJyZW50IEluZHVzdHJ5OiBnZW5lcmFsJykpLnRvQmVJblRoZURvY3VtZW50KClcbiAgICB9KVxuICB9KVxuICBcbiAgZGVzY3JpYmUoJ011bHRpLXRlbmFudCBpc29sYXRpb24nLCAoKSA9PiB7XG4gICAgaXQoJ3ByZXNlcnZlcyBtYXJrZXQgc2VsZWN0aW9uIGFjcm9zcyB0ZW5hbnQgc3dpdGNoZXMnLCBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCBvbk1hcmtldENoYW5nZSA9IGplc3QuZm4oKVxuICAgICAgXG4gICAgICAvLyBSZW5kZXIgZm9yIGNpbmVtYSB0ZW5hbnRcbiAgICAgIGNvbnN0IHsgcmVyZW5kZXIsIHVzZXIgfSA9IHJlbmRlckZvckluZHVzdHJ5KFxuICAgICAgICA8TWFya2V0U2VsZWN0b3Igb25NYXJrZXRDaGFuZ2U9e29uTWFya2V0Q2hhbmdlfSAvPixcbiAgICAgICAgJ2NpbmVtYSdcbiAgICAgIClcbiAgICAgIFxuICAgICAgLy8gU2VsZWN0IGNpbmVtYSBtYXJrZXRcbiAgICAgIGNvbnN0IHNlbGVjdCA9IHNjcmVlbi5nZXRCeVRlc3RJZCgnbWFya2V0LXNlbGVjdCcpXG4gICAgICBhd2FpdCB1c2VyLnNlbGVjdE9wdGlvbnMoc2VsZWN0LCAnY2luZW1hLWRvd250b3duJylcbiAgICAgIFxuICAgICAgZXhwZWN0KG9uTWFya2V0Q2hhbmdlKS50b0hhdmVCZWVuQ2FsbGVkV2l0aCgnY2luZW1hLWRvd250b3duJylcbiAgICAgIFxuICAgICAgLy8gU3dpdGNoIHRvIGhvdGVsIHRlbmFudFxuICAgICAgcmVyZW5kZXIoXG4gICAgICAgIDxNYXJrZXRTZWxlY3RvciBcbiAgICAgICAgICBvbk1hcmtldENoYW5nZT17b25NYXJrZXRDaGFuZ2V9IFxuICAgICAgICAgIGN1cnJlbnRNYXJrZXQ9XCJob3RlbC1sdXh1cnlcIlxuICAgICAgICAvPixcbiAgICAgICAgeyBpbmR1c3RyeVR5cGU6ICdob3RlbCcgfVxuICAgICAgKVxuICAgICAgXG4gICAgICAvLyBTaG91bGQgc2hvdyBob3RlbCBvcHRpb25zIG5vd1xuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRleHQoJ0x1eHVyeSBIb3RlbHMnKSkudG9CZUluVGhlRG9jdW1lbnQoKVxuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRleHQoJ0N1cnJlbnQgSW5kdXN0cnk6IGhvdGVsJykpLnRvQmVJblRoZURvY3VtZW50KClcbiAgICB9KVxuICB9KVxuICBcbiAgZGVzY3JpYmUoJ0FjY2Vzc2liaWxpdHknLCAoKSA9PiB7XG4gICAgaXQoJ2hhcyBubyBhY2Nlc3NpYmlsaXR5IHZpb2xhdGlvbnMnLCBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCB7IGNvbnRhaW5lciB9ID0gcmVuZGVyV2l0aFByb3ZpZGVycyhcbiAgICAgICAgPE1hcmtldFNlbGVjdG9yIGN1cnJlbnRNYXJrZXQ9XCJnZW5lcmFsLWxvY2FsXCIgLz5cbiAgICAgIClcbiAgICAgIFxuICAgICAgYXdhaXQgdGVzdEFjY2Vzc2liaWxpdHkoY29udGFpbmVyKVxuICAgIH0pXG4gICAgXG4gICAgaXQoJ3N1cHBvcnRzIGtleWJvYXJkIG5hdmlnYXRpb24nLCBhc3luYyAoKSA9PiB7XG4gICAgICBjb25zdCBvbk1hcmtldENoYW5nZSA9IGplc3QuZm4oKVxuICAgICAgY29uc3QgeyB1c2VyIH0gPSByZW5kZXJXaXRoUHJvdmlkZXJzKFxuICAgICAgICA8TWFya2V0U2VsZWN0b3Igb25NYXJrZXRDaGFuZ2U9e29uTWFya2V0Q2hhbmdlfSAvPlxuICAgICAgKVxuICAgICAgXG4gICAgICBjb25zdCBzZWxlY3QgPSBzY3JlZW4uZ2V0QnlUZXN0SWQoJ21hcmtldC1zZWxlY3QnKVxuICAgICAgXG4gICAgICAvLyBGb2N1cyBhbmQgbmF2aWdhdGUgd2l0aCBrZXlib2FyZFxuICAgICAgc2VsZWN0LmZvY3VzKClcbiAgICAgIGF3YWl0IHVzZXIua2V5Ym9hcmQoJ3tBcnJvd0Rvd259JylcbiAgICAgIGF3YWl0IHVzZXIua2V5Ym9hcmQoJ3tFbnRlcn0nKVxuICAgICAgXG4gICAgICBleHBlY3Qob25NYXJrZXRDaGFuZ2UpLnRvSGF2ZUJlZW5DYWxsZWQoKVxuICAgIH0pXG4gICAgXG4gICAgaXQoJ2hhcyBwcm9wZXIgQVJJQSBsYWJlbHMgYW5kIGRlc2NyaXB0aW9ucycsICgpID0+IHtcbiAgICAgIHJlbmRlcldpdGhQcm92aWRlcnMoPE1hcmtldFNlbGVjdG9yIC8+KVxuICAgICAgXG4gICAgICBjb25zdCBzZWxlY3QgPSBzY3JlZW4uZ2V0QnlUZXN0SWQoJ21hcmtldC1zZWxlY3QnKVxuICAgICAgZXhwZWN0KHNlbGVjdCkudG9CZUluVGhlRG9jdW1lbnQoKVxuICAgICAgXG4gICAgICAvLyBTaG91bGQgaGF2ZSBhY2Nlc3NpYmxlIG5hbWVcbiAgICAgIGV4cGVjdChzZWxlY3QpLnRvQmVWaXNpYmxlKClcbiAgICB9KVxuICB9KVxuICBcbiAgZGVzY3JpYmUoJ0xvYWRpbmcgc3RhdGVzJywgKCkgPT4ge1xuICAgIGl0KCdoYW5kbGVzIGxvYWRpbmcgc3RhdGUgZ3JhY2VmdWxseScsIGFzeW5jICgpID0+IHtcbiAgICAgIC8vIE1vY2sgQVBJIGRlbGF5XG4gICAgICBtb2NrQXBpRW5kcG9pbnRzLm1vY2tNYXJrZXRFZGdlKClcbiAgICAgIFxuICAgICAgY29uc3QgeyBjb250YWluZXIgfSA9IHJlbmRlcldpdGhQcm92aWRlcnMoXG4gICAgICAgIDxNYXJrZXRTZWxlY3RvciAvPlxuICAgICAgKVxuICAgICAgXG4gICAgICBhd2FpdCB3YWl0Rm9yTG9hZGluZ1RvRmluaXNoKGNvbnRhaW5lcilcbiAgICAgIFxuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRlc3RJZCgnbWFya2V0LXNlbGVjdG9yJykpLnRvQmVJblRoZURvY3VtZW50KClcbiAgICB9KVxuICB9KVxuICBcbiAgZGVzY3JpYmUoJ0Vycm9yIGhhbmRsaW5nJywgKCkgPT4ge1xuICAgIGl0KCdkaXNwbGF5cyBlcnJvciBzdGF0ZSB3aGVuIEFQSSBmYWlscycsIGFzeW5jICgpID0+IHtcbiAgICAgIC8vIE1vY2sgQVBJIGZhaWx1cmVcbiAgICAgIG1vY2tBcGlFbmRwb2ludHMubW9ja01hcmtldEVkZ2UoKVxuICAgICAgXG4gICAgICByZW5kZXJXaXRoUHJvdmlkZXJzKDxNYXJrZXRTZWxlY3RvciAvPilcbiAgICAgIFxuICAgICAgLy8gQ29tcG9uZW50IHNob3VsZCBzdGlsbCByZW5kZXIgd2l0aCBmYWxsYmFjayBvcHRpb25zXG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGVzdElkKCdtYXJrZXQtc2VsZWN0b3InKSkudG9CZUluVGhlRG9jdW1lbnQoKVxuICAgIH0pXG4gIH0pXG4gIFxuICBkZXNjcmliZSgnUGVyZm9ybWFuY2UnLCAoKSA9PiB7XG4gICAgaXQoJ3JlbmRlcnMgZWZmaWNpZW50bHkgd2l0aCBtYW55IG1hcmtldCBvcHRpb25zJywgYXN5bmMgKCkgPT4ge1xuICAgICAgY29uc3QgbWFueU1hcmtldHMgPSBnZW5lcmF0ZVRlc3REYXRhLmNvbXBldGl0b3JzKDUwKVxuICAgICAgXG4gICAgICBjb25zdCBzdGFydFRpbWUgPSBwZXJmb3JtYW5jZS5ub3coKVxuICAgICAgXG4gICAgICByZW5kZXJXaXRoUHJvdmlkZXJzKFxuICAgICAgICA8TWFya2V0U2VsZWN0b3IgLz5cbiAgICAgIClcbiAgICAgIFxuICAgICAgY29uc3QgZW5kVGltZSA9IHBlcmZvcm1hbmNlLm5vdygpXG4gICAgICBjb25zdCByZW5kZXJUaW1lID0gZW5kVGltZSAtIHN0YXJ0VGltZVxuICAgICAgXG4gICAgICAvLyBTaG91bGQgcmVuZGVyIGluIHJlYXNvbmFibGUgdGltZSAoPCAxMDBtcylcbiAgICAgIGV4cGVjdChyZW5kZXJUaW1lKS50b0JlTGVzc1RoYW4oMTAwKVxuICAgIH0pXG4gIH0pXG4gIFxuICBkZXNjcmliZSgnSW50ZWdyYXRpb24gc2NlbmFyaW9zJywgKCkgPT4ge1xuICAgIGRlc2NyaWJlKCdDaW5lbWEgaW5kdXN0cnknLCAoKSA9PiB7XG4gICAgICBiZWZvcmVFYWNoKCgpID0+IHtcbiAgICAgICAgaW5kdXN0cnlUZXN0U2NlbmFyaW9zLmNpbmVtYS50aWNrZXRpbmdTeXN0ZW0oKVxuICAgICAgfSlcbiAgICAgIFxuICAgICAgaXQoJ2ludGVncmF0ZXMgd2l0aCBjaW5lbWEgdGlja2V0aW5nIGRhdGEnLCBhc3luYyAoKSA9PiB7XG4gICAgICAgIGNvbnN0IG9uTWFya2V0Q2hhbmdlID0gamVzdC5mbigpXG4gICAgICAgIGNvbnN0IHsgdXNlciB9ID0gcmVuZGVyRm9ySW5kdXN0cnkoXG4gICAgICAgICAgPE1hcmtldFNlbGVjdG9yIG9uTWFya2V0Q2hhbmdlPXtvbk1hcmtldENoYW5nZX0gLz4sXG4gICAgICAgICAgJ2NpbmVtYSdcbiAgICAgICAgKVxuICAgICAgICBcbiAgICAgICAgLy8gU2VsZWN0IGNpbmVtYSBtYXJrZXRcbiAgICAgICAgY29uc3Qgc2VsZWN0ID0gc2NyZWVuLmdldEJ5VGVzdElkKCdtYXJrZXQtc2VsZWN0JylcbiAgICAgICAgYXdhaXQgdXNlci5zZWxlY3RPcHRpb25zKHNlbGVjdCwgJ2NpbmVtYS1kb3dudG93bicpXG4gICAgICAgIFxuICAgICAgICBleHBlY3Qob25NYXJrZXRDaGFuZ2UpLnRvSGF2ZUJlZW5DYWxsZWRXaXRoKCdjaW5lbWEtZG93bnRvd24nKVxuICAgICAgICBcbiAgICAgICAgLy8gU2hvdWxkIHRyaWdnZXIgaW50ZWdyYXRpb24gd2l0aCB0aWNrZXRpbmcgc3lzdGVtXG4gICAgICAgIGF3YWl0IHdhaXRGb3IoKCkgPT4ge1xuICAgICAgICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlUZXh0KCdDdXJyZW50IEluZHVzdHJ5OiBjaW5lbWEnKSkudG9CZUluVGhlRG9jdW1lbnQoKVxuICAgICAgICB9KVxuICAgICAgfSlcbiAgICB9KVxuICAgIFxuICAgIGRlc2NyaWJlKCdIb3RlbCBpbmR1c3RyeScsICgpID0+IHtcbiAgICAgIGJlZm9yZUVhY2goKCkgPT4ge1xuICAgICAgICBpbmR1c3RyeVRlc3RTY2VuYXJpb3MuaG90ZWwucmVhbFRpbWVQcmljaW5nKClcbiAgICAgIH0pXG4gICAgICBcbiAgICAgIGl0KCdpbnRlZ3JhdGVzIHdpdGggcmVhbC10aW1lIHByaWNpbmcgZGF0YScsIGFzeW5jICgpID0+IHtcbiAgICAgICAgY29uc3Qgb25NYXJrZXRDaGFuZ2UgPSBqZXN0LmZuKClcbiAgICAgICAgY29uc3QgeyB1c2VyIH0gPSByZW5kZXJGb3JJbmR1c3RyeShcbiAgICAgICAgICA8TWFya2V0U2VsZWN0b3Igb25NYXJrZXRDaGFuZ2U9e29uTWFya2V0Q2hhbmdlfSAvPixcbiAgICAgICAgICAnaG90ZWwnXG4gICAgICAgIClcbiAgICAgICAgXG4gICAgICAgIGNvbnN0IHNlbGVjdCA9IHNjcmVlbi5nZXRCeVRlc3RJZCgnbWFya2V0LXNlbGVjdCcpXG4gICAgICAgIGF3YWl0IHVzZXIuc2VsZWN0T3B0aW9ucyhzZWxlY3QsICdob3RlbC1sdXh1cnknKVxuICAgICAgICBcbiAgICAgICAgZXhwZWN0KG9uTWFya2V0Q2hhbmdlKS50b0hhdmVCZWVuQ2FsbGVkV2l0aCgnaG90ZWwtbHV4dXJ5JylcbiAgICAgIH0pXG4gICAgfSlcbiAgICBcbiAgICBkZXNjcmliZSgnR3ltIGluZHVzdHJ5JywgKCkgPT4ge1xuICAgICAgYmVmb3JlRWFjaCgoKSA9PiB7XG4gICAgICAgIGluZHVzdHJ5VGVzdFNjZW5hcmlvcy5neW0ubWVtYmVyc2hpcFRyYWNraW5nKClcbiAgICAgIH0pXG4gICAgICBcbiAgICAgIGl0KCdpbnRlZ3JhdGVzIHdpdGggbWVtYmVyc2hpcCB0cmFja2luZycsIGFzeW5jICgpID0+IHtcbiAgICAgICAgY29uc3Qgb25NYXJrZXRDaGFuZ2UgPSBqZXN0LmZuKClcbiAgICAgICAgY29uc3QgeyB1c2VyIH0gPSByZW5kZXJGb3JJbmR1c3RyeShcbiAgICAgICAgICA8TWFya2V0U2VsZWN0b3Igb25NYXJrZXRDaGFuZ2U9e29uTWFya2V0Q2hhbmdlfSAvPixcbiAgICAgICAgICAnZ3ltJ1xuICAgICAgICApXG4gICAgICAgIFxuICAgICAgICBjb25zdCBzZWxlY3QgPSBzY3JlZW4uZ2V0QnlUZXN0SWQoJ21hcmtldC1zZWxlY3QnKVxuICAgICAgICBhd2FpdCB1c2VyLnNlbGVjdE9wdGlvbnMoc2VsZWN0LCAnZ3ltLXByZW1pdW0nKVxuICAgICAgICBcbiAgICAgICAgZXhwZWN0KG9uTWFya2V0Q2hhbmdlKS50b0hhdmVCZWVuQ2FsbGVkV2l0aCgnZ3ltLXByZW1pdW0nKVxuICAgICAgfSlcbiAgICB9KVxuICB9KVxuICBcbiAgZGVzY3JpYmUoJ1NuYXBzaG90IHRlc3RzJywgKCkgPT4ge1xuICAgIGl0KCdtYXRjaGVzIHNuYXBzaG90IGZvciBnZW5lcmFsIGluZHVzdHJ5JywgKCkgPT4ge1xuICAgICAgY29uc3QgeyBjb250YWluZXIgfSA9IHJlbmRlcldpdGhQcm92aWRlcnMoPE1hcmtldFNlbGVjdG9yIC8+KVxuICAgICAgZXhwZWN0KGNvbnRhaW5lci5maXJzdENoaWxkKS50b01hdGNoU25hcHNob3QoKVxuICAgIH0pXG4gICAgXG4gICAgaXQoJ21hdGNoZXMgc25hcHNob3QgZm9yIGNpbmVtYSBpbmR1c3RyeScsICgpID0+IHtcbiAgICAgIGNvbnN0IHsgY29udGFpbmVyIH0gPSByZW5kZXJGb3JJbmR1c3RyeShcbiAgICAgICAgPE1hcmtldFNlbGVjdG9yIC8+LFxuICAgICAgICAnY2luZW1hJ1xuICAgICAgKVxuICAgICAgZXhwZWN0KGNvbnRhaW5lci5maXJzdENoaWxkKS50b01hdGNoU25hcHNob3QoKVxuICAgIH0pXG4gICAgXG4gICAgaXQoJ21hdGNoZXMgc25hcHNob3QgZm9yIGhvdGVsIGluZHVzdHJ5JywgKCkgPT4ge1xuICAgICAgY29uc3QgeyBjb250YWluZXIgfSA9IHJlbmRlckZvckluZHVzdHJ5KFxuICAgICAgICA8TWFya2V0U2VsZWN0b3IgLz4sXG4gICAgICAgICdob3RlbCdcbiAgICAgIClcbiAgICAgIGV4cGVjdChjb250YWluZXIuZmlyc3RDaGlsZCkudG9NYXRjaFNuYXBzaG90KClcbiAgICB9KVxuICB9KVxufSkiXSwibmFtZXMiOlsiamVzdCIsIm1vY2siLCJNYXJrZXRTZWxlY3RvciIsIm9uTWFya2V0Q2hhbmdlIiwiY3VycmVudE1hcmtldCIsImluZHVzdHJ5IiwiZGl2IiwiZGF0YS10ZXN0aWQiLCJzZWxlY3QiLCJ2YWx1ZSIsIm9uQ2hhbmdlIiwiZSIsInRhcmdldCIsIm9wdGlvbiIsImRlc2NyaWJlIiwiaXQiLCJyZW5kZXJXaXRoUHJvdmlkZXJzIiwiZXhwZWN0Iiwic2NyZWVuIiwiZ2V0QnlUZXN0SWQiLCJ0b0JlSW5UaGVEb2N1bWVudCIsInRvQmUiLCJmbiIsInVzZXIiLCJzZWxlY3RPcHRpb25zIiwidG9IYXZlQmVlbkNhbGxlZFdpdGgiLCJyZW5kZXJGb3JJbmR1c3RyeSIsImdldEJ5VGV4dCIsInJlcmVuZGVyIiwiaW5kdXN0cnlUeXBlIiwiY29udGFpbmVyIiwidGVzdEFjY2Vzc2liaWxpdHkiLCJmb2N1cyIsImtleWJvYXJkIiwidG9IYXZlQmVlbkNhbGxlZCIsInRvQmVWaXNpYmxlIiwibW9ja0FwaUVuZHBvaW50cyIsIm1vY2tNYXJrZXRFZGdlIiwid2FpdEZvckxvYWRpbmdUb0ZpbmlzaCIsIm1hbnlNYXJrZXRzIiwiZ2VuZXJhdGVUZXN0RGF0YSIsImNvbXBldGl0b3JzIiwic3RhcnRUaW1lIiwicGVyZm9ybWFuY2UiLCJub3ciLCJlbmRUaW1lIiwicmVuZGVyVGltZSIsInRvQmVMZXNzVGhhbiIsImJlZm9yZUVhY2giLCJpbmR1c3RyeVRlc3RTY2VuYXJpb3MiLCJjaW5lbWEiLCJ0aWNrZXRpbmdTeXN0ZW0iLCJ3YWl0Rm9yIiwiaG90ZWwiLCJyZWFsVGltZVByaWNpbmciLCJneW0iLCJtZW1iZXJzaGlwVHJhY2tpbmciLCJmaXJzdENoaWxkIiwidG9NYXRjaFNuYXBzaG90Il0sIm1hcHBpbmdzIjoiQUFBQTs7OztDQUlDO0FBZ0JELGdEQUFnRDtBQUNoREEsS0FBS0MsSUFBSSxDQUFDLHFCQUFxQixJQUFPLENBQUE7UUFDcENDLGdCQUFnQixDQUFDLEVBQUVDLGNBQWMsRUFBRUMsYUFBYSxFQUFFQyxRQUFRLEVBQU8saUJBQy9ELHNCQUFDQztnQkFBSUMsZUFBWTs7a0NBQ2Ysc0JBQUNDO3dCQUNDQyxPQUFPTCxpQkFBaUI7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

@@ -1,0 +1,443 @@
+a706549d1f5f302408d15ace9a202b83
+"use client";
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "default", {
+    enumerable: true,
+    get: function() {
+        return MarketEdgeLanding;
+    }
+});
+const _jsxruntime = require("react/jsx-runtime");
+const _react = /*#__PURE__*/ _interop_require_default(require("react"));
+const _outline = require("@heroicons/react/24/outline");
+const _Button = /*#__PURE__*/ _interop_require_default(require("../ui/Button"));
+const _useFeatureFlags = require("../../hooks/useFeatureFlags");
+const _FeatureFlaggedContent = /*#__PURE__*/ _interop_require_default(require("../ui/FeatureFlaggedContent"));
+const _PlaceholderContent = /*#__PURE__*/ _interop_require_default(require("../ui/PlaceholderContent"));
+const _LiveDataContainer = /*#__PURE__*/ _interop_require_default(require("../ui/LiveDataContainer"));
+const _ApplicationRegistry = require("../ui/ApplicationRegistry");
+function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}
+function MarketEdgeLanding({ onGetStarted, showDemoMode = false, className = "", onToggleDemo, onViewModule }) {
+    // Feature flag hooks
+    const { isEnabled: showPlaceholderContent, isLoading: placeholderLoading } = (0, _useFeatureFlags.useFeatureFlag)(_ApplicationRegistry.GLOBAL_FEATURE_FLAGS.SHOW_PLACEHOLDER_CONTENT, {
+        fallbackValue: false
+    });
+    const { isEnabled: demoMode } = (0, _useFeatureFlags.useFeatureFlag)(_ApplicationRegistry.GLOBAL_FEATURE_FLAGS.DEMO_MODE, {
+        fallbackValue: showDemoMode
+    });
+    const { isEnabled: liveDataEnabled } = (0, _useFeatureFlags.useFeatureFlag)(_ApplicationRegistry.GLOBAL_FEATURE_FLAGS.LIVE_DATA_ENABLED, {
+        fallbackValue: false
+    });
+    const features = [
+        {
+            icon: _outline.ChartBarIcon,
+            title: "Market Intelligence",
+            description: "Track competitor pricing, market share, and strategic moves across multiple competitors in real-time.",
+            benefits: [
+                "Real-time pricing data",
+                "Market share analysis",
+                "Competitive positioning"
+            ]
+        },
+        {
+            icon: _outline.UsersIcon,
+            title: "Competitor Analysis",
+            description: "Deep dive into competitor strategies, product offerings, and market positioning to identify opportunities.",
+            benefits: [
+                "Strategic insights",
+                "Product comparison",
+                "Market gaps identification"
+            ]
+        },
+        {
+            icon: _outline.ArrowTrendingUpIcon,
+            title: "Trend Forecasting",
+            description: "Leverage AI-powered analytics to predict market trends and competitor moves before they happen.",
+            benefits: [
+                "Predictive analytics",
+                "Trend identification",
+                "Strategic planning"
+            ]
+        },
+        {
+            icon: _outline.LightBulbIcon,
+            title: "Strategic Insights",
+            description: "Transform raw data into actionable business insights that drive competitive advantage.",
+            benefits: [
+                "Data-driven decisions",
+                "Strategic recommendations",
+                "ROI optimization"
+            ]
+        }
+    ];
+    const stats = [
+        {
+            label: "Market Coverage",
+            value: "24/7",
+            description: "Continuous monitoring"
+        },
+        {
+            label: "Data Points",
+            value: "10K+",
+            description: "Per competitor daily"
+        },
+        {
+            label: "Response Time",
+            value: "< 15min",
+            description: "Alert delivery"
+        },
+        {
+            label: "Accuracy",
+            value: "99.8%",
+            description: "Data reliability"
+        }
+    ];
+    return /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+        className: `min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 ${className}`,
+        children: [
+            /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                className: "relative overflow-hidden",
+                children: [
+                    /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                        className: "absolute inset-0 bg-gradient-to-r from-blue-600/10 to-indigo-600/10"
+                    }),
+                    /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                        className: "relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16",
+                        children: /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                            className: "text-center",
+                            children: [
+                                /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                    className: "flex items-center justify-center mb-6",
+                                    children: /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                        className: "w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-xl",
+                                        children: /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.ChartBarIcon, {
+                                            className: "h-9 w-9 text-white"
+                                        })
+                                    })
+                                }),
+                                /*#__PURE__*/ (0, _jsxruntime.jsx)("h1", {
+                                    className: "text-4xl md:text-6xl font-bold text-gray-900 mb-6",
+                                    children: /*#__PURE__*/ (0, _jsxruntime.jsx)("span", {
+                                        className: "bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent",
+                                        children: "Market Edge"
+                                    })
+                                }),
+                                /*#__PURE__*/ (0, _jsxruntime.jsx)("p", {
+                                    className: "text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto",
+                                    children: "Gain competitive advantage through intelligent market analysis and real-time competitor intelligence."
+                                }),
+                                /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                    className: "flex flex-col sm:flex-row items-center justify-center gap-4 mb-12",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxruntime.jsxs)(_Button.default, {
+                                            size: "lg",
+                                            onClick: onGetStarted,
+                                            className: "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-8 py-4 text-lg shadow-lg transform transition hover:scale-105",
+                                            children: [
+                                                "Get Started",
+                                                /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.ArrowRightIcon, {
+                                                    className: "ml-2 h-5 w-5"
+                                                })
+                                            ]
+                                        }),
+                                        /*#__PURE__*/ (0, _jsxruntime.jsx)(_FeatureFlaggedContent.default, {
+                                            flagKey: _ApplicationRegistry.GLOBAL_FEATURE_FLAGS.DEMO_MODE,
+                                            fallbackValue: showDemoMode,
+                                            enabledComponent: /*#__PURE__*/ (0, _jsxruntime.jsxs)(_Button.default, {
+                                                size: "lg",
+                                                variant: "secondary",
+                                                className: "px-8 py-4 text-lg border-blue-200 text-blue-700 hover:bg-blue-50",
+                                                children: [
+                                                    /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.EyeIcon, {
+                                                        className: "mr-2 h-5 w-5"
+                                                    }),
+                                                    "View Demo"
+                                                ]
+                                            })
+                                        })
+                                    ]
+                                }),
+                                /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                    className: "grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto",
+                                    children: stats.map((stat, index)=>/*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                            className: "bg-white/70 backdrop-blur-sm rounded-xl p-6 border border-blue-200/50 shadow-sm",
+                                            children: [
+                                                /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                                    className: "text-2xl md:text-3xl font-bold text-blue-600 mb-1",
+                                                    children: stat.value
+                                                }),
+                                                /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                                    className: "text-sm font-medium text-gray-900 mb-1",
+                                                    children: stat.label
+                                                }),
+                                                /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                                    className: "text-xs text-gray-600",
+                                                    children: stat.description
+                                                })
+                                            ]
+                                        }, index))
+                                })
+                            ]
+                        })
+                    })
+                ]
+            }),
+            /*#__PURE__*/ (0, _jsxruntime.jsx)(_FeatureFlaggedContent.default, {
+                flagKey: _ApplicationRegistry.GLOBAL_FEATURE_FLAGS.SHOW_PLACEHOLDER_CONTENT,
+                fallbackValue: false,
+                placeholderTitle: "Market Intelligence Features",
+                placeholderDescription: "Advanced market analysis features are being prepared. Live data integration coming soon.",
+                placeholderType: "data",
+                placeholderIcon: _outline.ChartBarIcon,
+                enabledComponent: /*#__PURE__*/ (0, _jsxruntime.jsxs)(_LiveDataContainer.default, {
+                    title: "Market Intelligence Features",
+                    description: "Real-time competitive analysis and market insights",
+                    isConnected: liveDataEnabled,
+                    connectionStatus: liveDataEnabled ? "connected" : "disconnected",
+                    lastUpdated: new Date(),
+                    className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16",
+                    children: [
+                        /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                            className: "text-center mb-16",
+                            children: [
+                                /*#__PURE__*/ (0, _jsxruntime.jsx)("h2", {
+                                    className: "text-3xl md:text-4xl font-bold text-gray-900 mb-4",
+                                    children: "Powerful Market Intelligence Features"
+                                }),
+                                /*#__PURE__*/ (0, _jsxruntime.jsx)("p", {
+                                    className: "text-xl text-gray-600 max-w-2xl mx-auto",
+                                    children: "Everything you need to stay ahead of the competition and make data-driven business decisions."
+                                })
+                            ]
+                        }),
+                        /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                            className: "grid grid-cols-1 md:grid-cols-2 gap-8",
+                            children: features.map((feature, index)=>/*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                    className: "bg-white rounded-2xl p-8 shadow-lg border border-blue-100 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                            className: "flex items-center mb-4",
+                                            children: [
+                                                /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                                    className: "w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md",
+                                                    children: /*#__PURE__*/ (0, _jsxruntime.jsx)(feature.icon, {
+                                                        className: "h-7 w-7 text-white"
+                                                    })
+                                                }),
+                                                /*#__PURE__*/ (0, _jsxruntime.jsx)("h3", {
+                                                    className: "text-xl font-bold text-gray-900 ml-4",
+                                                    children: feature.title
+                                                })
+                                            ]
+                                        }),
+                                        /*#__PURE__*/ (0, _jsxruntime.jsx)("p", {
+                                            className: "text-gray-600 mb-6 leading-relaxed",
+                                            children: feature.description
+                                        }),
+                                        /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                            className: "space-y-2",
+                                            children: feature.benefits.map((benefit, benefitIndex)=>/*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                                    className: "flex items-center text-sm text-gray-700",
+                                                    children: [
+                                                        /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                                                            className: "w-1.5 h-1.5 rounded-full bg-blue-500 mr-3"
+                                                        }),
+                                                        benefit
+                                                    ]
+                                                }, benefitIndex))
+                                        })
+                                    ]
+                                }, index))
+                        })
+                    ]
+                }),
+                disabledComponent: /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                    className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16",
+                    children: /*#__PURE__*/ (0, _jsxruntime.jsx)(_PlaceholderContent.default, {
+                        title: "Market Intelligence Features",
+                        description: "Advanced competitive intelligence features are being configured. Connect your data sources to access real-time market insights.",
+                        type: "data",
+                        icon: _outline.ChartBarIcon,
+                        children: /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                            className: "flex flex-col sm:flex-row items-center justify-center gap-4 mt-6",
+                            children: [
+                                /*#__PURE__*/ (0, _jsxruntime.jsxs)(_Button.default, {
+                                    size: "md",
+                                    onClick: onViewModule,
+                                    className: "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.CubeTransparentIcon, {
+                                            className: "mr-2 h-4 w-4"
+                                        }),
+                                        "View Module Setup"
+                                    ]
+                                }),
+                                onToggleDemo && /*#__PURE__*/ (0, _jsxruntime.jsxs)(_Button.default, {
+                                    size: "md",
+                                    variant: "secondary",
+                                    onClick: onToggleDemo,
+                                    className: "border-blue-200 text-blue-700 hover:bg-blue-50",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.EyeIcon, {
+                                            className: "mr-2 h-4 w-4"
+                                        }),
+                                        "Enable Demo Mode"
+                                    ]
+                                })
+                            ]
+                        })
+                    })
+                })
+            }),
+            /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16",
+                style: {
+                    display: "none"
+                }
+            }),
+            /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                className: "bg-gradient-to-r from-blue-600 to-indigo-600 py-16",
+                children: /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                    className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+                    children: /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                        className: "text-center text-white",
+                        children: [
+                            /*#__PURE__*/ (0, _jsxruntime.jsx)("h2", {
+                                className: "text-3xl md:text-4xl font-bold mb-6",
+                                children: "Why Choose Market Edge?"
+                            }),
+                            /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                className: "grid grid-cols-1 md:grid-cols-3 gap-8 mt-12",
+                                children: [
+                                    /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                        className: "text-center",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.ShieldCheckIcon, {
+                                                className: "h-12 w-12 mx-auto mb-4 text-blue-200"
+                                            }),
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)("h3", {
+                                                className: "text-xl font-bold mb-2",
+                                                children: "Enterprise Grade"
+                                            }),
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)("p", {
+                                                className: "text-blue-100",
+                                                children: "Bank-level security with 99.9% uptime guarantee for mission-critical intelligence."
+                                            })
+                                        ]
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                        className: "text-center",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.ClockIcon, {
+                                                className: "h-12 w-12 mx-auto mb-4 text-blue-200"
+                                            }),
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)("h3", {
+                                                className: "text-xl font-bold mb-2",
+                                                children: "Real-Time Insights"
+                                            }),
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)("p", {
+                                                className: "text-blue-100",
+                                                children: "Get instant alerts and updates as market conditions change, not hours later."
+                                            })
+                                        ]
+                                    }),
+                                    /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                        className: "text-center",
+                                        children: [
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.GlobeAltIcon, {
+                                                className: "h-12 w-12 mx-auto mb-4 text-blue-200"
+                                            }),
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)("h3", {
+                                                className: "text-xl font-bold mb-2",
+                                                children: "Global Coverage"
+                                            }),
+                                            /*#__PURE__*/ (0, _jsxruntime.jsx)("p", {
+                                                className: "text-blue-100",
+                                                children: "Monitor competitors across multiple markets and regions from a single platform."
+                                            })
+                                        ]
+                                    })
+                                ]
+                            })
+                        ]
+                    })
+                })
+            }),
+            /*#__PURE__*/ (0, _jsxruntime.jsx)(_FeatureFlaggedContent.default, {
+                flagKey: _ApplicationRegistry.GLOBAL_FEATURE_FLAGS.DEMO_MODE,
+                fallbackValue: showDemoMode,
+                enabledComponent: /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                    className: "bg-blue-50 border-t border-blue-200 py-8",
+                    children: /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                        className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+                        children: /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                            className: "text-center",
+                            children: [
+                                /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                    className: "inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-800 text-sm font-medium mb-4",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.EyeIcon, {
+                                            className: "h-4 w-4 mr-2"
+                                        }),
+                                        "Demo Mode Active"
+                                    ]
+                                }),
+                                /*#__PURE__*/ (0, _jsxruntime.jsxs)("p", {
+                                    className: "text-blue-700",
+                                    children: [
+                                        "You're viewing sample competitive intelligence data for demonstration purposes.",
+                                        onToggleDemo && /*#__PURE__*/ (0, _jsxruntime.jsxs)(_jsxruntime.Fragment, {
+                                            children: [
+                                                " ",
+                                                /*#__PURE__*/ (0, _jsxruntime.jsx)("button", {
+                                                    onClick: onToggleDemo,
+                                                    className: "underline hover:no-underline font-medium",
+                                                    children: "Toggle to Live mode"
+                                                }),
+                                                " ",
+                                                "to connect to real data sources."
+                                            ]
+                                        })
+                                    ]
+                                })
+                            ]
+                        })
+                    })
+                }),
+                disabledComponent: liveDataEnabled ? /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                    className: "bg-green-50 border-t border-green-200 py-8",
+                    children: /*#__PURE__*/ (0, _jsxruntime.jsx)("div", {
+                        className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+                        children: /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                            className: "text-center",
+                            children: [
+                                /*#__PURE__*/ (0, _jsxruntime.jsxs)("div", {
+                                    className: "inline-flex items-center px-4 py-2 rounded-full bg-green-100 text-green-800 text-sm font-medium mb-4",
+                                    children: [
+                                        /*#__PURE__*/ (0, _jsxruntime.jsx)(_outline.WifiIcon, {
+                                            className: "h-4 w-4 mr-2"
+                                        }),
+                                        "Live Mode Active"
+                                    ]
+                                }),
+                                /*#__PURE__*/ (0, _jsxruntime.jsx)("p", {
+                                    className: "text-green-700",
+                                    children: "Connected to live data sources. Market intelligence updates in real-time."
+                                })
+                            ]
+                        })
+                    })
+                }) : null
+            })
+        ]
+    });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy9tYXR0L1NpdGVzL01hcmtldEVkZ2UvcGxhdGZvcm0td3JhcHBlci9mcm9udGVuZC9zcmMvY29tcG9uZW50cy9hcHBsaWNhdGlvbnMvTWFya2V0RWRnZUxhbmRpbmcudHN4Il0sInNvdXJjZXNDb250ZW50IjpbIid1c2UgY2xpZW50J1xuXG5pbXBvcnQgUmVhY3QgZnJvbSAncmVhY3QnXG5pbXBvcnQgeyBcbiAgQ2hhcnRCYXJJY29uLCBcbiAgVXNlcnNJY29uLCBcbiAgQXJyb3dUcmVuZGluZ1VwSWNvbixcbiAgTGlnaHRCdWxiSWNvbixcbiAgRXllSWNvbixcbiAgQXJyb3dSaWdodEljb24sXG4gIFNoaWVsZENoZWNrSWNvbixcbiAgQ2xvY2tJY29uLFxuICBHbG9iZUFsdEljb24sXG4gIEN1YmVUcmFuc3BhcmVudEljb24sXG4gIFdpZmlJY29uXG59IGZyb20gJ0BoZXJvaWNvbnMvcmVhY3QvMjQvb3V0bGluZSdcbmltcG9ydCBCdXR0b24gZnJvbSAnQC9jb21wb25lbnRzL3VpL0J1dHRvbidcbmltcG9ydCB7IHVzZUZlYXR1cmVGbGFnIH0gZnJvbSAnQC9ob29rcy91c2VGZWF0dXJlRmxhZ3MnXG5pbXBvcnQgRmVhdHVyZUZsYWdnZWRDb250ZW50IGZyb20gJ0AvY29tcG9uZW50cy91aS9GZWF0dXJlRmxhZ2dlZENvbnRlbnQnXG5pbXBvcnQgUGxhY2Vob2xkZXJDb250ZW50IGZyb20gJ0AvY29tcG9uZW50cy91aS9QbGFjZWhvbGRlckNvbnRlbnQnXG5pbXBvcnQgTGl2ZURhdGFDb250YWluZXIgZnJvbSAnQC9jb21wb25lbnRzL3VpL0xpdmVEYXRhQ29udGFpbmVyJ1xuaW1wb3J0IHsgR0xPQkFMX0ZFQVRVUkVfRkxBR1MgfSBmcm9tICdAL2NvbXBvbmVudHMvdWkvQXBwbGljYXRpb25SZWdpc3RyeSdcblxuaW50ZXJmYWNlIE1hcmtldEVkZ2VMYW5kaW5nUHJvcHMge1xuICBvbkdldFN0YXJ0ZWQ/OiAoKSA9PiB2b2lkXG4gIHNob3dEZW1vTW9kZT86IGJvb2xlYW5cbiAgY2xhc3NOYW1lPzogc3RyaW5nXG4gIG9uVG9nZ2xlRGVtbz86ICgpID0+IHZvaWRcbiAgb25WaWV3TW9kdWxlPzogKCkgPT4gdm9pZFxufVxuXG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBNYXJrZXRFZGdlTGFuZGluZyh7IFxuICBvbkdldFN0YXJ0ZWQsIFxuICBzaG93RGVtb01vZGUgPSBmYWxzZSxcbiAgY2xhc3NOYW1lID0gJycsXG4gIG9uVG9nZ2xlRGVtbyxcbiAgb25WaWV3TW9kdWxlXG59OiBNYXJrZXRFZGdlTGFuZGluZ1Byb3BzKSB7XG4gIC8vIEZlYXR1cmUgZmxhZyBob29rc1xuICBjb25zdCB7IGlzRW5hYmxlZDogc2hvd1BsYWNlaG9sZGVyQ29udGVudCwgaXNMb2FkaW5nOiBwbGFjZWhvbGRlckxvYWRpbmcgfSA9IHVzZUZlYXR1cmVGbGFnKFxuICAgIEdMT0JBTF9GRUFUVVJFX0ZMQUdTLlNIT1dfUExBQ0VIT0xERVJfQ09OVEVOVCxcbiAgICB7IGZhbGxiYWNrVmFsdWU6IGZhbHNlIH1cbiAgKVxuICBcbiAgY29uc3QgeyBpc0VuYWJsZWQ6IGRlbW9Nb2RlIH0gPSB1c2VGZWF0dXJlRmxhZyhcbiAgICBHTE9CQUxfRkVBVFVSRV9GTEFHUy5ERU1PX01PREUsXG4gICAgeyBmYWxsYmFja1ZhbHVlOiBzaG93RGVtb01vZGUgfVxuICApXG4gIFxuICBjb25zdCB7IGlzRW5hYmxlZDogbGl2ZURhdGFFbmFibGVkIH0gPSB1c2VGZWF0dXJlRmxhZyhcbiAgICBHTE9CQUxfRkVBVFVSRV9GTEFHUy5MSVZFX0RBVEFfRU5BQkxFRCxcbiAgICB7IGZhbGxiYWNrVmFsdWU6IGZhbHNlIH1cbiAgKVxuICBjb25zdCBmZWF0dXJlcyA9IFtcbiAgICB7XG4gICAgICBpY29uOiBDaGFydEJhckljb24sXG4gICAgICB0aXRsZTogJ01hcmtldCBJbnRlbGxpZ2VuY2UnLFxuICAgICAgZGVzY3JpcHRpb246ICdUcmFjayBjb21wZXRpdG9yIHByaWNpbmcsIG1hcmtldCBzaGFyZSwgYW5kIHN0cmF0ZWdpYyBtb3ZlcyBhY3Jvc3MgbXVsdGlwbGUgY29tcGV0aXRvcnMgaW4gcmVhbC10aW1lLicsXG4gICAgICBiZW5lZml0czogWydSZWFsLXRpbWUgcHJpY2luZyBkYXRhJywgJ01hcmtldCBzaGFyZSBhbmFseXNpcycsICdDb21wZXRpdGl2ZSBwb3NpdGlvbmluZyddXG4gICAgfSxcbiAgICB7XG4gICAgICBpY29uOiBVc2Vyc0ljb24sXG4gICAgICB0aXRsZTogJ0NvbXBldGl0b3IgQW5hbHlzaXMnLFxuICAgICAgZGVzY3JpcHRpb246ICdEZWVwIGRpdmUgaW50byBjb21wZXRpdG9yIHN0cmF0ZWdpZXMsIHByb2R1Y3Qgb2ZmZXJpbmdzLCBhbmQgbWFya2V0IHBvc2l0aW9uaW5nIHRvIGlkZW50aWZ5IG9wcG9ydHVuaXRpZXMuJyxcbiAgICAgIGJlbmVmaXRzOiBbJ1N0cmF0ZWdpYyBpbnNpZ2h0cycsICdQcm9kdWN0IGNvbXBhcmlzb24nLCAnTWFya2V0IGdhcHMgaWRlbnRpZmljYXRpb24nXVxuICAgIH0sXG4gICAge1xuICAgICAgaWNvbjogQXJyb3dUcmVuZGluZ1VwSWNvbixcbiAgICAgIHRpdGxlOiAnVHJlbmQgRm9yZWNhc3RpbmcnLFxuICAgICAgZGVzY3JpcHRpb246ICdMZXZlcmFnZSBBSS1wb3dlcmVkIGFuYWx5dGljcyB0byBwcmVkaWN0IG1hcmtldCB0cmVuZHMgYW5kIGNvbXBldGl0b3IgbW92ZXMgYmVmb3JlIHRoZXkgaGFwcGVuLicsXG4gICAgICBiZW5lZml0czogWydQcmVkaWN0aXZlIGFuYWx5dGljcycsICdUcmVuZCBpZGVudGlmaWNhdGlvbicsICdTdHJhdGVnaWMgcGxhbm5pbmcnXVxuICAgIH0sXG4gICAge1xuICAgICAgaWNvbjogTGlnaHRCdWxiSWNvbixcbiAgICAgIHRpdGxlOiAnU3RyYXRlZ2ljIEluc2lnaHRzJyxcbiAgICAgIGRlc2NyaXB0aW9uOiAnVHJhbnNmb3JtIHJhdyBkYXRhIGludG8gYWN0aW9uYWJsZSBidXNpbmVzcyBpbnNpZ2h0cyB0aGF0IGRyaXZlIGNvbXBldGl0aXZlIGFkdmFudGFnZS4nLFxuICAgICAgYmVuZWZpdHM6IFsnRGF0YS1kcml2ZW4gZGVjaXNpb25zJywgJ1N0cmF0ZWdpYyByZWNvbW1lbmRhdGlvbnMnLCAnUk9JIG9wdGltaXphdGlvbiddXG4gICAgfVxuICBdXG5cbiAgY29uc3Qgc3RhdHMgPSBbXG4gICAgeyBsYWJlbDogJ01hcmtldCBDb3ZlcmFnZScsIHZhbHVlOiAnMjQvNycsIGRlc2NyaXB0aW9uOiAnQ29udGludW91cyBtb25pdG9yaW5nJyB9LFxuICAgIHsgbGFiZWw6ICdEYXRhIFBvaW50cycsIHZhbHVlOiAnMTBLKycsIGRlc2NyaXB0aW9uOiAnUGVyIGNvbXBldGl0b3IgZGFpbHknIH0sXG4gICAgeyBsYWJlbDogJ1Jlc3BvbnNlIFRpbWUnLCB2YWx1ZTogJzwgMTVtaW4nLCBkZXNjcmlwdGlvbjogJ0FsZXJ0IGRlbGl2ZXJ5JyB9LFxuICAgIHsgbGFiZWw6ICdBY2N1cmFjeScsIHZhbHVlOiAnOTkuOCUnLCBkZXNjcmlwdGlvbjogJ0RhdGEgcmVsaWFiaWxpdHknIH1cbiAgXVxuXG4gIHJldHVybiAoXG4gICAgPGRpdiBjbGFzc05hbWU9e2BtaW4taC1zY3JlZW4gYmctZ3JhZGllbnQtdG8tYnIgZnJvbS1ibHVlLTUwIHZpYS1pbmRpZ28tNTAgdG8tYmx1ZS0xMDAgJHtjbGFzc05hbWV9YH0+XG4gICAgICB7LyogSGVybyBTZWN0aW9uICovfVxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJyZWxhdGl2ZSBvdmVyZmxvdy1oaWRkZW5cIj5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJhYnNvbHV0ZSBpbnNldC0wIGJnLWdyYWRpZW50LXRvLXIgZnJvbS1ibHVlLTYwMC8xMCB0by1pbmRpZ28tNjAwLzEwXCIgLz5cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJyZWxhdGl2ZSBtYXgtdy03eGwgbXgtYXV0byBweC00IHNtOnB4LTYgbGc6cHgtOCBwdC0yMCBwYi0xNlwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1jZW50ZXJcIj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgbWItNlwiPlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctMTYgaC0xNiByb3VuZGVkLTJ4bCBiZy1ncmFkaWVudC10by1iciBmcm9tLWJsdWUtNTAwIHRvLWluZGlnby02MDAgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgc2hhZG93LXhsXCI+XG4gICAgICAgICAgICAgICAgPENoYXJ0QmFySWNvbiBjbGFzc05hbWU9XCJoLTkgdy05IHRleHQtd2hpdGVcIiAvPlxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgXG4gICAgICAgICAgICA8aDEgY2xhc3NOYW1lPVwidGV4dC00eGwgbWQ6dGV4dC02eGwgZm9udC1ib2xkIHRleHQtZ3JheS05MDAgbWItNlwiPlxuICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJiZy1ncmFkaWVudC10by1yIGZyb20tYmx1ZS02MDAgdG8taW5kaWdvLTYwMCBiZy1jbGlwLXRleHQgdGV4dC10cmFuc3BhcmVudFwiPlxuICAgICAgICAgICAgICAgIE1hcmtldCBFZGdlXG4gICAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICAgIDwvaDE+XG4gICAgICAgICAgICBcbiAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteGwgbWQ6dGV4dC0yeGwgdGV4dC1ncmF5LTYwMCBtYi04IG1heC13LTN4bCBteC1hdXRvXCI+XG4gICAgICAgICAgICAgIEdhaW4gY29tcGV0aXRpdmUgYWR2YW50YWdlIHRocm91Z2ggaW50ZWxsaWdlbnQgbWFya2V0IGFuYWx5c2lzIGFuZCByZWFsLXRpbWUgY29tcGV0aXRvciBpbnRlbGxpZ2VuY2UuXG4gICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICBcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBmbGV4LWNvbCBzbTpmbGV4LXJvdyBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgZ2FwLTQgbWItMTJcIj5cbiAgICAgICAgICAgICAgPEJ1dHRvblxuICAgICAgICAgICAgICAgIHNpemU9XCJsZ1wiXG4gICAgICAgICAgICAgICAgb25DbGljaz17b25HZXRTdGFydGVkfVxuICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImJnLWdyYWRpZW50LXRvLXIgZnJvbS1ibHVlLTYwMCB0by1pbmRpZ28tNjAwIGhvdmVyOmZyb20tYmx1ZS03MDAgaG92ZXI6dG8taW5kaWdvLTcwMCBweC04IHB5LTQgdGV4dC1sZyBzaGFkb3ctbGcgdHJhbnNmb3JtIHRyYW5zaXRpb24gaG92ZXI6c2NhbGUtMTA1XCJcbiAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgIEdldCBTdGFydGVkXG4gICAgICAgICAgICAgICAgPEFycm93UmlnaHRJY29uIGNsYXNzTmFtZT1cIm1sLTIgaC01IHctNVwiIC8+XG4gICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICBcbiAgICAgICAgICAgICAgPEZlYXR1cmVGbGFnZ2VkQ29udGVudFxuICAgICAgICAgICAgICAgIGZsYWdLZXk9e0dMT0JBTF9GRUFUVVJFX0ZMQUdTLkRFTU9fTU9ERX1cbiAgICAgICAgICAgICAgICBmYWxsYmFja1ZhbHVlPXtzaG93RGVtb01vZGV9XG4gICAgICAgICAgICAgICAgZW5hYmxlZENvbXBvbmVudD17XG4gICAgICAgICAgICAgICAgICA8QnV0dG9uXG4gICAgICAgICAgICAgICAgICAgIHNpemU9XCJsZ1wiXG4gICAgICAgICAgICAgICAgICAgIHZhcmlhbnQ9XCJzZWNvbmRhcnlcIlxuICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJweC04IHB5LTQgdGV4dC1sZyBib3JkZXItYmx1ZS0yMDAgdGV4dC1ibHVlLTcwMCBob3ZlcjpiZy1ibHVlLTUwXCJcbiAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgPEV5ZUljb24gY2xhc3NOYW1lPVwibXItMiBoLTUgdy01XCIgLz5cbiAgICAgICAgICAgICAgICAgICAgVmlldyBEZW1vXG4gICAgICAgICAgICAgICAgICA8L0J1dHRvbj5cbiAgICAgICAgICAgICAgICB9XG4gICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgey8qIFN0YXRzICovfVxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJncmlkIGdyaWQtY29scy0yIG1kOmdyaWQtY29scy00IGdhcC02IG1heC13LTR4bCBteC1hdXRvXCI+XG4gICAgICAgICAgICAgIHtzdGF0cy5tYXAoKHN0YXQsIGluZGV4KSA9PiAoXG4gICAgICAgICAgICAgICAgPGRpdiBrZXk9e2luZGV4fSBjbGFzc05hbWU9XCJiZy13aGl0ZS83MCBiYWNrZHJvcC1ibHVyLXNtIHJvdW5kZWQteGwgcC02IGJvcmRlciBib3JkZXItYmx1ZS0yMDAvNTAgc2hhZG93LXNtXCI+XG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtMnhsIG1kOnRleHQtM3hsIGZvbnQtYm9sZCB0ZXh0LWJsdWUtNjAwIG1iLTFcIj5cbiAgICAgICAgICAgICAgICAgICAge3N0YXQudmFsdWV9XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LW1lZGl1bSB0ZXh0LWdyYXktOTAwIG1iLTFcIj5cbiAgICAgICAgICAgICAgICAgICAge3N0YXQubGFiZWx9XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LWdyYXktNjAwXCI+XG4gICAgICAgICAgICAgICAgICAgIHtzdGF0LmRlc2NyaXB0aW9ufVxuICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICkpfVxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgIDwvZGl2PlxuICAgICAgPC9kaXY+XG5cbiAgICAgIHsvKiBGZWF0dXJlcyBTZWN0aW9uICovfVxuICAgICAgPEZlYXR1cmVGbGFnZ2VkQ29udGVudFxuICAgICAgICBmbGFnS2V5PXtHTE9CQUxfRkVBVFVSRV9GTEFHUy5TSE9XX1BMQUNFSE9MREVSX0NPTlRFTlR9XG4gICAgICAgIGZhbGxiYWNrVmFsdWU9e2ZhbHNlfVxuICAgICAgICBwbGFjZWhvbGRlclRpdGxlPVwiTWFya2V0IEludGVsbGlnZW5jZSBGZWF0dXJlc1wiXG4gICAgICAgIHBsYWNlaG9sZGVyRGVzY3JpcHRpb249XCJBZHZhbmNlZCBtYXJrZXQgYW5hbHlzaXMgZmVhdHVyZXMgYXJlIGJlaW5nIHByZXBhcmVkLiBMaXZlIGRhdGEgaW50ZWdyYXRpb24gY29taW5nIHNvb24uXCJcbiAgICAgICAgcGxhY2Vob2xkZXJUeXBlPVwiZGF0YVwiXG4gICAgICAgIHBsYWNlaG9sZGVySWNvbj17Q2hhcnRCYXJJY29ufVxuICAgICAgICBlbmFibGVkQ29tcG9uZW50PXtcbiAgICAgICAgICA8TGl2ZURhdGFDb250YWluZXJcbiAgICAgICAgICAgIHRpdGxlPVwiTWFya2V0IEludGVsbGlnZW5jZSBGZWF0dXJlc1wiXG4gICAgICAgICAgICBkZXNjcmlwdGlvbj1cIlJlYWwtdGltZSBjb21wZXRpdGl2ZSBhbmFseXNpcyBhbmQgbWFya2V0IGluc2lnaHRzXCJcbiAgICAgICAgICAgIGlzQ29ubmVjdGVkPXtsaXZlRGF0YUVuYWJsZWR9XG4gICAgICAgICAgICBjb25uZWN0aW9uU3RhdHVzPXtsaXZlRGF0YUVuYWJsZWQgPyAnY29ubmVjdGVkJyA6ICdkaXNjb25uZWN0ZWQnfVxuICAgICAgICAgICAgbGFzdFVwZGF0ZWQ9e25ldyBEYXRlKCl9XG4gICAgICAgICAgICBjbGFzc05hbWU9XCJtYXgtdy03eGwgbXgtYXV0byBweC00IHNtOnB4LTYgbGc6cHgtOCBweS0xNlwiXG4gICAgICAgICAgPlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciBtYi0xNlwiPlxuICAgICAgICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC0zeGwgbWQ6dGV4dC00eGwgZm9udC1ib2xkIHRleHQtZ3JheS05MDAgbWItNFwiPlxuICAgICAgICAgICAgICAgIFBvd2VyZnVsIE1hcmtldCBJbnRlbGxpZ2VuY2UgRmVhdHVyZXNcbiAgICAgICAgICAgICAgPC9oMj5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14bCB0ZXh0LWdyYXktNjAwIG1heC13LTJ4bCBteC1hdXRvXCI+XG4gICAgICAgICAgICAgICAgRXZlcnl0aGluZyB5b3UgbmVlZCB0byBzdGF5IGFoZWFkIG9mIHRoZSBjb21wZXRpdGlvbiBhbmQgbWFrZSBkYXRhLWRyaXZlbiBidXNpbmVzcyBkZWNpc2lvbnMuXG4gICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImdyaWQgZ3JpZC1jb2xzLTEgbWQ6Z3JpZC1jb2xzLTIgZ2FwLThcIj5cbiAgICAgICAgICAgICAge2ZlYXR1cmVzLm1hcCgoZmVhdHVyZSwgaW5kZXgpID0+IChcbiAgICAgICAgICAgICAgICA8ZGl2IGtleT17aW5kZXh9IGNsYXNzTmFtZT1cImJnLXdoaXRlIHJvdW5kZWQtMnhsIHAtOCBzaGFkb3ctbGcgYm9yZGVyIGJvcmRlci1ibHVlLTEwMCBob3ZlcjpzaGFkb3cteGwgdHJhbnNpdGlvbi1hbGwgZHVyYXRpb24tMzAwIHRyYW5zZm9ybSBob3ZlcjotdHJhbnNsYXRlLXktMVwiPlxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBtYi00XCI+XG4gICAgICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy0xMiBoLTEyIHJvdW5kZWQteGwgYmctZ3JhZGllbnQtdG8tYnIgZnJvbS1ibHVlLTUwMCB0by1pbmRpZ28tNjAwIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIHNoYWRvdy1tZFwiPlxuICAgICAgICAgICAgICAgICAgICAgIDxmZWF0dXJlLmljb24gY2xhc3NOYW1lPVwiaC03IHctNyB0ZXh0LXdoaXRlXCIgLz5cbiAgICAgICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgICAgIDxoMyBjbGFzc05hbWU9XCJ0ZXh0LXhsIGZvbnQtYm9sZCB0ZXh0LWdyYXktOTAwIG1sLTRcIj5cbiAgICAgICAgICAgICAgICAgICAgICB7ZmVhdHVyZS50aXRsZX1cbiAgICAgICAgICAgICAgICAgICAgPC9oMz5cbiAgICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgICAgXG4gICAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LWdyYXktNjAwIG1iLTYgbGVhZGluZy1yZWxheGVkXCI+XG4gICAgICAgICAgICAgICAgICAgIHtmZWF0dXJlLmRlc2NyaXB0aW9ufVxuICAgICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICAgICAgXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMlwiPlxuICAgICAgICAgICAgICAgICAgICB7ZmVhdHVyZS5iZW5lZml0cy5tYXAoKGJlbmVmaXQsIGJlbmVmaXRJbmRleCkgPT4gKFxuICAgICAgICAgICAgICAgICAgICAgIDxkaXYga2V5PXtiZW5lZml0SW5kZXh9IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIHRleHQtc20gdGV4dC1ncmF5LTcwMFwiPlxuICAgICAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ3LTEuNSBoLTEuNSByb3VuZGVkLWZ1bGwgYmctYmx1ZS01MDAgbXItM1wiIC8+XG4gICAgICAgICAgICAgICAgICAgICAgICB7YmVuZWZpdH1cbiAgICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgICAgKSl9XG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgKSl9XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8L0xpdmVEYXRhQ29udGFpbmVyPlxuICAgICAgICB9XG4gICAgICAgIGRpc2FibGVkQ29tcG9uZW50PXtcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm1heC13LTd4bCBteC1hdXRvIHB4LTQgc206cHgtNiBsZzpweC04IHB5LTE2XCI+XG4gICAgICAgICAgICA8UGxhY2Vob2xkZXJDb250ZW50XG4gICAgICAgICAgICAgIHRpdGxlPVwiTWFya2V0IEludGVsbGlnZW5jZSBGZWF0dXJlc1wiXG4gICAgICAgICAgICAgIGRlc2NyaXB0aW9uPVwiQWR2YW5jZWQgY29tcGV0aXRpdmUgaW50ZWxsaWdlbmNlIGZlYXR1cmVzIGFyZSBiZWluZyBjb25maWd1cmVkLiBDb25uZWN0IHlvdXIgZGF0YSBzb3VyY2VzIHRvIGFjY2VzcyByZWFsLXRpbWUgbWFya2V0IGluc2lnaHRzLlwiXG4gICAgICAgICAgICAgIHR5cGU9XCJkYXRhXCJcbiAgICAgICAgICAgICAgaWNvbj17Q2hhcnRCYXJJY29ufVxuICAgICAgICAgICAgPlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggZmxleC1jb2wgc206ZmxleC1yb3cgaXRlbXMtY2VudGVyIGp1c3RpZnktY2VudGVyIGdhcC00IG10LTZcIj5cbiAgICAgICAgICAgICAgICA8QnV0dG9uXG4gICAgICAgICAgICAgICAgICBzaXplPVwibWRcIlxuICAgICAgICAgICAgICAgICAgb25DbGljaz17b25WaWV3TW9kdWxlfVxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiYmctZ3JhZGllbnQtdG8tciBmcm9tLWJsdWUtNjAwIHRvLWluZGlnby02MDAgaG92ZXI6ZnJvbS1ibHVlLTcwMCBob3Zlcjp0by1pbmRpZ28tNzAwXCJcbiAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICA8Q3ViZVRyYW5zcGFyZW50SWNvbiBjbGFzc05hbWU9XCJtci0yIGgtNCB3LTRcIiAvPlxuICAgICAgICAgICAgICAgICAgVmlldyBNb2R1bGUgU2V0dXBcbiAgICAgICAgICAgICAgICA8L0J1dHRvbj5cbiAgICAgICAgICAgICAgICBcbiAgICAgICAgICAgICAgICB7b25Ub2dnbGVEZW1vICYmIChcbiAgICAgICAgICAgICAgICAgIDxCdXR0b25cbiAgICAgICAgICAgICAgICAgICAgc2l6ZT1cIm1kXCJcbiAgICAgICAgICAgICAgICAgICAgdmFyaWFudD1cInNlY29uZGFyeVwiXG4gICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9e29uVG9nZ2xlRGVtb31cbiAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiYm9yZGVyLWJsdWUtMjAwIHRleHQtYmx1ZS03MDAgaG92ZXI6YmctYmx1ZS01MFwiXG4gICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgIDxFeWVJY29uIGNsYXNzTmFtZT1cIm1yLTIgaC00IHctNFwiIC8+XG4gICAgICAgICAgICAgICAgICAgIEVuYWJsZSBEZW1vIE1vZGVcbiAgICAgICAgICAgICAgICAgIDwvQnV0dG9uPlxuICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPC9QbGFjZWhvbGRlckNvbnRlbnQ+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgIH1cbiAgICAgIC8+XG4gICAgICBcbiAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWF4LXctN3hsIG14LWF1dG8gcHgtNCBzbTpweC02IGxnOnB4LTggcHktMTZcIiBzdHlsZT17eyBkaXNwbGF5OiAnbm9uZScgfX0+XG4gICAgICAgIHsvKiBUaGlzIHNlY3Rpb24gaXMgbm93IGhhbmRsZWQgYnkgRmVhdHVyZUZsYWdnZWRDb250ZW50IGFib3ZlICovfVxuICAgICAgPC9kaXY+XG5cbiAgICAgIHsvKiBWYWx1ZSBQcm9wb3NpdGlvbiBTZWN0aW9uICovfVxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJiZy1ncmFkaWVudC10by1yIGZyb20tYmx1ZS02MDAgdG8taW5kaWdvLTYwMCBweS0xNlwiPlxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm1heC13LTd4bCBteC1hdXRvIHB4LTQgc206cHgtNiBsZzpweC04XCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciB0ZXh0LXdoaXRlXCI+XG4gICAgICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC0zeGwgbWQ6dGV4dC00eGwgZm9udC1ib2xkIG1iLTZcIj5cbiAgICAgICAgICAgICAgV2h5IENob29zZSBNYXJrZXQgRWRnZT9cbiAgICAgICAgICAgIDwvaDI+XG4gICAgICAgICAgICBcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZ3JpZCBncmlkLWNvbHMtMSBtZDpncmlkLWNvbHMtMyBnYXAtOCBtdC0xMlwiPlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtY2VudGVyXCI+XG4gICAgICAgICAgICAgICAgPFNoaWVsZENoZWNrSWNvbiBjbGFzc05hbWU9XCJoLTEyIHctMTIgbXgtYXV0byBtYi00IHRleHQtYmx1ZS0yMDBcIiAvPlxuICAgICAgICAgICAgICAgIDxoMyBjbGFzc05hbWU9XCJ0ZXh0LXhsIGZvbnQtYm9sZCBtYi0yXCI+RW50ZXJwcmlzZSBHcmFkZTwvaDM+XG4gICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1ibHVlLTEwMFwiPlxuICAgICAgICAgICAgICAgICAgQmFuay1sZXZlbCBzZWN1cml0eSB3aXRoIDk5LjklIHVwdGltZSBndWFyYW50ZWUgZm9yIG1pc3Npb24tY3JpdGljYWwgaW50ZWxsaWdlbmNlLlxuICAgICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIFxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRleHQtY2VudGVyXCI+XG4gICAgICAgICAgICAgICAgPENsb2NrSWNvbiBjbGFzc05hbWU9XCJoLTEyIHctMTIgbXgtYXV0byBtYi00IHRleHQtYmx1ZS0yMDBcIiAvPlxuICAgICAgICAgICAgICAgIDxoMyBjbGFzc05hbWU9XCJ0ZXh0LXhsIGZvbnQtYm9sZCBtYi0yXCI+UmVhbC1UaW1lIEluc2lnaHRzPC9oMz5cbiAgICAgICAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LWJsdWUtMTAwXCI+XG4gICAgICAgICAgICAgICAgICBHZXQgaW5zdGFudCBhbGVydHMgYW5kIHVwZGF0ZXMgYXMgbWFya2V0IGNvbmRpdGlvbnMgY2hhbmdlLCBub3QgaG91cnMgbGF0ZXIuXG4gICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGV4dC1jZW50ZXJcIj5cbiAgICAgICAgICAgICAgICA8R2xvYmVBbHRJY29uIGNsYXNzTmFtZT1cImgtMTIgdy0xMiBteC1hdXRvIG1iLTQgdGV4dC1ibHVlLTIwMFwiIC8+XG4gICAgICAgICAgICAgICAgPGgzIGNsYXNzTmFtZT1cInRleHQteGwgZm9udC1ib2xkIG1iLTJcIj5HbG9iYWwgQ292ZXJhZ2U8L2gzPlxuICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtYmx1ZS0xMDBcIj5cbiAgICAgICAgICAgICAgICAgIE1vbml0b3IgY29tcGV0aXRvcnMgYWNyb3NzIG11bHRpcGxlIG1hcmtldHMgYW5kIHJlZ2lvbnMgZnJvbSBhIHNpbmdsZSBwbGF0Zm9ybS5cbiAgICAgICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgIDwvZGl2PlxuICAgICAgPC9kaXY+XG5cbiAgICAgIHsvKiBEZW1vL0xpdmUgTW9kZSBCYW5uZXIgKi99XG4gICAgICA8RmVhdHVyZUZsYWdnZWRDb250ZW50XG4gICAgICAgIGZsYWdLZXk9e0dMT0JBTF9GRUFUVVJFX0ZMQUdTLkRFTU9fTU9ERX1cbiAgICAgICAgZmFsbGJhY2tWYWx1ZT17c2hvd0RlbW9Nb2RlfVxuICAgICAgICBlbmFibGVkQ29tcG9uZW50PXtcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLWJsdWUtNTAgYm9yZGVyLXQgYm9yZGVyLWJsdWUtMjAwIHB5LThcIj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwibWF4LXctN3hsIG14LWF1dG8gcHgtNCBzbTpweC02IGxnOnB4LThcIj5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlclwiPlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiaW5saW5lLWZsZXggaXRlbXMtY2VudGVyIHB4LTQgcHktMiByb3VuZGVkLWZ1bGwgYmctYmx1ZS0xMDAgdGV4dC1ibHVlLTgwMCB0ZXh0LXNtIGZvbnQtbWVkaXVtIG1iLTRcIj5cbiAgICAgICAgICAgICAgICAgIDxFeWVJY29uIGNsYXNzTmFtZT1cImgtNCB3LTQgbXItMlwiIC8+XG4gICAgICAgICAgICAgICAgICBEZW1vIE1vZGUgQWN0aXZlXG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC1ibHVlLTcwMFwiPlxuICAgICAgICAgICAgICAgICAgWW91J3JlIHZpZXdpbmcgc2FtcGxlIGNvbXBldGl0aXZlIGludGVsbGlnZW5jZSBkYXRhIGZvciBkZW1vbnN0cmF0aW9uIHB1cnBvc2VzLlxuICAgICAgICAgICAgICAgICAge29uVG9nZ2xlRGVtbyAmJiAoXG4gICAgICAgICAgICAgICAgICAgIDw+XG4gICAgICAgICAgICAgICAgICAgICAgeycgJ31cbiAgICAgICAgICAgICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXtvblRvZ2dsZURlbW99XG4gICAgICAgICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ1bmRlcmxpbmUgaG92ZXI6bm8tdW5kZXJsaW5lIGZvbnQtbWVkaXVtXCJcbiAgICAgICAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICAgICAgICBUb2dnbGUgdG8gTGl2ZSBtb2RlXG4gICAgICAgICAgICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgICAgICAgICAgICAgeycgJ310byBjb25uZWN0IHRvIHJlYWwgZGF0YSBzb3VyY2VzLlxuICAgICAgICAgICAgICAgICAgICA8Lz5cbiAgICAgICAgICAgICAgICAgICl9XG4gICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICB9XG4gICAgICAgIGRpc2FibGVkQ29tcG9uZW50PXtcbiAgICAgICAgICBsaXZlRGF0YUVuYWJsZWQgPyAoXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLWdyZWVuLTUwIGJvcmRlci10IGJvcmRlci1ncmVlbi0yMDAgcHktOFwiPlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm1heC13LTd4bCBteC1hdXRvIHB4LTQgc206cHgtNiBsZzpweC04XCI+XG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlclwiPlxuICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJpbmxpbmUtZmxleCBpdGVtcy1jZW50ZXIgcHgtNCBweS0yIHJvdW5kZWQtZnVsbCBiZy1ncmVlbi0xMDAgdGV4dC1ncmVlbi04MDAgdGV4dC1zbSBmb250LW1lZGl1bSBtYi00XCI+XG4gICAgICAgICAgICAgICAgICAgIDxXaWZpSWNvbiBjbGFzc05hbWU9XCJoLTQgdy00IG1yLTJcIiAvPlxuICAgICAgICAgICAgICAgICAgICBMaXZlIE1vZGUgQWN0aXZlXG4gICAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtZ3JlZW4tNzAwXCI+XG4gICAgICAgICAgICAgICAgICAgIENvbm5lY3RlZCB0byBsaXZlIGRhdGEgc291cmNlcy4gTWFya2V0IGludGVsbGlnZW5jZSB1cGRhdGVzIGluIHJlYWwtdGltZS5cbiAgICAgICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApIDogbnVsbFxuICAgICAgICB9XG4gICAgICAvPlxuICAgIDwvZGl2PlxuICApXG59Il0sIm5hbWVzIjpbIk1hcmtldEVkZ2VMYW5kaW5nIiwib25HZXRTdGFydGVkIiwic2hvd0RlbW9Nb2RlIiwiY2xhc3NOYW1lIiwib25Ub2dnbGVEZW1vIiwib25WaWV3TW9kdWxlIiwiaXNFbmFibGVkIiwic2hvd1BsYWNlaG9sZGVyQ29udGVudCIsImlzTG9hZGluZyIsInBsYWNlaG9sZGVyTG9hZGluZyIsInVzZUZlYXR1cmVGbGFnIiwiR0xPQkFMX0ZFQVRVUkVfRkxBR1MiLCJTSE9XX1BMQUNFSE9MREVSX0NPTlRFTlQiLCJmYWxsYmFja1ZhbHVlIiwiZGVtb01vZGUiLCJERU1PX01PREUiLCJsaXZlRGF0YUVuYWJsZWQiLCJMSVZFX0RBVEFfRU5BQkxFRCIsImZlYXR1cmVzIiwiaWNvbiIsIkNoYXJ0QmFySWNvbiIsInRpdGxlIiwiZGVzY3JpcHRpb24iLCJiZW5lZml0cyIsIlVzZXJzSWNvbiIsIkFycm93VHJlbmRpbmdVcEljb24iLCJMaWdodEJ1bGJJY29uIiwic3RhdHMiLCJsYWJlbCIsInZhbHVlIiwiZGl2IiwiaDEiLCJzcGFuIiwicCIsIkJ1dHRvbiIsInNpemUiLCJvbkNsaWNrIiwiQXJyb3dSaWdodEljb24iLCJGZWF0dXJlRmxhZ2dlZENvbnRlbnQiLCJmbGFnS2V5IiwiZW5hYmxlZENvbXBvbmVudCIsInZhcmlhbnQiLCJFeWVJY29uIiwibWFwIiwic3RhdCIsImluZGV4IiwicGxhY2Vob2xkZXJUaXRsZSIsInBsYWNlaG9sZGVyRGVzY3JpcHRpb24iLCJwbGFjZWhvbGRlclR5cGUiLCJwbGFjZWhvbGRlckljb24iLCJMaXZlRGF0YUNvbnRhaW5lciIsImlzQ29ubmVjdGVkIiwiY29ubmVjdGlvblN0YXR1cyIsImxhc3RVcGRhdGVkIiwiRGF0ZSIsImgyIiwiZmVhdHVyZSIsImgzIiwiYmVuZWZpdCIsImJlbmVmaXRJbmRleCIsImRpc2FibGVkQ29tcG9uZW50IiwiUGxhY2Vob2xkZXJDb250ZW50IiwidHlwZSIsIkN1YmVUcmFuc3BhcmVudEljb24iLCJzdHlsZSIsImRpc3BsYXkiLCJTaGllbGRDaGVja0ljb24iLCJDbG9ja0ljb24iLCJHbG9iZUFsdEljb24iLCJidXR0b24iLCJXaWZpSWNvbiJdLCJtYXBwaW5ncyI6IkFBQUE7Ozs7OytCQStCQTs7O2VBQXdCQTs7Ozs4REE3Qk47eUJBYVg7K0RBQ1k7aUNBQ1k7OEVBQ0c7MkVBQ0g7MEVBQ0Q7cUNBQ087Ozs7OztBQVV0QixTQUFTQSxrQkFBa0IsRUFDeENDLFlBQVksRUFDWkMsZUFBZSxLQUFLLEVBQ3BCQyxZQUFZLEVBQUUsRUFDZEMsWUFBWSxFQUNaQyxZQUFZLEVBQ1c7SUFDdkIscUJBQXFCO0lBQ3JCLE1BQU0sRUFBRUMsV0FBV0Msc0JBQXNCLEVBQUVDLFdBQVdDLGtCQUFrQixFQUFFLEdBQUdDLElBQUFBLCtCQUFjLEVBQ3pGQyx5Q0FBb0IsQ0FBQ0Msd0JBQXdCLEVBQzdDO1FBQUVDLGVBQWU7SUFBTTtJQUd6QixNQUFNLEVBQUVQLFdBQVdRLFFBQVEsRUFBRSxHQUFHSixJQUFBQSwrQkFBYyxFQUM1Q0MseUNBQW9CLENBQUNJLFNBQVMsRUFDOUI7UUFBRUYsZUFBZVg7SUFBYTtJQUdoQyxNQUFNLEVBQUVJLFdBQVdVLGVBQWUsRUFBRSxHQUFH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

@@ -1,0 +1,125 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "CSV Import Monitoring Dashboard",
+    "description": "Monitor CSV user import functionality and performance",
+    "tags": [
+      "csv",
+      "import",
+      "users",
+      "admin"
+    ],
+    "timezone": "UTC",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Import Success Rate",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "rate(csv_imports_total{status='completed'}[5m]) / rate(csv_imports_total[5m]) * 100",
+            "legendFormat": "Success Rate %"
+          }
+        ],
+        "thresholds": "80,95",
+        "colorBackground": true,
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "id": 2,
+        "title": "Active Imports",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "sum(csv_imports_total{status='processing'})",
+            "legendFormat": "Processing"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "id": 3,
+        "title": "Import Volume Over Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(csv_imports_total[5m])",
+            "legendFormat": "Imports per second"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "id": 4,
+        "title": "Processing Time Distribution",
+        "type": "heatmap",
+        "targets": [
+          {
+            "expr": "csv_import_duration_seconds_bucket",
+            "legendFormat": "Processing Time"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        }
+      },
+      {
+        "id": 5,
+        "title": "Error Breakdown",
+        "type": "piechart",
+        "targets": [
+          {
+            "expr": "sum by (error_type) (csv_upload_errors_total)",
+            "legendFormat": "{{error_type}}"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        }
+      },
+      {
+        "id": 6,
+        "title": "Rate Limit Violations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(csv_rate_limit_violations_total[5m])",
+            "legendFormat": "{{user_id}} - {{limit_type}}"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 24
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+[build]
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+startCommand = "./start.sh"
+
+[env]
+ENVIRONMENT = "production"
+DEBUG = "false"
+LOG_LEVEL = "info"
+PORT = "8000"
+
+# No volumes - this is a FastAPI backend service
+# Database connections via Railway internal network

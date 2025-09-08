@@ -1,0 +1,29 @@
+03442ae141fcbc60383f122c58816e23
+"use client";
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+Object.defineProperty(exports, "AuthProvider", {
+    enumerable: true,
+    get: function() {
+        return AuthProvider;
+    }
+});
+const _jsxruntime = require("react/jsx-runtime");
+const _react = /*#__PURE__*/ _interop_require_default(require("react"));
+const _useAuth = require("../../hooks/useAuth");
+function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}
+const AuthProvider = ({ children })=>{
+    const auth = (0, _useAuth.useAuth)();
+    return /*#__PURE__*/ (0, _jsxruntime.jsx)(_useAuth.AuthContext.Provider, {
+        value: auth,
+        children: children
+    });
+};
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy9tYXR0L1NpdGVzL01hcmtldEVkZ2UvcGxhdGZvcm0td3JhcHBlci9mcm9udGVuZC9zcmMvY29tcG9uZW50cy9wcm92aWRlcnMvQXV0aFByb3ZpZGVyLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyIndXNlIGNsaWVudCdcblxuaW1wb3J0IFJlYWN0IGZyb20gJ3JlYWN0J1xuaW1wb3J0IHsgQXV0aENvbnRleHQsIHVzZUF1dGggfSBmcm9tICdAL2hvb2tzL3VzZUF1dGgnXG5cbmV4cG9ydCBjb25zdCBBdXRoUHJvdmlkZXI6IFJlYWN0LkZDPHsgY2hpbGRyZW46IFJlYWN0LlJlYWN0Tm9kZSB9PiA9ICh7IGNoaWxkcmVuIH0pID0+IHtcbiAgY29uc3QgYXV0aCA9IHVzZUF1dGgoKVxuXG4gIHJldHVybiAoXG4gICAgPEF1dGhDb250ZXh0LlByb3ZpZGVyIHZhbHVlPXthdXRofT5cbiAgICAgIHtjaGlsZHJlbn1cbiAgICA8L0F1dGhDb250ZXh0LlByb3ZpZGVyPlxuICApXG59Il0sIm5hbWVzIjpbIkF1dGhQcm92aWRlciIsImNoaWxkcmVuIiwiYXV0aCIsInVzZUF1dGgiLCJBdXRoQ29udGV4dCIsIlByb3ZpZGVyIiwidmFsdWUiXSwibWFwcGluZ3MiOiJBQUFBOzs7OzsrQkFLYUE7OztlQUFBQTs7Ozs4REFISzt5QkFDbUI7Ozs7OztBQUU5QixNQUFNQSxlQUF3RCxDQUFDLEVBQUVDLFFBQVEsRUFBRTtJQUNoRixNQUFNQyxPQUFPQyxJQUFBQSxnQkFBTztJQUVwQixxQkFDRSxxQkFBQ0Msb0JBQVcsQ0FBQ0MsUUFBUTtRQUFDQyxPQUFPSjtrQkFDMUJEOztBQUdQIn0=

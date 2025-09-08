@@ -1,0 +1,62 @@
+{
+  "name": "marketedge-frontend",
+  "version": 2,
+  "regions": ["iad1"],
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_API_BASE_URL": "https://marketedge-backend-production.up.railway.app",
+      "NEXT_PUBLIC_AUTH0_DOMAIN": "dev-g8trhgbfdq2sk2m8.us.auth0.com",
+      "NEXT_PUBLIC_AUTH0_CLIENT_ID": "mQG01Z4lNhTTN081GHbR9R9C4fBQdPNr"
+    }
+  },
+  "env": {
+    "NEXT_PUBLIC_API_BASE_URL": "https://marketedge-backend-production.up.railway.app",
+    "NEXT_PUBLIC_AUTH0_DOMAIN": "dev-g8trhgbfdq2sk2m8.us.auth0.com", 
+    "NEXT_PUBLIC_AUTH0_CLIENT_ID": "mQG01Z4lNhTN081GHbR9R9C4fBQdPNr"
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://marketedge-backend-production.up.railway.app"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "X-Requested-With, Access-Control-Allow-Origin, X-HTTP-Method-Override, Content-Type, Authorization, Accept"
+        }
+      ]
+    }
+  ],
+  "functions": {
+    "src/app/**/*.tsx": {
+      "maxDuration": 30
+    }
+  }
+}

@@ -1,0 +1,719 @@
+b01ee4cef8801327a7437ebeb5973965
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+function _export(target, all) {
+    for(var name in all)Object.defineProperty(target, name, {
+        enumerable: true,
+        get: all[name]
+    });
+}
+_export(exports, {
+    CinemaDemoDataService: function() {
+        return CinemaDemoDataService;
+    },
+    cinemaDemoData: function() {
+        return cinemaDemoData;
+    }
+});
+class CinemaDemoDataService {
+    // Get market data for demo
+    getMarket() {
+        return this.ukCinemaMarket;
+    }
+    getCompetitors() {
+        return this.competitors;
+    }
+    getPricingData() {
+        return this.pricingData;
+    }
+    getMarketAlerts() {
+        return this.marketAlerts;
+    }
+    // Generate comprehensive market overview for demo
+    getMarketOverview() {
+        const metrics = {
+            period_start: "2024-07-15T00:00:00Z",
+            period_end: "2024-08-14T23:59:59Z",
+            total_data_points: this.pricingData.length,
+            average_price: 15.23,
+            median_price: 15.50,
+            min_price: 6.50,
+            max_price: 22.50,
+            price_range: 16.00,
+            standard_deviation: 4.85,
+            price_quartiles: {
+                q1: 11.35,
+                q2: 15.50,
+                q3: 18.99
+            },
+            competitors: {
+                "vue-cinemas-uk": {
+                    name: "Vue Entertainment",
+                    average_price: 12.83,
+                    median_price: 12.99,
+                    min_price: 6.50,
+                    max_price: 18.99,
+                    price_points_count: 3,
+                    standard_deviation: 6.24,
+                    price_rank: 2,
+                    position: "mid"
+                },
+                "cineworld-uk": {
+                    name: "Cineworld Group",
+                    average_price: 16.33,
+                    median_price: 17.90,
+                    min_price: 11.70,
+                    max_price: 21.40,
+                    price_points_count: 3,
+                    standard_deviation: 4.91,
+                    price_rank: 3,
+                    position: "mid"
+                },
+                "empire-cinemas": {
+                    name: "Empire Cinemas",
+                    average_price: 19.00,
+                    median_price: 19.00,
+                    min_price: 15.50,
+                    max_price: 22.50,
+                    price_points_count: 2,
+                    standard_deviation: 3.50,
+                    price_rank: 4,
+                    position: "high"
+                },
+                "showcase-cinemas": {
+                    name: "Showcase Cinemas",
+                    average_price: 13.99,
+                    median_price: 13.99,
+                    min_price: 10.99,
+                    max_price: 16.99,
+                    price_points_count: 2,
+                    standard_deviation: 3.00,
+                    price_rank: 1,
+                    position: "low"
+                }
+            },
+            trends: {
+                trend: "stable",
+                weekly_averages: {
+                    "2024-08-05": 15.45,
+                    "2024-08-06": 15.23,
+                    "2024-08-07": 15.18,
+                    "2024-08-08": 15.31,
+                    "2024-08-09": 15.20,
+                    "2024-08-10": 15.15,
+                    "2024-08-11": 15.23
+                },
+                price_change: -0.22,
+                price_change_percent: -1.4
+            },
+            anomalies: [
+                {
+                    id: "anomaly-empire-premium-2024080",
+                    competitor_name: "Empire Cinemas",
+                    product_service: "Adult Premium Seat",
+                    price: 22.50,
+                    z_score: 2.3,
+                    date_collected: "2024-08-14T10:00:00Z",
+                    deviation_from_mean: 7.27,
+                    severity: "medium"
+                }
+            ]
+        };
+        return {
+            market: this.ukCinemaMarket,
+            competitors: this.competitors,
+            metrics,
+            recent_data_points: this.pricingData.length,
+            recent_alerts: this.marketAlerts
+        };
+    }
+    // Generate competitor comparison data
+    getCompetitorComparison() {
+        return {
+            market_id: "uk-cinema-market-2024",
+            comparison_period: {
+                start_date: "2024-07-15T00:00:00Z",
+                end_date: "2024-08-14T23:59:59Z"
+            },
+            competitors: {
+                "vue-cinemas-uk": {
+                    name: "Vue Entertainment",
+                    business_type: "Cinema Chain",
+                    average_price: 12.83,
+                    min_price: 6.50,
+                    max_price: 18.99,
+                    data_points: 3,
+                    products_services: [
+                        "Adult Standard Ticket",
+                        "Adult Premium Seat",
+                        "Large Popcorn"
+                    ],
+                    market_share_estimate: 0.21,
+                    tracking_priority: 10,
+                    price_rank: 2
+                },
+                "cineworld-uk": {
+                    name: "Cineworld Group",
+                    business_type: "Cinema Chain",
+                    average_price: 16.33,
+                    min_price: 11.70,
+                    max_price: 21.40,
+                    data_points: 3,
+                    products_services: [
+                        "Adult Standard Ticket",
+                        "Adult Premium Seat",
+                        "Monthly Unlimited Pass"
+                    ],
+                    market_share_estimate: 0.25,
+                    tracking_priority: 10,
+                    price_rank: 3
+                },
+                "empire-cinemas": {
+                    name: "Empire Cinemas",
+                    business_type: "Cinema Chain",
+                    average_price: 19.00,
+                    min_price: 15.50,
+                    max_price: 22.50,
+                    data_points: 2,
+                    products_services: [
+                        "Adult Standard Ticket",
+                        "Adult Premium Seat"
+                    ],
+                    market_share_estimate: 0.03,
+                    tracking_priority: 7,
+                    price_rank: 4
+                },
+                "showcase-cinemas": {
+                    name: "Showcase Cinemas",
+                    business_type: "Cinema Chain",
+                    average_price: 13.99,
+                    min_price: 10.99,
+                    max_price: 16.99,
+                    data_points: 2,
+                    products_services: [
+                        "Adult Standard Ticket",
+                        "Adult Premium Seat"
+                    ],
+                    market_share_estimate: 0.07,
+                    tracking_priority: 8,
+                    price_rank: 1
+                }
+            },
+            rankings: {
+                by_price: [
+                    {
+                        competitor_id: "showcase-cinemas",
+                        name: "Showcase Cinemas",
+                        average_price: 13.99,
+                        rank: 1
+                    },
+                    {
+                        competitor_id: "vue-cinemas-uk",
+                        name: "Vue Entertainment",
+                        average_price: 12.83,
+                        rank: 2
+                    },
+                    {
+                        competitor_id: "cineworld-uk",
+                        name: "Cineworld Group",
+                        average_price: 16.33,
+                        rank: 3
+                    },
+                    {
+                        competitor_id: "empire-cinemas",
+                        name: "Empire Cinemas",
+                        average_price: 19.00,
+                        rank: 4
+                    }
+                ]
+            }
+        };
+    }
+    // Generate market trends data
+    getMarketTrends() {
+        return {
+            period: {
+                start_date: "2024-07-15T00:00:00Z",
+                end_date: "2024-08-14T23:59:59Z",
+                days_back: 30
+            },
+            filters: {},
+            market_trend: {
+                "2024-07-15": 15.67,
+                "2024-07-22": 15.58,
+                "2024-07-29": 15.49,
+                "2024-08-05": 15.45,
+                "2024-08-12": 15.23
+            },
+            competitor_trends: {
+                "vue-cinemas-uk": {
+                    name: "Vue Entertainment",
+                    weekly_averages: {
+                        "2024-07-15": 12.95,
+                        "2024-07-22": 12.91,
+                        "2024-07-29": 12.88,
+                        "2024-08-05": 12.86,
+                        "2024-08-12": 12.83
+                    }
+                },
+                "cineworld-uk": {
+                    name: "Cineworld Group",
+                    weekly_averages: {
+                        "2024-07-15": 16.85,
+                        "2024-07-22": 16.79,
+                        "2024-07-29": 16.67,
+                        "2024-08-05": 16.45,
+                        "2024-08-12": 16.33
+                    }
+                },
+                "empire-cinemas": {
+                    name: "Empire Cinemas",
+                    weekly_averages: {
+                        "2024-07-15": 19.25,
+                        "2024-07-22": 19.15,
+                        "2024-07-29": 19.08,
+                        "2024-08-05": 19.02,
+                        "2024-08-12": 19.00
+                    }
+                },
+                "showcase-cinemas": {
+                    name: "Showcase Cinemas",
+                    weekly_averages: {
+                        "2024-07-15": 14.25,
+                        "2024-07-22": 14.15,
+                        "2024-07-29": 14.08,
+                        "2024-08-05": 14.02,
+                        "2024-08-12": 13.99
+                    }
+                }
+            },
+            data_points_count: this.pricingData.length
+        };
+    }
+    // Get all markets (for demo, just return the UK cinema market)
+    getMarkets() {
+        return [
+            this.ukCinemaMarket
+        ];
+    }
+    // Get competitor analysis for individual competitor
+    getCompetitorAnalysis(competitorId) {
+        const competitor = this.competitors.find((c)=>c.id === competitorId);
+        if (!competitor) return null;
+        const competitorPricing = this.pricingData.filter((p)=>p.competitor_id === competitorId);
+        const prices = competitorPricing.map((p)=>p.price_point);
+        return {
+            competitor,
+            pricing_metrics: {
+                average_price: prices.reduce((a, b)=>a + b, 0) / prices.length || 0,
+                min_price: Math.min(...prices) || 0,
+                max_price: Math.max(...prices) || 0,
+                total_data_points: prices.length,
+                position_vs_market: "at_market",
+                market_average: 15.23
+            },
+            product_breakdown: competitorPricing.reduce((acc, pricing)=>{
+                if (!acc[pricing.product_service]) {
+                    acc[pricing.product_service] = {
+                        average_price: pricing.price_point,
+                        min_price: pricing.price_point,
+                        max_price: pricing.price_point,
+                        data_points: 1
+                    };
+                }
+                return acc;
+            }, {}),
+            recent_pricing: competitorPricing
+        };
+    }
+    constructor(){
+        // UK Cinema Market Data
+        this.ukCinemaMarket = {
+            id: "uk-cinema-market-2024",
+            name: "UK Cinema Exhibition Market",
+            geographic_bounds: {
+                country: "United Kingdom",
+                regions: [
+                    "England",
+                    "Scotland",
+                    "Wales",
+                    "Northern Ireland"
+                ],
+                focus_areas: [
+                    "London",
+                    "Birmingham",
+                    "Manchester",
+                    "Glasgow",
+                    "Leeds"
+                ]
+            },
+            organisation_id: "odeon-demo-org",
+            created_by: "odeon-market-analyst",
+            competitor_count: 4,
+            is_active: true,
+            tracking_config: {
+                industry_type: "cinema_exhibition",
+                sic_code: "59140",
+                metrics: [
+                    "ticket_prices",
+                    "concession_prices",
+                    "membership_fees",
+                    "premium_experiences"
+                ],
+                update_frequency: "daily",
+                alert_thresholds: {
+                    price_change: 0.05,
+                    new_competitor: true,
+                    market_share_shift: 0.02 // 2% market share change
+                }
+            },
+            created_at: "2024-01-01T00:00:00Z",
+            updated_at: "2024-08-14T10:00:00Z"
+        };
+        // Major UK Cinema Competitors
+        this.competitors = [
+            {
+                id: "vue-cinemas-uk",
+                name: "Vue Entertainment",
+                market_id: "uk-cinema-market-2024",
+                organisation_id: "odeon-demo-org",
+                business_type: "Cinema Chain",
+                website: "https://www.myvue.com",
+                locations: {
+                    total_sites: 91,
+                    total_screens: 840,
+                    regions: {
+                        "London": 15,
+                        "South East": 18,
+                        "Midlands": 12,
+                        "North": 20,
+                        "Scotland": 8,
+                        "Wales": 6,
+                        "N. Ireland": 3
+                    }
+                },
+                tracking_priority: 10,
+                description: "Leading UK cinema chain with premium and IMAX offerings",
+                market_share_estimate: 0.21,
+                last_updated: "2024-08-14T08:00:00Z",
+                created_at: "2024-01-01T00:00:00Z"
+            },
+            {
+                id: "cineworld-uk",
+                name: "Cineworld Group",
+                market_id: "uk-cinema-market-2024",
+                organisation_id: "odeon-demo-org",
+                business_type: "Cinema Chain",
+                website: "https://www.cineworld.co.uk",
+                locations: {
+                    total_sites: 99,
+                    total_screens: 1015,
+                    regions: {
+                        "London": 8,
+                        "South East": 22,
+                        "Midlands": 15,
+                        "North": 25,
+                        "Scotland": 12,
+                        "Wales": 9,
+                        "N. Ireland": 4
+                    }
+                },
+                tracking_priority: 10,
+                description: "Global cinema chain with strong UK presence, 4DX and IMAX",
+                market_share_estimate: 0.25,
+                last_updated: "2024-08-14T08:00:00Z",
+                created_at: "2024-01-01T00:00:00Z"
+            },
+            {
+                id: "empire-cinemas",
+                name: "Empire Cinemas",
+                market_id: "uk-cinema-market-2024",
+                organisation_id: "odeon-demo-org",
+                business_type: "Cinema Chain",
+                website: "https://empirecinemas.co.uk",
+                locations: {
+                    total_sites: 14,
+                    total_screens: 130,
+                    regions: {
+                        "London": 4,
+                        "South East": 6,
+                        "Midlands": 2,
+                        "North": 2,
+                        "Scotland": 0,
+                        "Wales": 0,
+                        "N. Ireland": 0
+                    }
+                },
+                tracking_priority: 7,
+                description: "Premium cinema experience with luxury seating and IMAX",
+                market_share_estimate: 0.03,
+                last_updated: "2024-08-14T08:00:00Z",
+                created_at: "2024-01-01T00:00:00Z"
+            },
+            {
+                id: "showcase-cinemas",
+                name: "Showcase Cinemas",
+                market_id: "uk-cinema-market-2024",
+                organisation_id: "odeon-demo-org",
+                business_type: "Cinema Chain",
+                website: "https://www.showcasecinemas.co.uk",
+                locations: {
+                    total_sites: 21,
+                    total_screens: 285,
+                    regions: {
+                        "London": 3,
+                        "South East": 8,
+                        "Midlands": 4,
+                        "North": 6,
+                        "Scotland": 0,
+                        "Wales": 0,
+                        "N. Ireland": 0
+                    }
+                },
+                tracking_priority: 8,
+                description: "American-owned chain with XPlus premium format",
+                market_share_estimate: 0.07,
+                last_updated: "2024-08-14T08:00:00Z",
+                created_at: "2024-01-01T00:00:00Z"
+            }
+        ];
+        // Current pricing data for cinema services
+        this.pricingData = [
+            // Vue Cinema Pricing
+            {
+                id: "vue-adult-std-2024080",
+                competitor_id: "vue-cinemas-uk",
+                market_id: "uk-cinema-market-2024",
+                product_service: "Adult Standard Ticket",
+                price_point: 12.99,
+                currency: "GBP",
+                date_collected: "2024-08-14T10:00:00Z",
+                source: "vue_website_scraper",
+                metadata: {
+                    location: "London West End",
+                    time_slot: "peak"
+                },
+                is_promotion: false,
+                created_at: "2024-08-14T10:00:00Z"
+            },
+            {
+                id: "vue-adult-prem-2024080",
+                competitor_id: "vue-cinemas-uk",
+                market_id: "uk-cinema-market-2024",
+                product_service: "Adult Premium Seat",
+                price_point: 18.99,
+                currency: "GBP",
+                date_collected: "2024-08-14T10:00:00Z",
+                source: "vue_website_scraper",
+                metadata: {
+                    location: "London West End",
+                    time_slot: "peak",
+                    seat_type: "premium_plus"
+                },
+                is_promotion: false,
+                created_at: "2024-08-14T10:00:00Z"
+            },
+            {
+                id: "vue-large-popcorn-2024080",
+                competitor_id: "vue-cinemas-uk",
+                market_id: "uk-cinema-market-2024",
+                product_service: "Large Popcorn",
+                price_point: 6.50,
+                currency: "GBP",
+                date_collected: "2024-08-14T10:00:00Z",
+                source: "vue_website_scraper",
+                metadata: {
+                    concession_type: "sweet",
+                    size: "large"
+                },
+                is_promotion: false,
+                created_at: "2024-08-14T10:00:00Z"
+            },
+            // Cineworld Pricing
+            {
+                id: "cineworld-adult-std-2024080",
+                competitor_id: "cineworld-uk",
+                market_id: "uk-cinema-market-2024",
+                product_service: "Adult Standard Ticket",
+                price_point: 11.70,
+                currency: "GBP",
+                date_collected: "2024-08-14T10:00:00Z",
+                source: "cineworld_api",
+                metadata: {
+                    location: "London Leicester Square",
+                    time_slot: "peak"
+                },
+                is_promotion: false,
+                created_at: "2024-08-14T10:00:00Z"
+            },
+            {
+                id: "cineworld-adult-prem-2024080",
+                competitor_id: "cineworld-uk",
+                market_id: "uk-cinema-market-2024",
+                product_service: "Adult Premium Seat",
+                price_point: 21.40,
+                currency: "GBP",
+                date_collected: "2024-08-14T10:00:00Z",
+                source: "cineworld_api",
+                metadata: {
+                    location: "London Leicester Square",
+                    time_slot: "peak",
+                    seat_type: "4dx"
+                },
+                is_promotion: false,
+                created_at: "2024-08-14T10:00:00Z"
+            },
+            {
+                id: "cineworld-unlimited-2024080",
+                competitor_id: "cineworld-uk",
+                market_id: "uk-cinema-market-2024",
+                product_service: "Monthly Unlimited Pass",
+                price_point: 17.90,
+                currency: "GBP",
+                date_collected: "2024-08-14T10:00:00Z",
+                source: "cineworld_api",
+                metadata: {
+                    subscription_type: "unlimited",
+                    billing: "monthly"
+                },
+                is_promotion: false,
+                created_at: "2024-08-14T10:00:00Z"
+            },
+            // Empire Cinemas Pricing
+            {
+                id: "empire-adult-std-2024080",
+                competitor_id: "empire-cinemas",
+                market_id: "uk-cinema-market-2024",
+                product_service: "Adult Standard Ticket",
+                price_point: 15.50,
+                currency: "GBP",
+                date_collected: "2024-08-14T10:00:00Z",
+                source: "empire_manual_check",
+                metadata: {
+                    location: "London Leicester Square IMAX",
+                    time_slot: "peak"
+                },
+                is_promotion: false,
+                created_at: "2024-08-14T10:00:00Z"
+            },
+            {
+                id: "empire-adult-prem-2024080",
+                competitor_id: "empire-cinemas",
+                market_id: "uk-cinema-market-2024",
+                product_service: "Adult Premium Seat",
+                price_point: 22.50,
+                currency: "GBP",
+                date_collected: "2024-08-14T10:00:00Z",
+                source: "empire_manual_check",
+                metadata: {
+                    location: "London Leicester Square IMAX",
+                    time_slot: "peak",
+                    seat_type: "imax_premium"
+                },
+                is_promotion: false,
+                created_at: "2024-08-14T10:00:00Z"
+            },
+            // Showcase Cinemas Pricing
+            {
+                id: "showcase-adult-std-2024080",
+                competitor_id: "showcase-cinemas",
+                market_id: "uk-cinema-market-2024",
+                product_service: "Adult Standard Ticket",
+                price_point: 10.99,
+                currency: "GBP",
+                date_collected: "2024-08-14T10:00:00Z",
+                source: "showcase_scraper",
+                metadata: {
+                    location: "Reading",
+                    time_slot: "peak"
+                },
+                is_promotion: false,
+                created_at: "2024-08-14T10:00:00Z"
+            },
+            {
+                id: "showcase-adult-xplus-2024080",
+                competitor_id: "showcase-cinemas",
+                market_id: "uk-cinema-market-2024",
+                product_service: "Adult Premium Seat",
+                price_point: 16.99,
+                currency: "GBP",
+                date_collected: "2024-08-14T10:00:00Z",
+                source: "showcase_scraper",
+                metadata: {
+                    location: "Reading",
+                    time_slot: "peak",
+                    seat_type: "xplus"
+                },
+                is_promotion: false,
+                created_at: "2024-08-14T10:00:00Z"
+            }
+        ];
+        // Market alerts focused on cinema industry insights
+        this.marketAlerts = [
+            {
+                id: "alert-cineworld-pricing-2024080",
+                market_id: "uk-cinema-market-2024",
+                organisation_id: "odeon-demo-org",
+                alert_type: "pricing_intelligence",
+                severity: "high",
+                title: "Cineworld Reduces Premium Pricing",
+                message: "Cineworld has reduced 4DX ticket prices by 8% across London venues, potentially impacting premium market positioning.",
+                trigger_data: {
+                    competitor: "Cineworld Group",
+                    price_change: -0.08,
+                    affected_product: "Adult Premium Seat",
+                    locations_affected: [
+                        "London Leicester Square",
+                        "London O2",
+                        "London Wood Green"
+                    ]
+                },
+                is_read: false,
+                created_at: "2024-08-14T09:30:00Z"
+            },
+            {
+                id: "alert-vue-expansion-2024080",
+                market_id: "uk-cinema-market-2024",
+                organisation_id: "odeon-demo-org",
+                alert_type: "competitive_moves",
+                severity: "medium",
+                title: "Vue Announces New IMAX Locations",
+                message: "Vue Entertainment planning 3 new IMAX installations in Manchester, Birmingham, and Glasgow for Q4 2024.",
+                trigger_data: {
+                    competitor: "Vue Entertainment",
+                    expansion_type: "premium_screens",
+                    locations: [
+                        "Manchester",
+                        "Birmingham",
+                        "Glasgow"
+                    ],
+                    planned_opening: "Q4 2024"
+                },
+                is_read: false,
+                created_at: "2024-08-13T14:20:00Z"
+            },
+            {
+                id: "alert-showcase-membership-2024080",
+                market_id: "uk-cinema-market-2024",
+                organisation_id: "odeon-demo-org",
+                alert_type: "product_intelligence",
+                severity: "medium",
+                title: "Showcase Launches Subscription Service",
+                message: "Showcase Cinemas introduces unlimited monthly pass at \xa314.99, undercutting Cineworld Unlimited by \xa32.91.",
+                trigger_data: {
+                    competitor: "Showcase Cinemas",
+                    new_product: "Unlimited Monthly Pass",
+                    price_point: 14.99,
+                    competitive_advantage: "Price leadership in subscriptions"
+                },
+                is_read: true,
+                created_at: "2024-08-12T11:45:00Z"
+            }
+        ];
+    }
+}
+const cinemaDemoData = new CinemaDemoDataService();
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIi9Vc2Vycy9tYXR0L1NpdGVzL01hcmtldEVkZ2UvcGxhdGZvcm0td3JhcHBlci9mcm9udGVuZC9zcmMvc2VydmljZXMvY2luZW1hLWRlbW8tZGF0YS50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBcbiAgTWFya2V0LCBcbiAgQ29tcGV0aXRvciwgXG4gIFByaWNpbmdEYXRhLCBcbiAgTWFya2V0QWxlcnQsIFxuICBNYXJrZXRPdmVydmlldyxcbiAgTWFya2V0TWV0cmljcyxcbiAgQ29tcGV0aXRvckNvbXBhcmlzb24sXG4gIE1hcmtldFRyZW5kcyxcbiAgQ29tcGV0aXRvckFuYWx5c2lzIFxufSBmcm9tICdAL3R5cGVzL21hcmtldC1lZGdlJztcblxuLy8gQ2luZW1hLXNwZWNpZmljIGRlbW8gZGF0YSBmb3IgT2Rlb24gcHJlc2VudGF0aW9uXG5leHBvcnQgY2xhc3MgQ2luZW1hRGVtb0RhdGFTZXJ2aWNlIHtcbiAgLy8gVUsgQ2luZW1hIE1hcmtldCBEYXRhXG4gIHByaXZhdGUgcmVhZG9ubHkgdWtDaW5lbWFNYXJrZXQ6IE1hcmtldCA9IHtcbiAgICBpZDogJ3VrLWNpbmVtYS1tYXJrZXQtMjAyNCcsXG4gICAgbmFtZTogJ1VLIENpbmVtYSBFeGhpYml0aW9uIE1hcmtldCcsXG4gICAgZ2VvZ3JhcGhpY19ib3VuZHM6IHtcbiAgICAgIGNvdW50cnk6ICdVbml0ZWQgS2luZ2RvbScsXG4gICAgICByZWdpb25zOiBbJ0VuZ2xhbmQnLCAnU2NvdGxhbmQnLCAnV2FsZXMnLCAnTm9ydGhlcm4gSXJlbGFuZCddLFxuICAgICAgZm9jdXNfYXJlYXM6IFsnTG9uZG9uJywgJ0Jpcm1pbmdoYW0nLCAnTWFuY2hlc3RlcicsICdHbGFzZ293JywgJ0xlZWRzJ11cbiAgICB9LFxuICAgIG9yZ2FuaXNhdGlvbl9pZDogJ29kZW9uLWRlbW8tb3JnJyxcbiAgICBjcmVhdGVkX2J5OiAnb2Rlb24tbWFya2V0LWFuYWx5c3QnLFxuICAgIGNvbXBldGl0b3JfY291bnQ6IDQsXG4gICAgaXNfYWN0aXZlOiB0cnVlLFxuICAgIHRyYWNraW5nX2NvbmZpZzoge1xuICAgICAgaW5kdXN0cnlfdHlwZTogJ2NpbmVtYV9leGhpYml0aW9uJyxcbiAgICAgIHNpY19jb2RlOiAnNTkxNDAnLFxuICAgICAgbWV0cmljczogWyd0aWNrZXRfcHJpY2VzJywgJ2NvbmNlc3Npb25fcHJpY2VzJywgJ21lbWJlcnNoaXBfZmVlcycsICdwcmVtaXVtX2V4cGVyaWVuY2VzJ10sXG4gICAgICB1cGRhdGVfZnJlcXVlbmN5OiAnZGFpbHknLFxuICAgICAgYWxlcnRfdGhyZXNob2xkczoge1xuICAgICAgICBwcmljZV9jaGFuZ2U6IDAuMDUsIC8vIDUlIGNoYW5nZSB0cmlnZ2VycyBhbGVydFxuICAgICAgICBuZXdfY29tcGV0aXRvcjogdHJ1ZSxcbiAgICAgICAgbWFya2V0X3NoYXJlX3NoaWZ0OiAwLjAyIC8vIDIlIG1hcmtldCBzaGFyZSBjaGFuZ2VcbiAgICAgIH1cbiAgICB9LFxuICAgIGNyZWF0ZWRfYXQ6ICcyMDI0LTAxLTAxVDAwOjAwOjAwWicsXG4gICAgdXBkYXRlZF9hdDogJzIwMjQtMDgtMTRUMTA6MDA6MDBaJ1xuICB9O1xuXG4gIC8vIE1ham9yIFVLIENpbmVtYSBDb21wZXRpdG9yc1xuICBwcml2YXRlIHJlYWRvbmx5IGNvbXBldGl0b3JzOiBDb21wZXRpdG9yW10gPSBbXG4gICAge1xuICAgICAgaWQ6ICd2dWUtY2luZW1hcy11aycsXG4gICAgICBuYW1lOiAnVnVlIEVudGVydGFpbm1lbnQnLFxuICAgICAgbWFya2V0X2lkOiAndWstY2luZW1hLW1hcmtldC0yMDI0JyxcbiAgICAgIG9yZ2FuaXNhdGlvbl9pZDogJ29kZW9uLWRlbW8tb3JnJyxcbiAgICAgIGJ1c2luZXNzX3R5cGU6ICdDaW5lbWEgQ2hhaW4nLFxuICAgICAgd2Vic2l0ZTogJ2h0dHBzOi8vd3d3Lm15dnVlLmNvbScsXG4gICAgICBsb2NhdGlvbnM6IHtcbiAgICAgICAgdG90YWxfc2l0ZXM6IDkxLFxuICAgICAgICB0b3RhbF9zY3JlZW5zOiA4NDAsXG4gICAgICAgIHJlZ2lvbnM6IHtcbiAgICAgICAgICAnTG9uZG9uJzogMTUsXG4gICAgICAgICAgJ1NvdXRoIEVhc3QnOiAxOCxcbiAgICAgICAgICAnTWlkbGFuZHMnOiAxMixcbiAgICAgICAgICAnTm9ydGgnOiAyMCxcbiAgICAgICAgICAnU2NvdGxhbmQnOiA4LFxuICAgICAgICAgICdXYWxlcyc6IDYsXG4gICAgICAgICAgJ04uIElyZWxhbmQnOiAzXG4gICAgICAgIH1cbiAgICAgIH0sXG4gICAgICB0cmFja2luZ19wcmlvcml0eTogMTAsIC8vIEhpZ2hlc3QgcHJpb3JpdHkgLSBtYWluIGNvbXBldGl0b3JcbiAgICAgIGRlc2NyaXB0aW9uOiAnTGVhZGluZyBVSyBjaW5lbWEgY2hhaW4gd2l0aCBwcmVtaXVtIGFuZCBJTUFYIG9mZmVyaW5ncycsXG4gICAgICBtYXJrZXRfc2hhcmVfZXN0aW1hdGU6IDAuMjEsIC8vIDIxJSBtYXJrZXQgc2hhcmVcbiAgICAgIGxhc3RfdXBkYXRlZDogJzIwMjQtMDgtMTRUMDg6MDA6MDBaJyxcbiAgICAgIGNyZWF0ZWRfYXQ6ICcyMDI0LTAxLTAxVDAwOjAwOjAwWidcbiAgICB9LFxuICAgIHtcbiAgICAgIGlkOiAnY2luZXdvcmxkLXVrJyxcbiAgICAgIG5hbWU6ICdDaW5ld29ybGQgR3JvdXAnLFxuICAgICAgbWFya2V0X2lkOiAndWstY2luZW1hLW1hcmtldC0yMDI0JyxcbiAgICAgIG9yZ2FuaXNhdGlvbl9pZDogJ29kZW9uLWRlbW8tb3JnJyxcbiAgICAgIGJ1c2luZXNzX3R5cGU6ICdDaW5lbWEgQ2hhaW4nLFxuICAgICAgd2Vic2l0ZTogJ2h0dHBzOi8vd3d3LmNpbmV3b3JsZC5jby51aycsXG4gICAgICBsb2NhdGlvbnM6IHtcbiAgICAgICAgdG90YWxfc2l0ZXM6IDk5LFxuICAgICAgICB0b3RhbF9zY3JlZW5zOiAxMDE1LFxuICAgICAgICByZWdpb25zOiB7XG4gICAgICAgICAgJ0xvbmRvbic6IDgsXG4gICAgICAgICAgJ1NvdXRoIEVhc3QnOiAyMixcbiAgICAgICAgICAnTWlkbGFuZHMnOiAxNSxcbiAgICAgICAgICAnTm9ydGgnOiAyNSxcbiAgICAgICAgICAnU2NvdGxhbmQnOiAxMixcbiAgICAgICAgICAnV2FsZXMnOiA5LFxuICAgICAgICAgICdOLiBJcmVsYW5kJzogNFxuICAgICAgICB9XG4gICAgICB9LFxuICAgICAgdHJhY2tpbmdfcHJpb3JpdHk6IDEwLCAvLyBIaWdoZXN0IHByaW9yaXR5XG4gICAgICBkZXNjcmlwdGlvbjogJ0dsb2JhbCBjaW5lbWEgY2hhaW4gd2l0aCBzdHJvbmcgVUsgcHJlc2VuY2UsIDREWCBhbmQgSU1BWCcsXG4gICAgICBtYXJrZXRfc2hhcmVfZXN0aW1hdGU6IDAuMjUsIC8vIDI1JSBtYXJrZXQgc2hhcmVcbiAgICAgIGxhc3RfdXBkYXRlZDogJzIwMjQtMDgtMTRUMDg6MDA6MDBaJyxcbiAgICAgIGNyZWF0ZWRfYXQ6ICcyMDI0LTAxLTAxVDAwOjAwOjAwWidcbiAgICB9LFxuICAgIHtcbiAgICAgIGlkOiAnZW1waXJlLWNpbmVtYXMnLFxuICAgICAgbmFtZTogJ0VtcGlyZSBDaW5lbWFzJyxcbiAgICAgIG1hcmtldF9pZDogJ3VrLWNpbmVtYS1tYXJrZXQtMjAyNCcsXG4gICAgICBvcmdhbmlzYXRpb25faWQ6ICdvZGVvbi1kZW1vLW9yZycsXG4gICAgICBidXNpbmVzc190eXBlOiAnQ2luZW1hIENoYWluJyxcbiAgICAgIHdlYnNpdGU6ICdodHRwczovL2VtcGlyZWNpbmVtYXMuY28udWsnLFxuICAgICAgbG9jYXRpb25zOiB7XG4gICAgICAgIHRvdGFsX3NpdGVzOiAxNCxcbiAgICAgICAgdG90YWxfc2NyZWVuczogMTMwLFxuICAgICAgICByZWdpb25zOiB7XG4gICAgICAgICAgJ0xvbmRvbic6IDQsXG4gICAgICAgICAgJ1NvdXRoIEVhc3QnOiA2LFxuICAgICAgICAgICdNaWRsYW5kcyc6IDIsXG4gICAgICAgICAgJ05vcnRoJzogMixcbiAgICAgICAgICAnU2NvdGxhbmQnOiAwLFxuICAgICAgICAgICdXYWxlcyc6IDAsXG4gICAgICAgICAgJ04uIElyZWxhbmQnOiAwXG4gICAgICAgIH1cbiAgICAgIH0sXG4gICAgICB0cmFja2luZ19wcmlvcml0eTogNywgLy8gTWVkaXVtIHByaW9yaXR5XG4gICAgICBkZXNjcmlwdGlvbjogJ1ByZW1pdW0gY2luZW1hIGV4cGVyaWVuY2Ugd2l0aCBsdXh1cnkgc2VhdGluZyBhbmQgSU1BWCcsXG4gICAgICBtYXJrZXRfc2hhcmVfZXN0aW1hdGU6IDAuMDMsIC8vIDMlIG1hcmtldCBzaGFyZVxuICAgICAgbGFzdF91cGRhdGVkOiAnMjAyNC0wOC0xNFQwODowMDowMFonLFxuICAgICAgY3JlYXRlZF9hdDogJzIwMjQtMDEtMDFUMDA6MDA6MDBaJ1xuICAgIH0sXG4gICAge1xuICAgICAgaWQ6ICdzaG93Y2FzZS1jaW5lbWFzJyxcbiAgICAgIG5hbWU6ICdTaG93Y2FzZSBDaW5lbWFzJyxcbiAgICAgIG1hcmtldF9pZDogJ3VrLWNpbmVtYS1tYXJrZXQtMjAyNCcsXG4gICAgICBvcmdhbmlzYXRpb25faWQ6ICdvZGVvbi1kZW1vLW9yZycsXG4gICAgICBidXNpbmVzc190eXBlOiAnQ2luZW1hIENoYWluJyxcbiAgICAgIHdlYnNpdGU6ICdodHRwczovL3d3dy5zaG93Y2FzZWNpbmVtYXMuY28udWsnLFxuICAgICAgbG9jYXRpb25zOiB7XG4gICAgICAgIHRvdGFsX3NpdGVzOiAyMSxcbiAgICAgICAgdG90YWxfc2NyZWVuczogMjg1LFxuICAgICAgICByZWdpb25zOiB7XG4gICAgICAgICAgJ0xvbmRvbic6IDMsXG4gICAgICAgICAgJ1NvdXRoIEVhc3QnOiA4LFxuICAgICAgICAgICdNaWRsYW5kcyc6IDQsXG4gICAgICAgICAgJ05vcnRoJzogNixcbiAgICAgICAgICAnU2NvdGxhbmQnOiAwLFxuICAgICAgICAgICdXYWxlcyc6IDAsXG4gICAgICAgICAgJ04uIElyZWxhbmQnOiAwXG4gICAgICAgIH1cbiAgICAgIH0sXG4gICAgICB0cmFja2luZ19wcmlvcml0eTogOCwgLy8gTWVkaXVtLWhpZ2ggcHJpb3JpdHlcbiAgICAgIGRlc2NyaXB0aW9uOiAnQW1lcmljYW4tb3duZWQgY2hhaW4gd2l0aCBYUGx1cyBwcmVtaXVtIGZvcm1hdCcsXG4gICAgICBtYXJrZXRfc2hhcmVfZXN0aW1hdGU6IDAuMDcsIC8vIDclIG1hcmtldCBzaGFyZVxuICAgICAgbGFzdF91cGRhdGVkOiAnMjAyNC0wOC0xNFQwODowMDowMFonLFxuICAgICAgY3JlYXRlZF9hdDogJzIwMjQtMDEtMDFUMDA6MDA6MDBaJ1xuICAgIH1cbiAgXTtcblxuICAvLyBDdXJyZW50IHByaWNpbmcgZGF0YSBmb3IgY2luZW1hIHNlcnZpY2VzXG4gIHByaXZhdGUgcmVhZG9ubHkgcHJpY2luZ0RhdGE6IFByaWNpbmdEYXRhW10gPSBbXG4gICAgLy8gVnVlIENpbmVtYSBQcmljaW5nXG4gICAgeyBcbiAgICAgIGlkOiAndnVlLWFkdWx0LXN0ZC0yMDI0MDgwJywgXG4gICAgICBjb21wZXRpdG9yX2lkOiAndnVlLWNpbmVtYXMtdWsnLCBcbiAgICAgIG1hcmtldF9pZDogJ3VrLWNpbmVtYS1tYXJrZXQtMjAyNCcsXG4gICAgICBwcm9kdWN0X3NlcnZpY2U6ICdBZHVsdCBTdGFuZGFyZCBUaWNrZXQnLCBcbiAgICAgIHByaWNlX3BvaW50OiAxMi45OSwgXG4gICAgICBjdXJyZW5jeTogJ0dCUCcsXG4gICAgICBkYXRlX2NvbGxlY3RlZDogJzIwMjQtMDgtMTRUMTA6MDA6MDBaJyxcbiAgICAgIHNvdXJjZTogJ3Z1ZV93ZWJzaXRlX3NjcmFwZXInLFxuICAgICAgbWV0YWRhdGE6IHsgbG9jYXRpb246ICdMb25kb24gV2VzdCBFbmQnLCB0aW1lX3Nsb3Q6ICdwZWFrJyB9LFxuICAgICAgaXNfcHJvbW90aW9uOiBmYWxzZSxcbiAgICAgIGNyZWF0ZWRfYXQ6ICcyMDI0LTA4LTE0VDEwOjAwOjAwWidcbiAgICB9LFxuICAgIHsgXG4gICAgICBpZDogJ3Z1ZS1hZHVsdC1wcmVtLTIwMjQwODAnLCBcbiAgICAgIGNvbXBldGl0b3JfaWQ6ICd2dWUtY2luZW1hcy11aycsIFxuICAgICAgbWFya2V0X2lkOiAndWstY2luZW1hLW1hcmtldC0yMDI0JyxcbiAgICAgIHByb2R1Y3Rfc2VydmljZTogJ0FkdWx0IFByZW1pdW0gU2VhdCcsIFxuICAgICAgcHJpY2VfcG9pbnQ6IDE4Ljk5LCBcbiAgICAgIGN1cnJlbmN5OiAnR0JQJyxcbiAgICAgIGRhdGVfY29sbGVjdGVkOiAnMjAyNC0wOC0xNFQxMDowMDowMFonLFxuICAgICAgc291cmNlOiAndnVlX3dlYnNpdGVfc2NyYXBlcicsXG4gICAgICBtZXRhZGF0YTogeyBsb2NhdGlvbjogJ0xvbmRvbiBXZXN0IEVuZCcsIHRpbWVfc2xvdDogJ3BlYWsnLCBzZWF0X3R5cGU6ICdwcmVtaXVtX3BsdXMnIH0sXG4gICAgICBpc19wcm9tb3Rpb246IGZhbHNlLFxuICAgICAgY3JlYXRlZF9hdDogJzIwMjQtMDgtMTRUMTA6MDA6MDBaJ1xuICAgIH0sXG4gICAgeyBcbiAgICAgIGlkOiAndnVlLWxhcmdlLXBvcGNvcm4tMjAyNDA4MCcsIFxuICAgICAgY29tcGV0aXRvcl9pZDogJ3Z1ZS1jaW5lbWFzLXVrJywgXG4gICAgICBtYXJrZXRfaWQ6ICd1ay1jaW5lbWEtbWFya2V0LTIwMjQnLFxuICAgICAgcHJvZHVjdF9zZXJ2aWNlOiAnTGFyZ2UgUG9wY29ybicsIFxuICAgICAgcHJpY2VfcG9pbnQ6IDYuNTAsIFxuICAgICAgY3VycmVuY3k6ICdHQlAnLFxuICAgICAgZGF0ZV9jb2xsZWN0ZWQ6ICcyMDI0LTA4LTE0VDEwOjAwOjAwWicsXG4gICAgICBzb3VyY2U6ICd2dWVfd2Vic2l0ZV9zY3JhcGVyJyxcbiAgICAgIG1ldGFkYXRhOiB7IGNvbmNlc3Npb25fdHlwZTogJ3N3ZWV0Jywgc2l6ZTogJ2xhcmdlJyB9LFxuICAgICAgaXNfcHJvbW90aW9uOiBmYWxzZSxcbiAgICAgIGNyZWF0ZWRfYXQ6ICcyMDI0LTA4LTE0VDEwOjAwOjAwWidcbiAgICB9LFxuICAgIFxuICAgIC8vIENpbmV3b3JsZCBQcmljaW5nXG4gICAgeyBcbiAgICAgIGlkOiAnY2luZXdvcmxkLWFkdWx0LXN0ZC0yMDI0MDgwJywgXG4gICAgICBjb21wZXRpdG9yX2lkOiAnY2luZXdvcmxkLXVrJywgXG4gICAgICBtYXJrZXRfaWQ6ICd1ay1jaW5lbWEtbWFya2V0LTIwMjQnLFxuICAgICAgcHJvZHVjdF9zZXJ2aWNlOiAnQWR1bHQgU3RhbmRhcmQgVGlja2V0JywgXG4gICAgICBwcmljZV9wb2ludDogMTEuNzAsIFxuICAgICAgY3VycmVuY3k6ICdHQlAnLFxuICAgICAgZGF0ZV9jb2xsZWN0ZWQ6ICcyMDI0LTA4LTE0VDEwOjAwOjAwWicsXG4gICAgICBzb3VyY2U6ICdjaW5ld29ybGRfYXBpJyxcbiAgICAgIG1ldGFkYXRhOiB7IGxvY2F0aW9uOiAnTG9uZG9uIExlaWNlc3RlciBTcXVhcmUnLCB0aW1lX3Nsb3Q6ICdwZWFrJyB9LFxuICAgICAgaXNfcHJvbW90aW9uOiBmYWxzZSxcbiAgICAgIGNyZWF0ZWRfYXQ6ICcyMDI0LTA4LTE0VDEwOjAwOjAwWidcbiAgICB9LFxuICAgIHsgXG4gICAgICBpZDogJ2NpbmV3b3JsZC1hZHVsdC1wcmVtLTIwMjQwODAnLCBcbiAgICAgIGNvbXBldGl0b3JfaWQ6ICdjaW5ld29ybGQtdWsnLCBcbiAgICAgIG1hcmtldF9pZDogJ3VrLWNpbmVtYS1tYXJrZXQtMjAyNCcsXG4gICAgICBwcm9kdWN0X3NlcnZpY2U6ICdBZHVsdCBQcmVtaXVtIFNlYXQnLCBcbiAgICAgIHByaWNlX3BvaW50OiAyMS40MCwgXG4gICAgICBjdXJyZW5jeTogJ0dCUCcsXG4gICAgICBkYXRlX2NvbGxlY3RlZDogJzIwMjQtMDgtMTRUMTA6MDA6MDBaJyxcbiAgICAgIHNvdXJjZTogJ2NpbmV3b3JsZF9hcGknLFxuICAgICAgbWV0YWRhdGE6IHsgbG9jYXRpb246ICdMb25kb24gTGVpY2VzdGVyIFNxdWFyZScsIHRpbWVfc2xvdDogJ3BlYWsnLCBzZWF0X3R5cGU6ICc0ZHgnIH0sXG4gICAgICBpc19wcm9tb3Rpb246IGZhbHNlLFxuICAgICAgY3JlYXRlZF9hdDogJzIwMjQtMDgtMTRUMTA6MDA6MDBaJ1xuICAgIH0sXG4gICAgeyBcbiAgICAgIGlkOiAnY2luZXdvcmxkLXVubGltaXRlZC0yMDI0MDgwJywgXG4gICAgICBjb21wZXRpdG9yX2lkOiAnY2luZXdvcmxkLXVrJywgXG4gICAgICBtYXJrZXRfaWQ6ICd1ay1jaW5lbWEtbWFya2V0LTIwMjQnLFxuICAgICAgcHJvZHVjdF9zZXJ2aWNlOiAnTW9udGhseSBVbmxpbWl0ZWQgUGFzcycsIFxuICAgICAgcHJpY2VfcG9pbnQ6IDE3LjkwLCBcbiAgICAgIGN1cnJlbmN5OiAnR0JQJyxcbiAgICAgIGRhdGVfY29sbGVjdGVkOiAnMjAyNC0wOC0xNFQxMDowMDowMFonLFxuICAgICAgc291cmNlOiAnY2luZXdvcmxkX2FwaScsXG4gICAgICBtZXRhZGF0YTogeyBzdWJzY3JpcHRpb25fdHlwZTogJ3VubGltaXRlZCcsIGJpbGxpbmc6ICdtb250aGx5JyB9LFxuICAgICAgaXNfcHJvbW90aW9uOiBmYWxzZSxcbiAgICAgIGNyZWF0ZWRfYXQ6ICcyMDI0LTA4LTE0VDEwOjAwOjAwWidcbiAgICB9LFxuXG4gICAgLy8gRW1waXJlIENpbmVtYXMgUHJpY2luZ1xuICAgIHsgXG4gICAgICBpZDogJ2VtcGlyZS1hZHVsdC1zdGQtMjAyNDA4MCcsIFxuICAgICAgY29tcGV0aXRvcl9pZDogJ2VtcGlyZS1jaW5lbWFzJywgXG4gICAgICBtYXJrZXRfaWQ6ICd1ay1jaW5lbWEtbWFya2V0LTIwMjQnLFxuICAgICAgcHJvZHVjdF9zZXJ2aWNlOiAnQWR1bHQgU3RhbmRhcmQgVGlja2V0JywgXG4gICAgICBwcmljZV9wb2ludDogMTUuNTAsIFxuICAgICAgY3VycmVuY3k6ICdHQlAnLFxuICAgICAgZGF0ZV9jb2xsZWN0ZWQ6ICcyMDI0LTA4LTE0VDEwOjAwOjAwWicsXG4gICAgICBzb3VyY2U6ICdlbXBpcmVfbWFudWFsX2NoZWNrJyxcbiAgICAgIG1ldGFkYXRhOiB7IGxvY2F0aW9uOiAnTG9uZG9uIExlaWNlc3RlciBTcXVhcmUgSU1BWCcsIHRpbWVfc2xvdDogJ3BlYWsnIH0sXG4gICAgICBpc19wcm9tb3Rpb246IGZhbHNlLFxuICAgICAgY3JlYXRlZF9hdDogJzIwMjQtMDgtMTRUMTA6MDA6MDBaJ1xuICAgIH0sXG4gICAgeyBcbiAgICAgIGlkOiAnZW1waXJlLWFkdWx0LXByZW0tMjAyNDA4MCcsIFxuICAgICAgY29tcGV0aXRvcl9pZDogJ2VtcGlyZS1jaW5lbWFzJywgXG4gICAgICBtYXJrZXRfaWQ6ICd1ay1jaW5lbWEtbWFya2V0LTIwMjQnLFxuICAgICAgcHJvZHVjdF9zZXJ2aWNlOiAnQWR1bHQgUHJlbWl1bSBTZWF0JywgXG4gICAgICBwcmljZV9wb2ludDogMjIuNTAsIFxuICAgICAgY3VycmVuY3k6ICdHQlAnLFxuICAgICAgZGF0ZV9jb2xsZWN0ZWQ6ICcyMDI0LTA4LTE0VDEwOjAwOjAwWicsXG4gICAgICBzb3VyY2U6ICdlbXBpcmVfbWFudWFsX2NoZWNrJyxcbiAgICAgIG1ldGFkYXRhOiB7IGxvY2F0aW9uOiAnTG9uZG9uIExlaWNlc3RlciBTcXVhcmUgSU1BWCcsIHRpbWVfc2xvdDogJ3BlYWsnLCBzZWF0X3R5cGU6ICdpbWF4X3ByZW1pdW0nIH0sXG4gICAgICBpc19wcm9tb3Rpb246IGZhbHNlLFxuICAgICAgY3JlYXRlZF9hdDogJzIwMjQtMDgtMTRUMTA6MDA6MDBaJ1xuICAgIH0sXG5cbiAgICAvLyBTaG93Y2FzZSBDaW5lbWFzIFByaWNpbmdcbiAgICB7IFxuICAgICAgaWQ6ICdzaG93Y2FzZS1hZHVsdC1zdGQtMjAyNDA4MCcsIFxuICAgICAgY29tcGV0aXRvcl9pZDogJ3Nob3djYXNlLWNpbmVtYXMnLCBcbiAgICAgIG1hcmtldF9pZDogJ3VrLWNpbmVtYS1tYXJrZXQtMjAyNCcsXG4gICAgICBwcm9kdWN0X3NlcnZpY2U6ICdBZHVsdCBTdGFuZGFyZCBUaWNrZXQnLCBcbiAgICAgIHByaWNlX3BvaW50OiAxMC45OSwgXG4gICAgICBjdXJyZW5jeTogJ0dCUCcsXG4gICAgICBkYXRlX2NvbGxlY3RlZDogJzIwMjQtMDgtMTRUMTA6MDA6MDBaJyxcbiAgICAgIHNvdXJjZTogJ3Nob3djYXNlX3NjcmFwZXInLFxuICAgICAgbWV0YWRhdGE6IHsgbG9jYXRpb246ICdSZWFkaW5nJywgdGltZV9zbG90OiAncGVhaycgfSxcbiAgICAgIGlzX3Byb21vdGlvbjogZmFsc2UsXG4gICAgICBjcmVhdGVkX2F0OiAnMjAyNC0wOC0xNFQxMDowMDowMFonXG4gICAgfSxcbiAgICB7IFxuICAgICAgaWQ6ICdzaG93Y2FzZS1hZHVsdC14cGx1cy0yMDI0MDgwJywgXG4gICAgICBjb21wZXRpdG9yX2lkOiAnc2hvd2Nhc2UtY2luZW1hcycsIFxuICAgICAgbWFya2V0X2lkOiAndWstY2luZW1hLW1hcmtldC0yMDI0JyxcbiAgICAgIHByb2R1Y3Rfc2VydmljZTogJ0FkdWx0IFByZW1pdW0gU2VhdCcsIFxuICAgICAgcHJpY2VfcG9pbnQ6IDE2Ljk5LCBcbiAgICAgIGN1cnJlbmN5OiAnR0JQJyxcbiAgICAgIGRhdGVfY29sbGVjdGVkOiAnMjAyNC0wOC0xNFQxMDowMDowMFonLFxuICAgICAgc291cmNlOiAnc2hvd2Nhc2Vfc2NyYXBlcicsXG4gICAgICBtZXRhZGF0YTogeyBsb2NhdGlvbjogJ1JlYWRpbmcnLCB0aW1lX3Nsb3Q6ICdwZWFrJywgc2VhdF90eXBlOiAneHBsdXMnIH0sXG4gICAgICBpc19wcm9tb3Rpb246IGZhbHNlLFxuICAgICAgY3JlYXRlZF9hdDogJzIwMjQtMDgtMTRUMTA6MDA6MDBaJ1xuICAgIH1cbiAgXTtcblxuICAvLyBNYXJrZXQgYWxlcnRzIGZvY3VzZWQgb24gY2luZW1hIGluZHVzdHJ5IGluc2lnaHRzXG4gIHByaXZhdGUgcmVhZG9ubHkgbWFya2V0QWxlcnRzOiBNYXJrZXRBbGVydFtdID0gW1xuICAgIHtcbiAgICAgIGlkOiAnYWxlcnQtY2luZXdvcmxkLXByaWNpbmctMjAyNDA4MCcsXG4gICAgICBtYXJrZXRfaWQ6ICd1ay1jaW5lbWEtbWFya2V0LTIwMjQnLFxuICAgICAgb3JnYW5pc2F0aW9uX2lkOiAnb2Rlb24tZGVtby1vcmcnLFxuICAgICAgYWxlcnRfdHlwZTogJ3ByaWNpbmdfaW50ZWxsaWdlbmNlJyxcbiAgICAgIHNldmVyaXR5OiAnaGlnaCcsXG4gICAgICB0aXRsZTogJ0NpbmV3b3JsZCBSZWR1Y2VzIFByZW1pdW0gUHJpY2luZycsXG4gICAgICBtZXNzYWdlOiAnQ2luZXdvcmxkIGhhcyByZWR1Y2VkIDREWCB0aWNrZXQgcHJpY2VzIGJ5IDglIGFjcm9zcyBMb25kb24gdmVudWVzLCBwb3RlbnRpYWxseSBpbXBhY3RpbmcgcHJlbWl1bSBtYXJrZXQgcG9zaXRpb25pbmcuJyxcbiAgICAgIHRyaWdnZXJfZGF0YToge1xuICAgICAgICBjb21wZXRpdG9yOiAnQ2luZXdvcmxkIEdyb3VwJyxcbiAgICAgICAgcHJpY2VfY2hhbmdlOiAtMC4wOCxcbiAgICAgICAgYWZmZWN0ZWRfcHJvZHVjdDogJ0FkdWx0IFByZW1pdW0gU2VhdCcsXG4gICAgICAgIGxvY2F0aW9uc19hZmZlY3RlZDogWydMb25kb24gTGVpY2VzdGVyIFNxdWFyZScsICdMb25kb24gTzInLCAnTG9uZG9uIFdvb2QgR3JlZW4nXVxuICAgICAgfSxcbiAgICAgIGlzX3JlYWQ6IGZhbHNlLFxuICAgICAgY3JlYXRlZF9hdDogJzIwMjQtMDgtMTRUMDk6MzA6MDBaJ1xuICAgIH0sXG4gICAge1xuICAgICAgaWQ6ICdhbGVydC12dWUtZXhwYW5zaW9uLTIwMjQwODAnLFxuICAgICAgbWFya2V0X2lkOiAndWstY2luZW1hLW1hcmtldC0yMDI0JyxcbiAgICAgIG9yZ2FuaXNhdGlvbl9pZDogJ29kZW9uLWRlbW8tb3JnJyxcbiAgICAgIGFsZXJ0X3R5cGU6ICdjb21wZXRpdGl2ZV9tb3ZlcycsXG4gICAgICBzZXZlcml0eTogJ21lZGl1bScsXG4gICAgICB0aXRsZTogJ1Z1ZSBBbm5vdW5jZXMgTmV3IElNQVggTG9jYXRpb25zJyxcbiAgICAgIG1lc3NhZ2U6ICdWdWUgRW50ZXJ0YWlubWVudCBwbGFubmluZyAzIG5ldyBJTUFYIGluc3RhbGxhdGlvbnMgaW4gTWFuY2hlc3RlciwgQmlybWluZ2hhbSwgYW5kIEdsYXNnb3cgZm9yIFE0IDIwMjQuJyxcbiAgICAgIHRyaWdnZXJfZGF0YToge1xuICAgICAgICBjb21wZXRpdG9yOiAnVnVlIEVudGVydGFpbm1lbnQnLFxuICAgICAgICBleHBhbnNpb25fdHlwZTogJ3ByZW1pdW1fc2NyZWVucycsXG4gICAgICAgIGxvY2F0aW9uczogWydNYW5jaGVzdGVyJywgJ0Jpcm1pbmdoYW0nLCAnR2xhc2dvdyddLFxuICAgICAgICBwbGFubmVkX29wZW5pbmc6ICdRNCAyMDI0J1xuICAgICAgfSxcbiAgICAgIGlzX3JlYWQ6IGZhbHNlLFxuICAgICAgY3JlYXRlZF9hdDogJzIwMjQtMDgtMTNUMTQ6MjA6MDBaJ1xuICAgIH0sXG4gICAge1xuICAgICAgaWQ6ICdhbGVydC1zaG93Y2FzZS1tZW1iZXJzaGlwLTIwMjQwODAnLFxuICAgICAgbWFya2V0X2lkOiAndWstY2luZW1hLW1hcmtldC0yMDI0JyxcbiAgICAgIG9yZ2FuaXNhdGlvbl9pZDogJ29kZW9uLWRlbW8tb3JnJyxcbiAgICAgIGFsZXJ0X3R5cGU6ICdwcm9kdWN0X2ludGVsbGlnZW5jZScsXG4gICAgICBzZXZlcml0eTogJ21lZGl1bScsXG4gICAgICB0aXRsZTogJ1Nob3djYXNlIExhdW5jaGVzIFN1YnNjcmlwdGlvbiBTZXJ2aWNlJyxcbiAgICAgIG1lc3NhZ2U6ICdTaG93Y2FzZSBDaW5lbWFzIGludHJvZHVjZXMgdW5saW1pdGVkIG1vbnRobHkgcGFzcyBhdCDCozE0Ljk5LCB1bmRlcmN1dHRpbmcgQ2luZXdvcmxkIFVubGltaXRlZCBieSDCozIuOTEuJyxcbiAgICAgIHRyaWdnZXJfZGF0YToge1xuICAgICAgICBjb21wZXRpdG9yOiAnU2hvd2Nhc2UgQ2luZW1hcycsXG4gICAgICAgIG5ld19wcm9kdWN0OiAnVW5saW1pdGVkIE1vbnRobHkgUGFzcycsXG4gICAgICAgIHByaWNlX3BvaW50OiAxNC45OSxcbiAgICAgICAgY29tcGV0aXRpdmVfYWR2YW50YWdlOiAnUHJpY2UgbGVhZGVyc2hpcCBpbiBzdWJzY3JpcHRpb25zJ1xuICAgICAgfSxcbiAgICAgIGlzX3JlYWQ6IHRydWUsXG4gICAgICBjcmVhdGVkX2F0OiAnMjAyNC0wOC0xMlQxMTo0NTowMFonXG4gICAgfVxuICBdO1xuXG4gIC8vIEdldCBtYXJrZXQgZGF0YSBmb3IgZGVtb1xuICBnZXRNYXJrZXQoKTogTWFya2V0IHtcbiAgICByZXR1cm4gdGhpcy51a0NpbmVtYU1hcmtldDtcbiAgfVxuXG4gIGdldENvbXBldGl0b3JzKCk6IENvbXBldGl0b3JbXSB7XG4gICAgcmV0dXJuIHRoaXMuY29tcGV0aXRvcnM7XG4gIH1cblxuICBnZXRQcmljaW5nRGF0YSgpOiBQcmljaW5nRGF0YVtdIHtcbiAgICByZXR1cm4gdGhpcy5wcmljaW5nRGF0YTtcbiAgfVxuXG4gIGdldE1hcmtldEFsZXJ0cygpOiBNYXJrZXRBbGVydFtdIHtcbiAgICByZXR1cm4gdGhpcy5tYXJrZXRBbGVydHM7XG4gIH1cblxuICAvLyBHZW5lcmF0ZSBjb21wcmVoZW5zaXZlIG1hcmtldCBvdmVydmlldyBmb3IgZGVtb1xuICBnZXRNYXJrZXRPdmVydmlldygpOiBNYXJrZXRPdmVydmlldyB7XG4gICAgY29uc3QgbWV0cmljczogTWFya2V0TWV0cmljcyA9IHtcbiAgICAgIHBlcmlvZF9zdGFydDogJzIwMjQtMDctMTVUMDA6MDA6MDBaJyxcbiAgICAgIHBlcmlvZF9lbmQ6ICcyMDI0LTA4LTE0VDIzOjU5OjU5WicsXG4gICAgICB0b3RhbF9kYXRhX3BvaW50czogdGhpcy5wcmljaW5nRGF0YS5sZW5ndGgsXG4gICAgICBhdmVyYWdlX3ByaWNlOiAxNS4yMyxcbiAgICAgIG1lZGlhbl9wcmljZTogMTUuNTAsXG4gICAgICBtaW5fcHJpY2U6IDYuNTAsXG4gICAgICBtYXhfcHJpY2U6IDIyLjUwLFxuICAgICAgcHJpY2VfcmFuZ2U6IDE2LjAwLFxuICAgICAgc3RhbmRhcmRfZGV2aWF0aW9uOiA0Ljg1LFxuICAgICAgcHJpY2VfcXVhcnRpbGVzOiB7XG4gICAgICAgIHExOiAxMS4zNSxcbiAgICAgICAgcTI6IDE1LjUwLFxuICAgICAgICBxMzogMTguOTlcbiAgICAgIH0sXG4gICAgICBjb21wZXRpdG9yczoge1xuICAgICAgICAndnVlLWNpbmVtYXMtdWsnOiB7XG4gICAgICAgICAgbmFtZTogJ1Z1ZSBFbnRlcnRhaW5tZW50JyxcbiAgICAgICAgICBhdmVyYWdlX3ByaWNlOiAxMi44MyxcbiAgICAgICAgICBtZWRpYW5fcHJpY2U6IDEyLjk5LFxuICAgICAgICAgIG1pbl9wcmljZTogNi41MCxcbiAgICAgICAgICBtYXhfcHJpY2U6IDE4Ljk5LFxuICAgICAgICAgIHByaWNlX3BvaW50c19jb3VudDogMyxcbiAgICAgICAgICBzdGFuZGFyZF9kZXZpYXRpb246IDYuMjQsXG4gICAgICAgICAgcHJpY2VfcmFuazogMixcbiAgICAgICAgICBwb3NpdGlvbjogJ21pZCdcbiAgICAgICAgfSxcbiAgICAgICAgJ2NpbmV3b3JsZC11ayc6IHtcbiAgICAgICAgICBuYW1lOiAnQ2luZXdvcmxkIEdyb3VwJyxcbiAgICAgICAgICBhdmVyYWdlX3ByaWNlOiAxNi4zMyxcbiAgICAgICAgICBtZWRpYW5fcHJpY2U6IDE3LjkwLFxuICAgICAgICAgIG1pbl9wcmljZTogMTEuNzAsXG4gICAgICAgICAgbWF4X3ByaWNlOiAyMS40MCxcbiAgICAgICAgICBwcmljZV9wb2ludHNfY291bnQ6IDMsXG4gICAgICAgICAgc3RhbmRhcmRfZGV2aWF0aW9uOiA0LjkxLFxuICAgICAgICAgIHByaWNlX3Jhbms6IDMsXG4gICAgICAgICAgcG9zaXRpb246ICdtaWQnXG4gICAgICAgIH0sXG4gICAgICAgICdlbXBpcmUtY2luZW1hcyc6IHtcbiAgICAgICAgICBuYW1lOiAnRW1waXJlIENpbmVtYXMnLFxuICAgICAgICAgIGF2ZXJhZ2VfcHJpY2U6IDE5LjAwLFxuICAgICAgICAgIG1lZGlhbl9wcmljZTogMTkuMDAsXG4gICAgICAgICAgbWluX3ByaWNlOiAxNS41MCxcbiAgICAgICAgICBtYXhfcHJpY2U6IDIyLjUwLFxuICAgICAgICAgIHByaWNlX3BvaW50c19jb3VudDogMixcbiAgICAgICAgICBzdGFuZGFyZF9kZXZpYXRpb246IDMuNTAsXG4gICAgICAgICAgcHJpY2VfcmFuazogNCxcbiAgICAgICAgICBwb3NpdGlvbjogJ2hpZ2gnXG4gICAgICAgIH0sXG4gICAgICAgICdzaG93Y2FzZS1jaW5lbWFzJzoge1xuICAgICAgICAgIG5hbWU6ICdTaG93Y2FzZSBDaW5lbWFzJyxcbiAgICAgICAgICBhdmVyYWdlX3ByaWNlOiAxMy45OSxcbiAgICAgICAgICBtZWRpYW5fcHJpY2U6IDEzLjk5LFxuICAgICAgICAgIG1pbl9wcmljZTogMTAuOTksXG4gICAgICAgICAgbWF4X3ByaWNlOiAxNi45OSxcbiAgICAgICAgICBwcmljZV9wb2ludHNfY291bnQ6IDIsXG4gICAgICAgICAgc3RhbmRhcmRfZGV2aWF0aW9uOiAzLjAwLFxuICAgICAgICAgIHByaWNlX3Jhbms6IDEsXG4gICAgICAgICAgcG9zaXRpb246ICdsb3cnXG4gICAgICAgIH1cbiAgICAgIH0sXG4gICAgICB0cmVuZHM6IHtcbiAgICAgICAgdHJlbmQ6ICdzdGFibGUnLFxuICAgICAgICB3ZWVrbHlfYXZlcmFnZXM6IHtcbiAgICAgICAgICAnMjAyNC0wOC0wNSc6IDE1LjQ1LFxuICAgICAgICAgICcyMDI0LTA4LTA2JzogMTUuMjMsXG4gICAgICAgICAgJzIwMjQtMDgtMDcnOiAxNS4xOCxcbiAgICAgICAgICAnMjAyNC0wOC0wOCc6IDE1LjMxLFxuICAgICAgICAgICcyMDI0LTA4LTA5JzogMTUuMjAsXG4gICAgICAgICAgJzIwMjQtMDgtMTAnOiAxNS4xNSxcbiAgICAgICAgICAnMjAyNC0wOC0xMSc6IDE1LjIzXG4gICAgICAgIH0sXG4gICAgICAgIHByaWNlX2NoYW5nZTogLTAuMjIsXG4gICAgICAgIHByaWNlX2NoYW5nZV9wZXJjZW50OiAtMS40XG4gICAgICB9LFxuICAgICAgYW5vbWFsaWVzOiBbXG4gICAgICAgIHtcbiAgICAgICAgICBpZDogJ2Fub21hbHktZW1waXJlLXByZW1pdW0tMjAyNDA4MCcsXG4gICAgICAgICAgY29tcGV0aXRvcl9uYW1lOiAnRW1waXJlIENpbmVtYXMnLFxuICAgICAgICAgIHByb2R1Y3Rfc2VydmljZTogJ0FkdWx0IFByZW1pdW0gU2VhdCcsXG4gICAgICAgICAgcHJpY2U6IDIyLjUwLFxuICAgICAgICAgIHpfc2NvcmU6IDIuMyxcbiAgICAgICAgICBkYXRlX2NvbGxlY3RlZDogJzIwMjQtMDgtMTRUMTA6MDA6MDBaJyxcbiAgICAgICAgICBkZXZpYXRpb25fZnJvbV9tZWFuOiA3LjI3LFxuICAgICAgICAgIHNldmVyaXR5OiAnbWVkaXVtJ1xuICAgICAgICB9XG4gICAgICBdXG4gICAgfTtcblxuICAgIHJldHVybiB7XG4gICAgICBtYXJrZXQ6IHRoaXMudWtDaW5lbWFNYXJrZXQsXG4gICAgICBjb21wZXRpdG9yczogdGhpcy5jb21wZXRpdG9ycyxcbiAgICAgIG1ldHJpY3MsXG4gICAgICByZWNlbnRfZGF0YV9wb2ludHM6IHRoaXMucHJpY2luZ0RhdGEubGVuZ3RoLFxuICAgICAgcmVjZW50X2FsZXJ0czogdGhpcy5tYXJrZXRBbGVydHNcbiAgICB9O1xuICB9XG5cbiAgLy8gR2VuZXJhdGUgY29tcGV0aXRvciBjb21wYXJpc29uIGRhdGFcbiAgZ2V0Q29tcGV0aXRvckNvbXBhcmlzb24oKTogQ29tcGV0aXRvckNvbXBhcmlzb24ge1xuICAgIHJldHVybiB7XG4gICAgICBtYXJrZXRfaWQ6ICd1ay1jaW5lbWEtbWFya2V0LTIwMjQnLFxuICAgICAgY29tcGFyaXNvbl9wZXJpb2Q6IHtcbiAgICAgICAgc3RhcnRfZGF0ZTogJzIwMjQtMDctMTVUMDA6MDA6MDBaJyxcbiAgICAgICAgZW5kX2RhdGU6ICcyMDI0LTA4LTE0VDIzOjU5OjU5WidcbiAgICAgIH0sXG4gICAgICBjb21wZXRpdG9yczoge1xuICAgICAgICAndnVlLWNpbmVtYXMtdWsnOiB7XG4gICAgICAgICAgbmFtZTogJ1Z1ZSBFbnRlcnRhaW5tZW50JyxcbiAgICAgICAgICBidXNpbmVzc190eXBlOiAnQ2luZW1hIENoYWluJyxcbiAgICAgICAgICBhdmVyYWdlX3ByaWNlOiAxMi44MyxcbiAgICAgICAgICBtaW5fcHJpY2U6IDYuNTAsXG4gICAgICAgICAgbWF4X3ByaWNlOiAxOC45OSxcbiAgICAgICAgICBkYXRhX3BvaW50czogMyxcbiAgICAgICAgICBwcm9kdWN0c19zZXJ2aWNlczogWydBZHVsdCBTdGFuZGFyZCBUaWNrZXQnLCAnQWR1bHQgUHJlbWl1bSBTZWF0JywgJ0xhcmdlIFBvcGNvcm4nXSxcbiAgICAgICAgICBtYXJrZXRfc2hhcmVfZXN0aW1hdGU6IDAuMjEsXG4gICAgICAgICAgdHJhY2tpbmdfcHJpb3JpdHk6IDEwLFxuICAgICAgICAgIHByaWNlX3Jhbms6IDJcbiAgICAgICAgfSxcbiAgICAgICAgJ2NpbmV3b3JsZC11ayc6IHtcbiAgICAgICAgICBuYW1lOiAnQ2luZXdvcmxkIEdyb3VwJyxcbiAgICAgICAgICBidXNpbmVzc190eXBlOiAnQ2luZW1hIENoYWluJyxcbiAgICAgICAgICBhdmVyYWdlX3ByaWNlOiAxNi4zMyxcbiAgICAgICAgICBtaW5fcHJpY2U6IDExLjcwLFxuICAgICAgICAgIG1heF9wcmljZTogMjEuNDAsXG4gICAgICAgICAgZGF0YV9wb2ludHM6IDMsXG4gICAgICAgICAgcHJvZHVjdHNfc2VydmljZXM6IFsnQWR1bHQgU3RhbmRhcmQgVGlja2V0JywgJ0FkdWx0IFByZW1pdW0gU2VhdCcsICdNb250aGx5IFVubGltaXRlZCBQYXNzJ10sXG4gICAgICAgICAgbWFya2V0X3NoYXJlX2VzdGltYXRlOiAwLjI1LFxuICAgICAgICAgIHRyYWNraW5nX3ByaW9yaXR5OiAxMCxcbiAgICAgICAgICBwcmljZV9yYW5rOiAzXG4gICAgICAgIH0sXG4gICAgICAgICdlbXBpcmUtY2luZW1hcyc6IHtcbiAgICAgICAgICBuYW1lOiAnRW1waXJlIENpbmVtYXMnLFxuICAgICAgICAgIGJ1c2luZXNzX3R5cGU6ICdDaW5lbWEgQ2hhaW4nLFxuICAgICAgICAgIGF2ZXJhZ2VfcHJpY2U6IDE5LjAwLFxuICAgICAgICAgIG1pbl9wcmljZTogMTUuNTAsXG4gICAgICAgICAgbWF4X3ByaWNlOiAyMi41MCxcbiAgICAgICAgICBkYXRhX3BvaW50czogMixcbiAgICAgICAgICBwcm9kdWN0c19zZXJ2aWNlczogWydBZHVsdCBTdGFuZGFyZCBUaWNrZXQnLCAnQWR1bHQgUHJlbWl1bSBTZWF0J10sXG4gICAgICAgICAgbWFya2V0X3NoYXJlX2VzdGltYXRlOiAwLjAzLFxuICAgICAgICAgIHRyYWNraW5nX3ByaW9yaXR5OiA3LFxuICAgICAgICAgIHByaWNlX3Jhbms6IDRcbiAgICAgICAgfSxcbiAgICAgICAgJ3Nob3djYXNlLWNpbmVtYXMnOiB7XG4gICAgICAgICAgbmFtZTogJ1Nob3djYXNlIENpbmVtYXMnLFxuICAgICAgICAgIGJ1c2luZXNzX3R5cGU6ICdDaW5lbWEgQ2hhaW4nLFxuICAgICAgICAgIGF2ZXJhZ2VfcHJpY2U6IDEzLjk5LFxuICAgICAgICAgIG1pbl9wcmljZTogMTAuOTksXG4gICAgICAgICAgbWF4X3ByaWNlOiAxNi45OSxcbiAgICAgICAgICBkYXRhX3BvaW50czogMixcbiAgICAgICAgICBwcm9kdWN0c19zZXJ2aWNlczogWydBZHVsdCBTdGFuZGFyZCBUaWNrZXQnLCAnQWR1bHQgUHJlbWl1bSBTZWF0J10sXG4gICAgICAgICAgbWFya2V0X3NoYXJlX2VzdGltYXRlOiAwLjA3LFxuICAgICAgICAgIHRyYWNraW5nX3ByaW9yaXR5OiA4LFxuICAgICAgICAgIHByaWNlX3Jhbms6IDFcbiAgICAgICAgfVxuICAgICAgfSxcbiAgICAgIHJhbmtpbmdzOiB7XG4gICAgICAgIGJ5X3ByaWNlOiBbXG4gICAgICAgICAgeyBjb21wZXRpdG9yX2lkOiAnc2hvd2Nhc2UtY2luZW1hcycsIG5hbWU6ICdTaG93Y2FzZSBDaW5lbWFzJywgYXZlcmFnZV9wcmljZTogMTMuOTksIHJhbms6IDEgfSxcbiAgICAgICAgICB7IGNvbXBldGl0b3JfaWQ6ICd2dWUtY2luZW1hcy11aycsIG5hbWU6ICdWdWUgRW50ZXJ0YWlubWVudCcsIGF2ZXJhZ2VfcHJpY2U6IDEyLjgzLCByYW5rOiAyIH0sXG4gICAgICAgICAgeyBjb21wZXRpdG9yX2lkOiAnY2luZXdvcmxkLXVrJywgbmFtZTogJ0NpbmV3b3JsZCBHcm91cCcsIGF2ZXJhZ2VfcHJpY2U6IDE2LjMzLCByYW5rOiAzIH0sXG4gICAgICAgICAgeyBjb21wZXRpdG9yX2lkOiAnZW1waXJlLWNpbmVtYXMnLCBuYW1lOiAnRW1waXJlIENpbmVtYXMnLCBhdmVyYWdlX3ByaWNlOiAxOS4wMCwgcmFuazogNCB9XG4gICAgICAgIF1cbiAgICAgIH1cbiAgICB9O1xuICB9XG5cbiAgLy8gR2VuZXJhdGUgbWFya2V0IHRyZW5kcyBkYXRhXG4gIGdldE1hcmtldFRyZW5kcygpOiBNYXJrZXRUcmVuZHMge1xuICAgIHJldHVybiB7XG4gICAgICBwZXJpb2Q6IHtcbiAgICAgICAgc3RhcnRfZGF0ZTogJzIwMjQtMDctMTVUMDA6MDA6MDBaJyxcbiAgICAgICAgZW5kX2RhdGU6ICcyMDI0LTA4LTE0VDIzOjU5OjU5WicsXG4gICAgICAgIGRheXNfYmFjazogMzBcbiAgICAgIH0sXG4gICAgICBmaWx0ZXJzOiB7fSxcbiAgICAgIG1hcmtldF90cmVuZDoge1xuICAgICAgICAnMjAyNC0wNy0xNSc6IDE1LjY3LFxuICAgICAgICAnMjAyNC0wNy0yMic6IDE1LjU4LFxuICAgICAgICAnMjAyNC0wNy0yOSc6IDE1LjQ5LFxuICAgICAgICAnMjAyNC0wOC0wNSc6IDE1LjQ1LFxuICAgICAgICAnMjAyNC0wOC0xMic6IDE1LjIzXG4gICAgICB9LFxuICAgICAgY29tcGV0aXRvcl90cmVuZHM6IHtcbiAgICAgICAgJ3Z1ZS1jaW5lbWFzLXVrJzoge1xuICAgICAgICAgIG5hbWU6ICdWdWUgRW50ZXJ0YWlubWVudCcsXG4gICAgICAgICAgd2Vla2x5X2F2ZXJhZ2VzOiB7XG4gICAgICAgICAgICAnMjAyNC0wNy0xNSc6IDEyLjk1LFxuICAgICAgICAgICAgJzIwMjQtMDctMjInOiAxMi45MSxcbiAgICAgICAgICAgICcyMDI0LTA3LTI5JzogMTIuODgsXG4gICAgICAgICAgICAnMjAyNC0wOC0wNSc6IDEyLjg2LFxuICAgICAgICAgICAgJzIwMjQtMDgtMTInOiAxMi44M1xuICAgICAgICAgIH1cbiAgICAgICAgfSxcbiAgICAgICAgJ2NpbmV3b3JsZC11ayc6IHtcbiAgICAgICAgICBuYW1lOiAnQ2luZXdvcmxkIEdyb3VwJyxcbiAgICAgICAgICB3ZWVrbHlfYXZlcmFnZXM6IHtcbiAgICAgICAgICAgICcyMDI0LTA3LTE1JzogMTYuODUsXG4gICAgICAgICAgICAnMjAyNC0wNy0yMic6IDE2Ljc5LFxuICAgICAgICAgICAgJzIwMjQtMDctMjknOiAxNi42NyxcbiAgICAgICAgICAgICcyMDI0LTA4LTA1JzogMTYuNDUsXG4gICAgICAgICAgICAnMjAyNC0wOC0xMic6IDE2LjMzXG4gICAgICAgICAgfVxuICAgICAgICB9LFxuICAgICAgICAnZW1waXJlLWNpbmVtYXMnOiB7XG4gICAgICAgICAgbmFtZTogJ0VtcGlyZSBDaW5lbWFzJyxcbiAgICAgICAgICB3ZWVrbHlfYXZlcmFnZXM6IHtcbiAgICAgICAgICAgICcyMDI0LTA3LTE1JzogMTkuMjUsXG4gICAgICAgICAgICAnMjAyNC0wNy0yMic6IDE5LjE1LFxuICAgICAgICAgICAgJzIwMjQtMDctMjknOiAxOS4wOCxcbiAgICAgICAgICAgICcyMDI0LTA4LTA1JzogMTkuMDIsXG4gICAgICAgICAgICAnMjAyNC0wOC0xMic6IDE5LjAwXG4gICAgICAgICAgfVxuICAgICAgICB9LFxuICAgICAgICAnc2hvd2Nhc2UtY2luZW1hcyc6IHtcbiAgICAgICAgICBuYW1lOiAnU2hvd2Nhc2UgQ2luZW1hcycsXG4gICAgICAgICAgd2Vla2x5X2F2ZXJhZ2VzOiB7XG4gICAgICAgICAgICAnMjAyNC0wNy0xNSc6IDE0LjI1LFxuICAgICAgICAgICAgJzIwMjQtMDctMjInOiAxNC4xNSxcbiAgICAgICAgICAgICcyMDI0LTA3LTI5JzogMTQuMDgsXG4gICAgICAgICAgICAnMjAyNC0wOC0wNSc6IDE0LjAyLFxuICAgICAgICAgICAgJzIwMjQtMDgtMTInOiAxMy45OVxuICAgICAgICAgIH1cbiAgICAgICAgfVxuICAgICAgfSxcbiAgICAgIGRhdGFfcG9pbnRzX2NvdW50OiB0aGlzLnByaWNpbmdEYXRhLmxlbmd0aFxuICAgIH07XG4gIH1cblxuICAvLyBHZXQgYWxsIG1hcmtldHMgKGZvciBkZW1vLCBqdXN0IHJldHVybiB0aGUgVUsgY2luZW1hIG1hcmtldClcbiAgZ2V0TWFya2V0cygpOiBNYXJrZXRbXSB7XG4gICAgcmV0dXJuIFt0aGlzLnVrQ2luZW1hTWFya2V0XTtcbiAgfVxuXG4gIC8vIEdldCBjb21wZXRpdG9yIGFuYWx5c2lzIGZvciBpbmRpdmlkdWFsIGNvbXBldGl0b3JcbiAgZ2V0Q29tcGV0aXRvckFuYWx5c2lzKGNvbXBldGl0b3JJZDogc3RyaW5nKTogQ29tcGV0aXRvckFuYWx5c2lzIHwgbnVsbCB7XG4gICAgY29uc3QgY29tcGV0aXRvciA9IHRoaXMuY29tcGV0aXRvcnMuZmluZChjID0+IGMuaWQgPT09IGNvbXBldGl0b3JJZCk7XG4gICAgaWYgKCFjb21wZXRpdG9yKSByZXR1cm4gbnVsbDtcblxuICAgIGNvbnN0IGNvbXBldGl0b3JQcmljaW5nID0gdGhpcy5wcmljaW5nRGF0YS5maWx0ZXIocCA9PiBwLmNvbXBldGl0b3JfaWQgPT09IGNvbXBldGl0b3JJZCk7XG4gICAgY29uc3QgcHJpY2VzID0gY29tcGV0aXRvclByaWNpbmcubWFwKHAgPT4gcC5wcmljZV9wb2ludCk7XG4gICAgXG4gICAgcmV0dXJuIHtcbiAgICAgIGNvbXBldGl0b3IsXG4gICAgICBwcmljaW5nX21ldHJpY3M6IHtcbiAgICAgICAgYXZlcmFnZV9wcmljZTogcHJpY2VzLnJlZHVjZSgoYSwgYikgPT4gYSArIGIsIDApIC8gcHJpY2VzLmxlbmd0aCB8fCAwLFxuICAgICAgICBtaW5fcHJpY2U6IE1hdGgubWluKC4uLnByaWNlcykgfHwgMCxcbiAgICAgICAgbWF4X3ByaWNlOiBNYXRoLm1heCguLi5wcmljZXMpIHx8IDAsXG4gICAgICAgIHRvdGFsX2RhdGFfcG9pbnRzOiBwcmljZXMubGVuZ3RoLFxuICAgICAgICBwb3NpdGlvbl92c19tYXJrZXQ6ICdhdF9tYXJrZXQnLCAvLyBUaGlzIHdvdWxkIGJlIGNhbGN1bGF0ZWRcbiAgICAgICAgbWFya2V0X2F2ZXJhZ2U6IDE1LjIzXG4gICAgICB9LFxuICAgICAgcHJvZHVjdF9icmVha2Rvd246IGNvbXBldGl0b3JQcmljaW5nLnJlZHVjZSgoYWNjLCBwcmljaW5nKSA9PiB7XG4gICAgICAgIGlmICghYWNjW3ByaWNpbmcucHJvZHVjdF9zZXJ2aWNlXSkge1xuICAgICAgICAgIGFjY1twcmljaW5nLnByb2R1Y3Rfc2VydmljZV0gPSB7XG4gICAgICAgICAgICBhdmVyYWdlX3ByaWNlOiBwcmljaW5nLnByaWNlX3BvaW50LFxuICAgICAgICAgICAgbWluX3ByaWNlOiBwcmljaW5nLnByaWNlX3BvaW50LFxuICAgICAgICAgICAgbWF4X3ByaWNlOiBwcmljaW5nLnByaWNlX3BvaW50LFxuICAgICAgICAgICAgZGF0YV9wb2ludHM6IDFcbiAgICAgICAgICB9O1xuICAgICAgICB9XG4gICAgICAgIHJldHVybiBhY2M7XG4gICAgICB9LCB7fSBhcyBSZWNvcmQ8c3RyaW5nLCBhbnk+KSxcbiAgICAgIHJlY2VudF9wcmljaW5nOiBjb21wZXRpdG9yUHJpY2luZ1xuICAgIH07XG4gIH1cbn1cblxuZXhwb3J0IGNvbnN0IGNpbmVtYURlbW9EYXRhID0gbmV3IENpbmVtYURlbW9EYXRhU2VydmljZSgpOyJdLCJuYW1lcyI6WyJDaW5lbWFEZW1vRGF0YVNlcnZpY2UiLCJjaW5lbWFEZW1vRGF0YSIsImdldE1hcmtldCIsInVrQ2luZW1hTWFya2V0IiwiZ2V0Q29tcGV0aXRvcnMiLCJjb21wZXRpdG9ycyIsImdldFByaWNpbmdEYXRhIiwicHJpY2luZ0RhdGEiLCJnZXRNYXJrZXRBbGVydHMiLCJtYXJrZXRBbGVydHMiLCJnZXRNYXJrZXRPdmVydmlldyIsIm1ldHJpY3MiLCJwZXJpb2Rfc3RhcnQiLCJwZXJpb2RfZW5kIiwidG90YWxfZGF0YV9wb2ludHMiLCJsZW5ndGgiLCJhdmVyYWdlX3ByaWNlIiwibWVkaWFuX3ByaWNlIiwibWluX3ByaWNlIiwibWF4X3ByaWNlIiwicHJpY2VfcmFuZ2UiLCJzdGFuZGFyZF9kZXZpYXRpb24iLCJwcmljZV9xdWFydGlsZXMiLCJxMSIsInEyIiwicTMiLCJuYW1lIiwicHJpY2VfcG9pbnRzX2NvdW50IiwicHJpY2VfcmFuayIsInBvc2l0aW9uIiwidHJlbmRzIiwidHJlbmQiLCJ3ZWVrbHlfYXZlcmFnZXMiLCJwcmljZV9jaGFuZ2UiLCJwcmljZV9jaGFuZ2VfcGVyY2VudCIsImFub21hbGllcyIsImlkIiwiY29tcGV0aXRvcl9uYW1lIiwicHJvZHVjdF9zZXJ2aWNlIiwicHJpY2UiLCJ6X3Njb3JlIiwiZGF0ZV9jb2xsZWN0ZWQiLCJkZXZpYXRpb25fZnJvbV9tZWFuIiwic2V2ZXJpdHkiLCJtYXJrZXQiLCJyZWNlbnRfZGF0YV9wb2ludHMiLCJyZWNlbnRfYWxlcnRzIiwiZ2V0Q29tcGV0aXRvckNvbXBhcmlzb24iLCJtYXJrZXRfaWQiLCJjb21wYXJpc29uX3BlcmlvZCIsInN0YXJ0X2RhdGUiLCJlbmRfZGF0ZSIsImJ1c2luZXNzX3R5cGUiLCJkYXRhX3BvaW50cyIsInByb2R1Y3RzX3NlcnZpY2VzIiwibWFya2V0X3NoYXJlX2VzdGltYXRlIiwidHJhY2tpbmdfcHJpb3JpdHkiLCJyYW5raW5ncyIsImJ5X3ByaWNlIiwiY29tcGV0aXRvcl9pZCIsInJhbmsiLCJnZXRNYXJrZXRUcmVuZHMiLCJwZXJpb2QiLCJkYXlzX2JhY2siLCJmaWx0ZXJzIiwibWFya2V0X3RyZW5kIiwiY29tcGV0aXRvcl90cmVuZHMiLCJkYXRhX3BvaW50c19jb3VudCIsImdldE1hcmtldHMiLCJnZXRDb21wZXRpdG9yQW5hbHlzaXMiLCJjb21wZXRpdG9ySWQiLCJjb21wZXRpdG9yIiwiZmluZCIsImMiLCJjb21wZXRpdG9yUHJpY2luZyIsImZpbHRlciIsInAiLCJwcmljZXMiLCJtYXAiLCJwcmljZV9wb2ludCIsInByaWNpbmdfbWV0cmljcyIsInJlZHVjZSIsImEiLCJiIiwiTWF0aCIsIm1pbiIsIm1heCIsInBvc2l0aW9uX3ZzX21hcmtldCIsIm1hcmtldF9hdmVyYWdlIiwicHJvZHVjdF9icmVha2Rvd24iLCJhY2MiLCJwcmljaW5nIiwicmVjZW50X3ByaWNpbmciLCJnZW9ncmFwaGljX2JvdW5kcyIsImNvdW50cnkiLCJyZWdpb25zIiwiZm9jdXNfYXJlYXMiLCJvcmdhbmlzYXRpb25faWQiLCJjcmVhdGVkX2J5IiwiY29tcGV0aXRvcl9jb3VudCIsImlzX2FjdGl2ZSIsInRyYWNraW5nX2NvbmZpZyIsImluZHVzdHJ5X3R5cGUiLCJzaWNfY29kZSIsInVwZGF0ZV9mcmVxdWVuY3kiLCJhbGVydF90aHJlc2hvbGRzIiwibmV3X2NvbXBldGl0b3IiLCJtYXJrZXRfc2hhcmVfc2hpZnQiLCJjcmVhdGVkX2F0IiwidXBkYXRlZF9hdCIsIndlYnNpdGUiLCJsb2NhdGlvbnMiLCJ0b3RhbF9zaXRlcyIsInRvdGFsX3NjcmVlbnMiLCJkZXNjcmlwdGlvbiIsImxhc3RfdXBkYXRlZCIsImN1cnJlbmN5Iiwic291cmNlIiwibWV0YWRhdGEiLCJsb2NhdGlvbiIsInRpbWVfc2xvdCIsImlzX3Byb21vdGlvbiIsInNlYXRfdHlwZSIsImNvbmNlc3Npb25fdHlwZSIsInNpemUiLCJzdWJzY3JpcHRpb25fdHlwZSIsImJpbGxpbmciLCJhbGVydF90eXBlIiwidGl0bGUiLCJtZXNzYWdlIiwidHJpZ2dlcl9kYXRhIiwiYWZmZWN0ZWRfcHJvZHVjdCIsImxvY2F0aW9uc19hZmZlY3RlZCIsImlzX3JlYWQiLCJleHBhbnNpb25fdHlwZSIsInBsYW5uZWRfb3BlbmluZyIsIm5ld19wcm9kdWN0IiwiY29tcGV0aXRpdmVfYWR2YW50YWdlIl0sIm1hcHBpbmdzIjoiOzs7Ozs7Ozs7OztJQWFhQSxxQkFBcUI7ZUFBckJBOztJQTRtQkFDLGNBQWM7ZUFBZEE7OztBQTVtQk4sTUFBTUQ7SUE2VVgsMkJBQTJCO0lBQzNCRSxZQUFvQjtRQUNsQixPQUFPLElBQUksQ0FBQ0MsY0FBYztJQUM1QjtJQUVBQyxpQkFBK0I7UUFDN0IsT0FBTyxJQUFJLENBQUNDLFdBQVc7SUFDekI7SUFFQUMsaUJBQWdDO1FBQzlCLE9BQU8sSUFBSSxDQUFDQyxXQUFXO0lBQ3pCO0lBRUFDLGtCQUFpQztRQUMvQixPQUFPLElBQUksQ0FBQ0MsWUFBWTtJQUMxQjtJQUVBLGtEQUFrRDtJQUNsREMsb0JBQW9DO1FBQ2xDLE1BQU1DLFVBQXlCO1lBQzdCQyxjQUFjO1lBQ2RDLFlBQVk7WUFDWkMsbUJBQW1CLElBQUksQ0FBQ1AsV0FBVyxDQUFDUSxNQUFNO1lBQzFDQyxlQUFlO1lBQ2ZDLGNBQWM7WUFDZEMsV0FBVztZQUNYQyxXQUFXO1lBQ1hDLGFBQWE7WUFDYkMsb0JBQW9CO1lBQ3BCQyxpQkFBaUI7Z0JBQ2ZDLElBQUk7Z0JBQ0pDLElBQUk7Z0JBQ0pDLElBQUk7WUFDTjtZQUNBcEIsYUFBYTtnQkFDWCxrQkFBa0I7b0JBQ2hCcUIsTUFBTTtvQkFDTlYsZUFBZTtvQkFDZkMsY0FBYztvQkFDZEMsV0FBVztvQkFDWEMsV0FBVztvQkFDWFEsb0JBQW9CO29CQUNwQk4sb0JBQW9CO29CQUNwQk8sWUFBWTtvQkFDWkMsVUFBVTtnQkFDWjtnQkFDQSxnQkFBZ0I7b0JBQ2RILE1BQU07b0JBQ05WLGVBQWU7b0JBQ2ZDLGNBQWM7b0JBQ2RDLFdBQVc7b0JBQ1hDLFdBQVc7b0JBQ1hR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

@@ -1,0 +1,70 @@
+{
+  "name": "marketedge-frontend-staging",
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "staging",
+    "NEXT_PUBLIC_ENVIRONMENT": "staging",
+    "NEXT_PUBLIC_AUTH0_DOMAIN": "dev-g8trhgbfdq2sk2m8.us.auth0.com",
+    "NEXT_PUBLIC_AUTH0_CLIENT_ID": "mQG01Z4lNhTTN081GHbR9R9C4fBQdPNr",
+    "NEXT_PUBLIC_API_BASE_URL": "https://staging-api.zebra.associates",
+    "NEXT_PUBLIC_EPIC_1_ENABLED": "true",
+    "NEXT_PUBLIC_EPIC_2_ENABLED": "true",
+    "NEXT_PUBLIC_DEBUG_MODE": "true",
+    "NEXT_PUBLIC_ENABLE_DEV_TOOLS": "true",
+    "NEXT_PUBLIC_ANALYTICS_ENV": "staging",
+    "NEXT_PUBLIC_SENTRY_ENVIRONMENT": "staging",
+    "NEXT_PUBLIC_API_TIMEOUT": "60000",
+    "NEXT_PUBLIC_MAX_RETRIES": "5"
+  },
+  "github": {
+    "autoAlias": false
+  },
+  "git": {
+    "deploymentEnabled": {
+      "develop": true,
+      "staging": true
+    }
+  },
+  "regions": [
+    "iad1"
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/health",
+      "destination": "/api/health",
+      "statusCode": 301
+    }
+  ],
+  "aliases": [
+    "staging.zebra.associates"
+  ]
+}

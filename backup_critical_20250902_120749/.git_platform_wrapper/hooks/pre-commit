@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Environment Security Pre-commit Hook
+# Prevents .env files from being committed and detects potential secrets
+
+echo "🔒 Running environment security checks..."
+
+# Check for .env files being committed
+env_files=$(git diff --cached --name-only | grep -E '\.env$|\.env\.' || true)
+if [ -n "$env_files" ]; then
+    echo "❌ ERROR: Attempting to commit environment files:"
+    echo "$env_files"
+    echo ""
+    echo "Environment files should never be committed to git!"
+    echo "These files may contain sensitive information like:"
+    echo "  - Database passwords"
+    echo "  - API keys and secrets"
+    echo "  - Authentication tokens"
+    echo ""
+    echo "To fix this:"
+    echo "  git reset HEAD $env_files"
+    echo "  git add -A && git commit"
+    echo ""
+    exit 1
+fi
+
+# Check for potential secret patterns in staged files
+secret_patterns=(
+    "AUTH0_CLIENT_SECRET=.*[a-zA-Z0-9]{32,}"
+    "JWT_SECRET_KEY=.*[a-zA-Z0-9]{32,}"
+    "DATABASE_URL=postgresql://.*:.*@"
+    "API_KEY=.*[a-zA-Z0-9]{20,}"
+    "SECRET=.*[a-zA-Z0-9]{20,}"
+    "PASSWORD=.*[a-zA-Z0-9]{8,}"
+    "TOKEN=.*[a-zA-Z0-9]{20,}"
+)
+
+found_secrets=false
+for pattern in "${secret_patterns[@]}"; do
+    matches=$(git diff --cached --name-only | xargs -I{} sh -c 'git show :{} 2>/dev/null || echo ""' | grep -E "$pattern" || true)
+    if [ -n "$matches" ]; then
+        if [ "$found_secrets" = false ]; then
+            echo "⚠️  WARNING: Potential secrets detected in staged changes:"
+            found_secrets=true
+        fi
+        echo "  Pattern: $pattern"
+    fi
+done
+
+if [ "$found_secrets" = true ]; then
+    echo ""
+    echo "Please review the staged changes for any hardcoded secrets."
+    echo "Consider using environment variables or a secret management system."
+    echo ""
+    read -p "Continue with commit anyway? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Commit aborted."
+        exit 1
+    fi
+fi
+
+echo "✅ Environment security checks passed"

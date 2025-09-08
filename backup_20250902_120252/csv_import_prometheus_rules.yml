@@ -1,0 +1,61 @@
+{
+  "rule_groups": [
+    {
+      "name": "csv_import_alerts",
+      "rules": [
+        {
+          "alert": "CSVImportHighFailureRate",
+          "expr": "rate(csv_imports_total{status='failed'}[5m]) / rate(csv_imports_total[5m]) > 0.1",
+          "for": "5m",
+          "labels": {
+            "severity": "critical",
+            "service": "csv_import"
+          },
+          "annotations": {
+            "summary": "High CSV import failure rate detected",
+            "description": "CSV import failure rate is above {{ $value }}% for 5 minutes"
+          }
+        },
+        {
+          "alert": "CSVImportSlowProcessing",
+          "expr": "avg(csv_import_duration_seconds / csv_import_users_processed) > 30",
+          "for": "10m",
+          "labels": {
+            "severity": "warning",
+            "service": "csv_import"
+          },
+          "annotations": {
+            "summary": "CSV import processing is slow",
+            "description": "Average processing time per user is {{ $value }} seconds"
+          }
+        },
+        {
+          "alert": "CSVRateLimitViolations",
+          "expr": "rate(csv_rate_limit_violations_total[1h]) > 20",
+          "for": "5m",
+          "labels": {
+            "severity": "warning",
+            "service": "csv_import"
+          },
+          "annotations": {
+            "summary": "High rate of CSV import rate limit violations",
+            "description": "Rate limit violations occurring at {{ $value }} per hour"
+          }
+        },
+        {
+          "alert": "CSVBackgroundTaskFailures",
+          "expr": "rate(csv_background_task_failures_total[1h]) > 5",
+          "for": "10m",
+          "labels": {
+            "severity": "critical",
+            "service": "csv_import"
+          },
+          "annotations": {
+            "summary": "CSV background task failures detected",
+            "description": "Background task failures at {{ $value }} per hour"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Environment Security Pre-push Hook
+# Final check before pushing to remote
+
+echo "🔒 Running pre-push environment security checks..."
+
+# Check if any .env files exist in the repo
+env_in_repo=$(git ls-files | grep -E '\.env$|\.env\.' || true)
+if [ -n "$env_in_repo" ]; then
+    echo "❌ ERROR: Environment files found in repository:"
+    echo "$env_in_repo"
+    echo ""
+    echo "These files should be removed from git history!"
+    echo "Use: git filter-branch --tree-filter 'rm -f FILE' HEAD"
+    exit 1
+fi
+
+# Validate current environment if backend directory exists
+if [ -f "backend/.env" ] && [ -f "backend/app/core/secret_manager.py" ]; then
+    cd backend
+    if python3 -c "
+from app.core.secret_manager import SecretManager
+import sys
+try:
+    sm = SecretManager('.env')
+    valid, errors = sm.validate_basic()
+    if not valid:
+        print('❌ Environment validation failed:')
+        for error in errors:
+            print(f'  - {error}')
+        sys.exit(1)
+    else:
+        print('✅ Environment validation passed')
+except Exception as e:
+    print(f'⚠️  Could not validate environment: {e}')
+"; then
+        cd ..
+    else
+        cd ..
+        echo "❌ Environment validation failed - check your .env file"
+        exit 1
+    fi
+fi
+
+echo "✅ Pre-push security checks passed"

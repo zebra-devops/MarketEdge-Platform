@@ -1,0 +1,387 @@
+"""
+Module Management API Endpoints
+
+Provides administrative endpoints for managing the module routing system,
+including registration, status monitoring, and configuration.
+"""
+
+from typing import Dict, Any, List, Optional
+import logging
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel
+
+from ....auth.dependencies import get_current_user, require_admin
+from ....core.database import get_db
+from ....core.module_routing import get_module_routing_manager, ModuleRoutingManager
+from ....core.module_registry import get_module_registry, ModuleRegistry, RegistrationResult
+from ....models.user import User
+from ....services.audit_service import AuditService
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+class ModuleStatusResponse(BaseModel):
+    """Response model for module status"""
+    module_id: str
+    state: str
+    metadata: Dict[str, Any]
+    version: str
+    namespace: str
+    health: Dict[str, Any]
+
+
+class RegistrationResponse(BaseModel):
+    """Response model for module registration"""
+    success: bool
+    module_id: str
+    message: str
+    lifecycle_state: str
+    errors: List[str] = []
+    warnings: List[str] = []
+
+
+class RouteMetricsResponse(BaseModel):
+    """Response model for route metrics"""
+    route: str
+    call_count: int
+    total_duration_ms: float
+    error_count: int
+    last_called: Optional[float]
+    avg_duration_ms: float
+    success_rate: float
+
+
+@router.get("/modules", response_model=List[str])
+async def get_registered_modules(
+    current_user: User = Depends(require_admin),
+    registry: ModuleRegistry = Depends(get_module_registry)
+):
+    """
+    Get list of all registered modules
+    
+    Requires admin privileges.
+    """
+    try:
+        modules = registry.get_registered_modules()
+        logger.info(f"Module list requested by admin {current_user.id}")
+        return modules
+    
+    except Exception as e:
+        logger.error(f"Error getting registered modules: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error retrieving module list"
+        )
+
+
+@router.get("/modules/{module_id}/status", response_model=ModuleStatusResponse)
+async def get_module_status(
+    module_id: str,
+    current_user: User = Depends(require_admin),
+    registry: ModuleRegistry = Depends(get_module_registry)
+):
+    """
+    Get detailed status for a specific module
+    
+    Requires admin privileges.
+    """
+    try:
+        status_info = await registry.get_module_status(module_id)
+        
+        if not status_info:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Module '{module_id}' not found"
+            )
+        
+        logger.info(f"Module status for {module_id} requested by admin {current_user.id}")
+        
+        return ModuleStatusResponse(
+            module_id=status_info["module_id"],
+            state=status_info["state"],
+            metadata=status_info["metadata"],
+            version=status_info["version"],
+            namespace=status_info["namespace"],
+            health=status_info["health"]
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting module status for {module_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error retrieving module status"
+        )
+
+
+@router.post("/modules/discover", response_model=List[RegistrationResponse])
+async def discover_and_register_modules(
+    current_user: User = Depends(require_admin),
+    registry: ModuleRegistry = Depends(get_module_registry),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Discover and register all available modules
+    
+    Requires admin privileges.
+    """
+    try:
+        logger.info(f"Module auto-discovery initiated by admin {current_user.id}")
+        
+        results = await registry.auto_discover_and_register()
+        
+        # Convert results to response models
+        responses = [
+            RegistrationResponse(
+                success=result.success,
+                module_id=result.module_id,
+                message=result.message,
+                lifecycle_state=result.lifecycle_state.value,
+                errors=result.errors,
+                warnings=result.warnings
+            )
+            for result in results
+        ]
+        
+        # Log the action for audit
+        audit_service = AuditService(db)
+        await audit_service.log_action(
+            user_id=str(current_user.id),
+            action="MODULE_DISCOVERY",
+            resource_type="module_system",
+            resource_id="all",
+            description=f"Auto-discovered {len(results)} modules",
+            changes={
+                "discovered_modules": [r.module_id for r in results],
+                "successful_registrations": [r.module_id for r in results if r.success]
+            }
+        )
+        
+        logger.info(f"Module discovery completed: {sum(1 for r in results if r.success)}/{len(results)} successful")
+        
+        return responses
+    
+    except Exception as e:
+        logger.error(f"Error during module discovery: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error during module discovery"
+        )
+
+
+@router.delete("/modules/{module_id}")
+async def unregister_module(
+    module_id: str,
+    current_user: User = Depends(require_admin),
+    registry: ModuleRegistry = Depends(get_module_registry),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Unregister a module
+    
+    Requires admin privileges.
+    """
+    try:
+        logger.info(f"Module unregistration requested for {module_id} by admin {current_user.id}")
+        
+        result = await registry.unregister_module(module_id)
+        
+        # Log the action for audit
+        audit_service = AuditService(db)
+        await audit_service.log_action(
+            user_id=str(current_user.id),
+            action="MODULE_UNREGISTER",
+            resource_type="analytics_module",
+            resource_id=module_id,
+            description=f"Unregistered module {module_id}",
+            changes={"success": result.success, "message": result.message}
+        )
+        
+        if result.success:
+            return {"message": result.message}
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result.message
+            )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error unregistering module {module_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error unregistering module"
+        )
+
+
+@router.get("/modules/metrics", response_model=Dict[str, RouteMetricsResponse])
+async def get_module_metrics(
+    current_user: User = Depends(require_admin),
+    routing_manager: ModuleRoutingManager = Depends(get_module_routing_manager),
+    module_id: Optional[str] = Query(None, description="Filter by specific module ID")
+):
+    """
+    Get performance metrics for module routes
+    
+    Requires admin privileges.
+    """
+    try:
+        metrics = routing_manager.get_route_metrics(module_id)
+        
+        # Convert to response format
+        response_metrics = {}
+        for route_key, route_metrics in metrics.items():
+            success_rate = (
+                (route_metrics.call_count - route_metrics.error_count) / route_metrics.call_count
+                if route_metrics.call_count > 0 else 1.0
+            )
+            
+            response_metrics[route_key] = RouteMetricsResponse(
+                route=route_key,
+                call_count=route_metrics.call_count,
+                total_duration_ms=route_metrics.total_duration_ms,
+                error_count=route_metrics.error_count,
+                last_called=route_metrics.last_called,
+                avg_duration_ms=route_metrics.avg_duration_ms,
+                success_rate=success_rate
+            )
+        
+        logger.info(f"Module metrics requested by admin {current_user.id}")
+        return response_metrics
+    
+    except Exception as e:
+        logger.error(f"Error getting module metrics: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error retrieving module metrics"
+        )
+
+
+@router.get("/modules/registration-history", response_model=List[RegistrationResponse])
+async def get_registration_history(
+    current_user: User = Depends(require_admin),
+    registry: ModuleRegistry = Depends(get_module_registry),
+    limit: int = Query(50, le=200, description="Maximum number of records to return")
+):
+    """
+    Get history of module registration attempts
+    
+    Requires admin privileges.
+    """
+    try:
+        history = registry.get_registration_history()
+        
+        # Limit results and convert to response format
+        limited_history = history[-limit:] if len(history) > limit else history
+        
+        responses = [
+            RegistrationResponse(
+                success=result.success,
+                module_id=result.module_id,
+                message=result.message,
+                lifecycle_state=result.lifecycle_state.value,
+                errors=result.errors,
+                warnings=result.warnings
+            )
+            for result in limited_history
+        ]
+        
+        logger.info(f"Registration history requested by admin {current_user.id}")
+        return responses
+    
+    except Exception as e:
+        logger.error(f"Error getting registration history: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error retrieving registration history"
+        )
+
+
+@router.get("/routing/conflicts")
+async def check_routing_conflicts(
+    current_user: User = Depends(require_admin),
+    routing_manager: ModuleRoutingManager = Depends(get_module_routing_manager)
+):
+    """
+    Check for routing conflicts in the system
+    
+    Requires admin privileges.
+    """
+    try:
+        # Get conflict detector state
+        conflict_detector = routing_manager.conflict_detector
+        
+        conflicts_info = {
+            "total_registered_patterns": len(conflict_detector.registered_patterns),
+            "namespaces": dict(conflict_detector.namespace_modules),
+            "potential_conflicts": []  # Would implement conflict scanning logic
+        }
+        
+        logger.info(f"Routing conflicts check requested by admin {current_user.id}")
+        return conflicts_info
+    
+    except Exception as e:
+        logger.error(f"Error checking routing conflicts: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error checking routing conflicts"
+        )
+
+
+@router.get("/system/health")
+async def get_system_health(
+    current_user: User = Depends(require_admin),
+    routing_manager: ModuleRoutingManager = Depends(get_module_routing_manager),
+    registry: ModuleRegistry = Depends(get_module_registry)
+):
+    """
+    Get overall health status of the module routing system
+    
+    Requires admin privileges.
+    """
+    try:
+        registered_modules = registry.get_registered_modules()
+        route_metrics = routing_manager.get_route_metrics()
+        
+        # Calculate overall health metrics
+        total_calls = sum(metrics.call_count for metrics in route_metrics.values())
+        total_errors = sum(metrics.error_count for metrics in route_metrics.values())
+        overall_error_rate = total_errors / total_calls if total_calls > 0 else 0
+        
+        avg_response_time = (
+            sum(metrics.avg_duration_ms for metrics in route_metrics.values()) / len(route_metrics)
+            if route_metrics else 0
+        )
+        
+        health_status = {
+            "status": "healthy" if overall_error_rate < 0.05 else "degraded",
+            "modules": {
+                "registered_count": len(registered_modules),
+                "modules": registered_modules
+            },
+            "routing": {
+                "total_routes": len(route_metrics),
+                "total_calls": total_calls,
+                "total_errors": total_errors,
+                "error_rate": overall_error_rate,
+                "avg_response_time_ms": avg_response_time
+            },
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        logger.info(f"System health check requested by admin {current_user.id}")
+        return health_status
+    
+    except Exception as e:
+        logger.error(f"Error getting system health: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error retrieving system health"
+        )

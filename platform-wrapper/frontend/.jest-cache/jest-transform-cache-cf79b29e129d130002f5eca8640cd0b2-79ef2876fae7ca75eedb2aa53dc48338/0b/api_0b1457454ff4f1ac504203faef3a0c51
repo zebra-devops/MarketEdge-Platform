@@ -1,0 +1,58 @@
+b923ab45ca48b5454adde90ffe529b65
+"use strict";
+
+/* istanbul ignore next */
+function cov_mbmhmr1db() {
+  var path = "/Users/matt/Sites/MarketEdge/platform-wrapper/frontend/src/types/api.ts";
+  var hash = "0b3c6cb74ac00dc2a345553baf7b8c84067fb83d";
+  var global = new Function("return this")();
+  var gcv = "__coverage__";
+  var coverageData = {
+    path: "/Users/matt/Sites/MarketEdge/platform-wrapper/frontend/src/types/api.ts",
+    statementMap: {
+      "0": {
+        start: {
+          line: 2,
+          column: 0
+        },
+        end: {
+          line: 4,
+          column: 3
+        }
+      }
+    },
+    fnMap: {},
+    branchMap: {},
+    s: {
+      "0": 0
+    },
+    f: {},
+    b: {},
+    inputSourceMap: {
+      version: 3,
+      sources: [],
+      names: [],
+      mappings: ""
+    },
+    _coverageSchema: "1a1c01bbd47fc00a2c39e90264f33305004495a9",
+    hash: "0b3c6cb74ac00dc2a345553baf7b8c84067fb83d"
+  };
+  var coverage = global[gcv] || (global[gcv] = {});
+  if (!coverage[path] || coverage[path].hash !== hash) {
+    coverage[path] = coverageData;
+  }
+  var actualCoverage = coverage[path];
+  {
+    // @ts-ignore
+    cov_mbmhmr1db = function () {
+      return actualCoverage;
+    };
+  }
+  return actualCoverage;
+}
+cov_mbmhmr1db();
+cov_mbmhmr1db().s[0]++;
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6W10sInNvdXJjZXMiOltdLCJzb3VyY2VzQ29udGVudCI6W10sIm1hcHBpbmdzIjoiIiwiaWdub3JlTGlzdCI6W119
