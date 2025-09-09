@@ -9,6 +9,7 @@ import {
   ArrowPathIcon,
   FunnelIcon
 } from '@heroicons/react/24/outline';
+import { apiService } from '../../services/api';
 
 interface AuditLog {
   id: string;
@@ -44,18 +45,9 @@ export const AuditLogViewer: React.FC = () => {
       if (filters.action) params.append('action', filters.action);
       if (filters.resource_type) params.append('resource_type', filters.resource_type);
       
-      const response = await fetch(`/api/v1/admin/audit-logs?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${document.cookie.split('access_token=')[1]?.split(';')[0]}`
-        }
-      });
+      const response = await apiService.get<{audit_logs: AuditLog[]}>(`/admin/audit-logs?${params.toString()}`);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch audit logs');
-      }
-
-      const data = await response.json();
-      setLogs(data.audit_logs || []);
+      setLogs(response.audit_logs || []);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load audit logs');

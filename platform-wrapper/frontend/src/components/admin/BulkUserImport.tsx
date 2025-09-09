@@ -155,7 +155,7 @@ export default function BulkUserImport({ organisationId, onImportComplete }: Bul
 
   const downloadTemplate = async () => {
     try {
-      const response = await fetch(`/api/v1/organizations/${organisationId}/users/import/template`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${organisationId}/users/import/template`, {
         headers: {
           'Authorization': `Bearer ${currentUser?.access_token}`,
         },
@@ -191,7 +191,7 @@ export default function BulkUserImport({ organisationId, onImportComplete }: Bul
       const formData = new FormData()
       formData.append('file', selectedFile)
       
-      const response = await fetch(`/api/v1/organizations/${organisationId}/users/import/preview`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${organisationId}/users/import/preview`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${currentUser?.access_token}`,
@@ -235,7 +235,7 @@ export default function BulkUserImport({ organisationId, onImportComplete }: Bul
         default_role: 'viewer'
       }
       
-      const response = await fetch(`/api/v1/organizations/${organisationId}/users/import?${new URLSearchParams({
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${organisationId}/users/import?${new URLSearchParams({
         send_invitations: sendInvitations.toString(),
         skip_duplicates: skipDuplicates.toString(),
       })}`, {

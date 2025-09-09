@@ -7,6 +7,7 @@ import {
   UserIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
+import { apiService } from '../../services/api';
 
 interface SecurityEvent {
   id: string;
@@ -29,17 +30,7 @@ export const SecurityEvents: React.FC = () => {
   const fetchSecurityEvents = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/v1/admin/security-events?hours=${timeRange}`, {
-        headers: {
-          'Authorization': `Bearer ${document.cookie.split('access_token=')[1]?.split(';')[0]}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch security events');
-      }
-
-      const data = await response.json();
+      const data = await apiService.get<{security_events: SecurityEvent[]}>(`/admin/security-events?hours=${timeRange}`);
       setEvents(data.security_events || []);
       setError(null);
     } catch (err) {

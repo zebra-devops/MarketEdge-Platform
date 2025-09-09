@@ -88,19 +88,7 @@ export const RateLimitManager: React.FC<RateLimitManagerProps> = ({
 
   const handleUpdateRateLimit = async (rateLimitId: string, updates: Partial<RateLimit>) => {
     try {
-      const response = await fetch(`/api/v1/admin/rate-limits/${rateLimitId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates)
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to update rate limit: ${response.status}`)
-      }
-
-      const updatedRateLimit = await response.json()
+      const updatedRateLimit = await apiService.put(`/admin/rate-limits/${rateLimitId}`, updates)
       
       setRateLimits(prev => prev.map(rl => 
         rl.id === rateLimitId ? updatedRateLimit : rl
@@ -121,22 +109,10 @@ export const RateLimitManager: React.FC<RateLimitManagerProps> = ({
 
   const handleEmergencyBypass = async (tenantId: string, reason: string, durationHours: number = 1) => {
     try {
-      const response = await fetch(`/api/v1/admin/rate-limits/${tenantId}/emergency-bypass`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          reason,
-          duration_hours: durationHours
-        })
+      const updatedRateLimit = await apiService.post(`/admin/rate-limits/${tenantId}/emergency-bypass`, {
+        reason,
+        duration_hours: durationHours
       })
-
-      if (!response.ok) {
-        throw new Error(`Failed to enable emergency bypass: ${response.status}`)
-      }
-
-      const updatedRateLimit = await response.json()
       
       setRateLimits(prev => prev.map(rl => 
         rl.tenant_id === tenantId ? updatedRateLimit : rl
@@ -154,14 +130,7 @@ export const RateLimitManager: React.FC<RateLimitManagerProps> = ({
 
   const handleRemoveBypass = async (tenantId: string) => {
     try {
-      const response = await fetch(`/api/v1/admin/rate-limits/${tenantId}/emergency-bypass`, {
-        method: 'DELETE'
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to remove emergency bypass: ${response.status}`)
-      }
-
+      await apiService.delete(`/admin/rate-limits/${tenantId}/emergency-bypass`)
       await fetchRateLimits() // Refresh data
       
     } catch (err) {
