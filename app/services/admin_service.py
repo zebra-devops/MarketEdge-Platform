@@ -54,9 +54,10 @@ class AdminService:
             flags = result.scalars().all()
             
             # Log admin access
+            from ..models.audit_log import AuditAction
             await self.audit_service.log_action(
                 user_id=admin_user.id,
-                action="READ",
+                action=AuditAction.READ,
                 resource_type="feature_flags",
                 description=f"Admin {admin_user.email} accessed feature flags list",
                 success=True
@@ -85,7 +86,7 @@ class AdminService:
         except Exception as e:
             await self.audit_service.log_action(
                 user_id=admin_user.id,
-                action="READ",
+                action=AuditAction.READ,
                 resource_type="feature_flags",
                 description=f"Failed to access feature flags: {str(e)}",
                 success=False,
@@ -143,7 +144,7 @@ class AdminService:
             # Log the change
             await self.audit_service.log_action(
                 user_id=admin_user.id,
-                action="UPDATE",
+                action=AuditAction.UPDATE,
                 resource_type="feature_flag",
                 resource_id=flag_id,
                 description=f"Admin {admin_user.email} updated feature flag {flag.flag_key}",
@@ -164,7 +165,7 @@ class AdminService:
             await self.db.rollback()
             await self.audit_service.log_action(
                 user_id=admin_user.id,
-                action="UPDATE",
+                action=AuditAction.UPDATE,
                 resource_type="feature_flag",
                 resource_id=flag_id,
                 description=f"Failed to update feature flag: {str(e)}",
@@ -219,7 +220,7 @@ class AdminService:
             # Log admin access
             await self.audit_service.log_action(
                 user_id=admin_user.id,
-                action="READ",
+                action=AuditAction.READ,
                 resource_type="audit_logs",
                 description=f"Admin {admin_user.email} accessed audit logs",
                 success=True
@@ -250,7 +251,7 @@ class AdminService:
         except Exception as e:
             await self.audit_service.log_action(
                 user_id=admin_user.id,
-                action="READ",
+                action=AuditAction.READ,
                 resource_type="audit_logs",
                 description=f"Failed to access audit logs: {str(e)}",
                 success=False,

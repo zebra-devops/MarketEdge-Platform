@@ -17,6 +17,7 @@ from ....services.module_service import ModuleService
 from ....services.audit_service import AuditService
 from ....services.admin_service import AdminService
 from ....services.rate_limiting_service import RateLimitingService, IndustryType
+from ....services.rate_limit_admin_service import RateLimitAdminService
 from ....middleware.rate_limiting import get_rate_limiting_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -591,12 +592,10 @@ async def reset_rate_limits(
             # Log the admin action
             audit_service = AuditService(db)
             await audit_service.log_admin_action(
-                admin_user=current_user,
-                action=AdminAction.SYSTEM_CONFIG_UPDATE,
-                resource_type="rate_limit",
-                resource_id=f"{request.tenant_id}:{request.user_id}",
-                description=f"Rate limits reset for tenant {request.tenant_id}, user {request.user_id}, window: {request.window or 'all'}",
-                changes={
+                admin_user_id=str(current_user.id),
+                action_type="rate_limit_reset",
+                summary=f"Rate limits reset for tenant {request.tenant_id}, user {request.user_id}, window: {request.window or 'all'}",
+                configuration_changes={
                     "tenant_id": request.tenant_id,
                     "user_id": request.user_id,
                     "window": request.window,
