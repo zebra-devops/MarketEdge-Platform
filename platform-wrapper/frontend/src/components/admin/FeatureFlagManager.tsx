@@ -11,7 +11,7 @@ import {
   ExclamationTriangleIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
-import { authenticatedFetch, AuthError } from '../../lib/auth';
+import { apiService } from '../../services/api';
 
 interface FeatureFlag {
   id: string;
@@ -55,22 +55,16 @@ export const FeatureFlagManager: React.FC = () => {
   const fetchFlags = async () => {
     try {
       setIsLoading(true);
-      const response = await authenticatedFetch('/api/v1/admin/feature-flags');
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch feature flags: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await apiService.get<{feature_flags: FeatureFlag[]}>('/admin/feature-flags');
       setFlags(data.feature_flags || []);
       setError(null);
-    } catch (err) {
-      if (err instanceof AuthError) {
-        setError(`Authentication error: ${err.message}`);
-        // Don't set loading to false here - user will be redirected
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        setError('Authentication error: Please log in again');
+        // Redirect will be handled by apiService
         return;
       }
-      setError(err instanceof Error ? err.message : 'Failed to load feature flags');
+      setError(err.message || 'Failed to load feature flags');
     } finally {
       setIsLoading(false);
     }
@@ -82,25 +76,18 @@ export const FeatureFlagManager: React.FC = () => {
 
   const handleToggleFlag = async (flag: FeatureFlag) => {
     try {
-      const response = await authenticatedFetch(`/api/v1/admin/feature-flags/${flag.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          is_enabled: !flag.is_enabled
-        })
+      await apiService.put(`/admin/feature-flags/${flag.id}`, {
+        is_enabled: !flag.is_enabled
       });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update feature flag: ${response.status}`);
-      }
 
       // Refresh the list
       await fetchFlags();
-    } catch (err) {
-      if (err instanceof AuthError) {
+    } catch (err: any) {
+      if (err.response?.status === 401) {
         // User will be redirected, no need to set error
         return;
       }
-      alert(err instanceof Error ? err.message : 'Failed to update feature flag');
+      alert(err.message || 'Failed to update feature flag');
     }
   };
 

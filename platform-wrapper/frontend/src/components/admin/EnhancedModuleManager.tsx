@@ -18,7 +18,7 @@ import {
   BuildingOffice2Icon
 } from '@heroicons/react/24/outline'
 import { useModuleFeatureFlags, useModuleDiscovery, useModuleHealth } from '@/hooks/useModuleFeatureFlags'
-import { authenticatedFetch, AuthError } from '@/lib/auth'
+import { apiService } from '@/services/api'
 import { ModuleDiscovery } from './ModuleDiscovery'
 import { ModuleFlagManager } from './ModuleFlagManager'
 import { AnalyticsModule } from '@/types/module-feature-flags'
@@ -47,21 +47,15 @@ export const EnhancedModuleManager: React.FC<EnhancedModuleManagerProps> = ({
   const fetchModules = async () => {
     try {
       setIsLoading(true)
-      const response = await authenticatedFetch('/api/v1/admin/modules')
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch modules: ${response.status}`)
-      }
-
-      const data = await response.json()
+      const data = await apiService.get<{modules: AnalyticsModule[]}>('/admin/modules')
       setModules(data.modules || [])
       setError(null)
-    } catch (err) {
-      if (err instanceof AuthError) {
-        setError(`Authentication error: ${err.message}`)
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        setError('Authentication error: Please log in again')
         return
       }
-      setError(err instanceof Error ? err.message : 'Failed to load modules')
+      setError(err.message || 'Failed to load modules')
     } finally {
       setIsLoading(false)
     }

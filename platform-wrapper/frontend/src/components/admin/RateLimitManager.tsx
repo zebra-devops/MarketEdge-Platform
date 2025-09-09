@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import { apiService } from '../../services/api'
 
 interface RateLimit {
   id: string
@@ -70,21 +71,15 @@ export const RateLimitManager: React.FC<RateLimitManagerProps> = ({
   const fetchRateLimits = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/v1/admin/rate-limits')
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch rate limits: ${response.status}`)
-      }
-      
-      const data = await response.json()
+      const data = await apiService.get<RateLimit[]>('/admin/rate-limits')
       const filteredData = tenantId 
         ? data.filter((rl: RateLimit) => rl.tenant_id === tenantId)
         : data
       
       setRateLimits(filteredData)
       setError(null)
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch rate limits'
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to fetch rate limits'
       setError(errorMessage)
     } finally {
       setLoading(false)

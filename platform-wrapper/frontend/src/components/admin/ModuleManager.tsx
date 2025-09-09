@@ -8,6 +8,7 @@ import {
   XCircleIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
+import { apiService } from '../../services/api';
 
 interface AnalyticsModule {
   id: string;
@@ -32,21 +33,11 @@ export const ModuleManager: React.FC = () => {
   const fetchModules = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/v1/admin/modules', {
-        headers: {
-          'Authorization': `Bearer ${document.cookie.split('access_token=')[1]?.split(';')[0]}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch modules');
-      }
-
-      const data = await response.json();
+      const data = await apiService.get<{modules: AnalyticsModule[]}>('/admin/modules');
       setModules(data.modules || []);
       setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load modules');
+    } catch (err: any) {
+      setError(err.message || 'Failed to load modules');
     } finally {
       setIsLoading(false);
     }
