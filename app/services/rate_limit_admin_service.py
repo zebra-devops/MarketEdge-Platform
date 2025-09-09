@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 import structlog
 from ..models.organisation import Organisation
-from ..core.database import get_db_session
 
 logger = structlog.get_logger()
 
