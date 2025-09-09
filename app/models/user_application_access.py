@@ -10,9 +10,9 @@ from datetime import datetime
 
 class ApplicationType(str, enum.Enum):
     """Available applications in the platform"""
-    MARKET_EDGE = "market_edge"
-    CAUSAL_EDGE = "causal_edge"
-    VALUE_EDGE = "value_edge"
+    MARKET_EDGE = "MARKET_EDGE"
+    CAUSAL_EDGE = "CAUSAL_EDGE"
+    VALUE_EDGE = "VALUE_EDGE"
 
 
 class InvitationStatus(str, enum.Enum):
