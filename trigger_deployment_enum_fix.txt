@@ -1,0 +1,20 @@
+DEPLOYMENT TRIGGER FOR CRITICAL ENUM FIX - ZEBRA ASSOCIATES £925K OPPORTUNITY
+
+Timestamp: 2025-09-09T13:59:00Z
+Commit: 26dc1c9
+Fix: ApplicationType enum case mismatch resolved
+
+This file triggers a deployment to restart the backend with the corrected enum values.
+
+Critical Fix Applied:
+- Python enum values updated from lowercase to UPPERCASE to match database
+- MARKET_EDGE = "MARKET_EDGE" 
+- CAUSAL_EDGE = "CAUSAL_EDGE"
+- VALUE_EDGE = "VALUE_EDGE"
+
+Expected Result:
+- Admin verification endpoint will stop returning 500 errors
+- matt.lindop@zebra.associates will have working admin access
+- £925K opportunity will be unblocked
+
+DEPLOYMENT REQUIRED: Backend needs restart to load corrected Python enum definitions
