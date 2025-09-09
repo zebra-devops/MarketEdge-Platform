@@ -27,10 +27,13 @@ import SuperAdminUserProvisioning from '@/components/admin/SuperAdminUserProvisi
 import OrganizationUserManagement from '@/components/admin/OrganizationUserManagement';
 import ApplicationAccessMatrix from '@/components/admin/ApplicationAccessMatrix';
 
+// CRITICAL: Import auth debug utilities for Zebra Associates troubleshooting
+import '@/utils/auth-debug';
+
 type TabType = 'dashboard' | 'organisations' | 'user-provisioning' | 'user-management' | 'access-matrix' | 'feature-flags' | 'modules' | 'audit-logs' | 'security';
 
 export default function AdminPage() {
-  const { user } = useAuthContext();
+  const { user, isLoading, isAuthenticated } = useAuthContext();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
@@ -41,15 +44,83 @@ export default function AdminPage() {
     }
   }, [user]);
 
-  if (!user || user.role !== 'admin') {
+  // CRITICAL DEBUG: Enhanced access control with detailed feedback for Zebra Associates troubleshooting
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <h3 className="mt-2 text-lg font-medium text-gray-900">Loading...</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Verifying authentication and admin privileges...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    console.log('🚨 Admin access denied: User not authenticated', { 
+      isAuthenticated, 
+      user: user ? { email: user.email, role: user.role } : null 
+    });
+    
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md">
+          <ShieldCheckIcon className="mx-auto h-12 w-12 text-red-400" />
+          <h3 className="mt-2 text-lg font-medium text-gray-900">Authentication Required</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Please log in to access the admin console.
+          </p>
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-xs text-yellow-800">
+              Debug: {isAuthenticated ? 'Authenticated but no user data' : 'Not authenticated'}
+            </p>
+            <p className="text-xs text-yellow-800 mt-1">
+              If you should have access, try refreshing the page or logging in again.
+            </p>
+          </div>
+          <button 
+            onClick={() => router.push('/login')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.role !== 'admin') {
+    console.log('🚨 Admin access denied: Insufficient privileges', { 
+      email: user.email, 
+      role: user.role,
+      requiredRole: 'admin'
+    });
+    
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center max-w-md">
           <ShieldCheckIcon className="mx-auto h-12 w-12 text-red-400" />
           <h3 className="mt-2 text-lg font-medium text-gray-900">Access Denied</h3>
           <p className="mt-1 text-sm text-gray-500">
             You need administrator privileges to access this page.
           </p>
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-xs text-red-800">
+              Current user: {user.email}
+            </p>
+            <p className="text-xs text-red-800 mt-1">
+              Current role: {user.role} (Required: admin)
+            </p>
+          </div>
+          <button 
+            onClick={() => router.push('/dashboard')}
+            className="mt-4 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+          >
+            Return to Dashboard
+          </button>
         </div>
       </div>
     );

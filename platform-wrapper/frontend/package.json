@@ -20,7 +20,9 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:multi-tenant": "jest --testPathPattern=.*multi.*tenant.*",
-    "test:components": "jest --testPathPattern=src/components/.*test.*"
+    "test:components": "jest --testPathPattern=src/components/.*test.*",
+    "test:token-retrieval": "node src/test-token-retrieval.js",
+    "test:auth": "npm run test:token-retrieval"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",

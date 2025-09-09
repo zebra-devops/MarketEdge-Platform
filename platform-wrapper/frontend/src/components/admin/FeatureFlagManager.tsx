@@ -12,6 +12,7 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { apiService } from '../../services/api';
+import { AdminDebugPanel } from './AdminDebugPanel';
 
 interface FeatureFlag {
   id: string;
@@ -52,19 +53,51 @@ export const FeatureFlagManager: React.FC = () => {
   const [selectedFlag, setSelectedFlag] = useState<FeatureFlag | null>(null);
   const [showAnalytics, setShowAnalytics] = useState(false);
 
+  // CRITICAL DEBUG: Log component initialization state
+  console.log('🏳️  FeatureFlagManager component initializing...');
+  console.log('   Component render time:', new Date().toISOString());
+  console.log('   LocalStorage available:', typeof localStorage !== 'undefined');
+  console.log('   Document available:', typeof document !== 'undefined');
+  
+  // Immediate token check
+  React.useEffect(() => {
+    console.log('🔍 FeatureFlagManager mounted - checking initial auth state...');
+    const hasLocalStorageToken = localStorage.getItem('access_token');
+    const hasCookieToken = document.cookie.includes('access_token');
+    console.log('   LocalStorage token:', hasLocalStorageToken ? `EXISTS (${hasLocalStorageToken.length} chars)` : 'MISSING');
+    console.log('   Cookie token:', hasCookieToken ? 'EXISTS' : 'MISSING');
+  }, []);
+
   const fetchFlags = async () => {
     try {
       setIsLoading(true);
+      
+      // ENHANCED DEBUG: Log authentication state before API call
+      console.log('🏳️  FeatureFlagManager: About to fetch admin feature flags');
+      console.log('   LocalStorage token:', localStorage.getItem('access_token') ? 'EXISTS' : 'MISSING');
+      console.log('   Cookie token:', document.cookie.includes('access_token') ? 'EXISTS' : 'MISSING');
+      
       const data = await apiService.get<{feature_flags: FeatureFlag[]}>('/admin/feature-flags');
+      console.log('✅ Feature flags fetched successfully:', data?.feature_flags?.length || 0, 'flags');
+      
       setFlags(data.feature_flags || []);
       setError(null);
     } catch (err: any) {
+      console.error('❌ Feature flag fetch failed:', err);
+      
       if (err.response?.status === 401) {
         setError('Authentication error: Please log in again');
+        console.log('🔐 401 error - user needs to re-authenticate');
         // Redirect will be handled by apiService
         return;
+      } else if (err.response?.status === 403) {
+        setError('Access denied: Admin privileges required for feature flag management');
+        console.log('🚫 403 error - user lacks admin privileges or token missing');
+        return;
       }
+      
       setError(err.message || 'Failed to load feature flags');
+      console.log('💥 Generic error:', err.message);
     } finally {
       setIsLoading(false);
     }
@@ -176,6 +209,12 @@ export const FeatureFlagManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* CRITICAL: Debug panel for Zebra Associates token issues */}
+      <AdminDebugPanel onTokenFixed={() => {
+        console.log('🔧 Token fixed - refreshing feature flags...');
+        fetchFlags();
+      }} />
+      
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Feature Flags</h2>

@@ -31,38 +31,85 @@ class ApiService {
   private setupInterceptors() {
     this.client.interceptors.request.use(
       (config) => {
-        // FIXED: Enhanced token retrieval prioritizing localStorage for local dev
-        let token = localStorage.getItem('access_token')
+        // CRITICAL FIX: Enhanced token retrieval with multiple fallback strategies
+        let token = null
+        
+        // Strategy 1: Try localStorage first (preferred for local development)
+        try {
+          token = localStorage.getItem('access_token')
+          if (token) {
+            console.log('🔑 Token retrieved from localStorage (Strategy 1)')
+          }
+        } catch (localStorageError) {
+          console.warn('LocalStorage access failed:', localStorageError)
+        }
+        
+        // Strategy 2: Fallback to cookies
         if (!token) {
-          token = Cookies.get('access_token')
+          try {
+            token = Cookies.get('access_token')
+            if (token) {
+              console.log('🔑 Token retrieved from cookies (Strategy 2)')
+            }
+          } catch (cookieError) {
+            console.warn('Cookie access failed:', cookieError)
+          }
+        }
+        
+        // Strategy 3: Try to get token from auth service directly
+        if (!token && typeof window !== 'undefined') {
+          try {
+            // Import auth service dynamically to avoid circular dependency
+            const authModule = require('./auth')
+            if (authModule?.authService?.getToken) {
+              token = authModule.authService.getToken()
+              if (token) {
+                console.log('🔑 Token retrieved from auth service (Strategy 3)')
+              }
+            }
+          } catch (authServiceError) {
+            console.warn('Auth service token retrieval failed:', authServiceError)
+          }
         }
         
         // DEBUG: Enhanced logging for better troubleshooting
         const isAuthRequest = config.url?.includes('/auth/')
         const requiresAuth = !isAuthRequest && !config.url?.includes('/health') && !config.url?.includes('/cors-debug')
         
-        console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`)
-        console.log(`Token available: ${token ? 'YES (length: ' + token.length + ')' : 'NO'}`)
+        console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`)
+        console.log(`🔐 Token Status: ${token ? `FOUND (${token.length} chars, starts with: ${token.substring(0, 20)}...)` : 'NOT FOUND'}`)
         
         if (!token && requiresAuth) {
-          console.log('⚠️  No access token for protected endpoint - request may fail with 403/401')
-          console.log('   Cookie token:', Cookies.get('access_token') ? 'EXISTS' : 'MISSING')
-          console.log('   LocalStorage token:', localStorage.getItem('access_token') ? 'EXISTS' : 'MISSING')
-          console.log('   Suggestion: Check authentication state or login again')
+          console.error('🚨 CRITICAL: No access token for protected endpoint!')
+          console.log('   📊 Debug Info:')
+          console.log('     - Cookie token:', Cookies.get('access_token') ? 'EXISTS' : 'MISSING')
+          console.log('     - LocalStorage token:', localStorage.getItem('access_token') ? 'EXISTS' : 'MISSING')
+          console.log('     - URL:', config.url)
+          console.log('     - Suggestion: User may need to log in again')
+          
+          // ENHANCED: Show more detailed debugging info
+          if (typeof window !== 'undefined') {
+            console.log('     - Current URL:', window.location.href)
+            console.log('     - LocalStorage keys:', Object.keys(localStorage))
+            console.log('     - Document cookies:', document.cookie ? 'HAS_COOKIES' : 'NO_COOKIES')
+          }
         } else if (token) {
-          console.log('✅ Token found and will be included in request')
+          console.log('✅ Authorization header will be added to request')
         }
         
         if (token) {
           config.headers.Authorization = `Bearer ${token}`
+          console.log('🔒 Authorization header added successfully')
         } else if (requiresAuth) {
-          // FIXED: For protected endpoints without token, add debug info
-          console.warn('Making request to protected endpoint without token:', config.url)
+          // CRITICAL: For protected endpoints without token, add debug info
+          console.error('❌ Making request to protected endpoint without token:', config.url)
+          console.error('   This will likely result in a 403 Forbidden error')
         }
         
         // Add organization context header if set
         if (this.currentOrganizationId) {
           config.headers['X-Organization-ID'] = this.currentOrganizationId
+          console.log('🏢 Organization context added:', this.currentOrganizationId)
         }
         
         return config

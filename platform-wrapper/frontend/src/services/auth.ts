@@ -591,12 +591,29 @@ export class AuthService {
         console.log('⚠️  Cookie storage error (using localStorage):', cookieError)
       }
       
-      // VERIFICATION: Ensure token is accessible
+      // ENHANCED VERIFICATION: Ensure token is accessible with multiple checks
       const verifyToken = this.getToken()
       if (verifyToken) {
         console.log('✅ Token verification successful - accessible via getToken()')
+        console.log(`   Token length: ${verifyToken.length} characters`)
+        console.log(`   Token preview: ${verifyToken.substring(0, 50)}...`)
+        
+        // Double-check by manually testing localStorage and cookies
+        const localCheck = localStorage.getItem('access_token')
+        const cookieCheck = Cookies.get('access_token')
+        console.log(`   LocalStorage check: ${localCheck ? 'SUCCESS' : 'FAILED'}`)
+        console.log(`   Cookie check: ${cookieCheck ? 'SUCCESS' : 'FAILED'}`)
       } else {
         console.error('❌ CRITICAL: Token storage verification failed!')
+        console.log('   Attempting manual retrieval...')
+        const manualLocal = localStorage.getItem('access_token')
+        const manualCookie = Cookies.get('access_token')
+        console.log(`   Manual localStorage: ${manualLocal ? 'EXISTS' : 'MISSING'}`)
+        console.log(`   Manual cookie: ${manualCookie ? 'EXISTS' : 'MISSING'}`)
+        
+        if (manualLocal || manualCookie) {
+          console.log('   Token exists but getToken() failed - potential timing issue')
+        }
       }
     }
     
@@ -663,7 +680,7 @@ export class AuthService {
     localStorage.setItem('user_permissions', JSON.stringify(permissions))
   }
 
-  private getStoredUser(): User | null {
+  getStoredUser(): User | null {
     try {
       const userData = localStorage.getItem('current_user')
       return userData ? JSON.parse(userData) : null

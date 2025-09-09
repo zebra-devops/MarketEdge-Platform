@@ -111,12 +111,35 @@ export const useAuth = (): AuthContextType => {
     try {
       setState(prev => ({ ...prev, isLoading: true }))
 
+      // CRITICAL FIX: Enhanced token detection with comprehensive logging
+      console.log('🔍 Initializing authentication...')
+      
+      // First check if we have tokens stored
+      const hasToken = authService.getToken()
+      const hasRefreshToken = authService.getRefreshToken()
+      const storedUser = authService.getStoredUser ? authService.getStoredUser() : null
+      
+      console.log('Token Status:', {
+        accessToken: hasToken ? 'FOUND' : 'MISSING',
+        refreshToken: hasRefreshToken ? 'FOUND' : 'MISSING',
+        storedUser: storedUser ? `${storedUser.email} (${storedUser.role})` : 'MISSING'
+      })
+
       // Check if user has valid authentication
       if (authService.isAuthenticated()) {
+        console.log('✅ Auth service reports user as authenticated, fetching user data...')
+        
         try {
-          // Get current user data from backend
+          // Get current user data from backend to ensure it's still valid
           const userResponse = await authService.getCurrentUser()
           const permissions = authService.getUserPermissions ? authService.getUserPermissions() : []
+          
+          console.log('✅ Successfully retrieved user data from backend:', {
+            email: userResponse.user?.email || userResponse.email,
+            role: userResponse.user?.role || userResponse.role,
+            tenant: userResponse.tenant?.name,
+            permissions: permissions.length
+          })
           
           setState({
             user: userResponse.user || userResponse,
@@ -126,9 +149,39 @@ export const useAuth = (): AuthContextType => {
             isAuthenticated: true,
             isInitialized: true
           })
-        } catch (error) {
-          console.error('Failed to get current user:', error)
-          // Clear invalid tokens
+        } catch (error: any) {
+          console.error('❌ Failed to get current user:', error)
+          console.log('Token validation failed, will attempt refresh or clear auth...')
+          
+          // Check if it's a token expiry issue (401) and we have a refresh token
+          if (error?.response?.status === 401 && hasRefreshToken) {
+            console.log('🔄 Attempting token refresh due to 401 error...')
+            try {
+              const refreshResponse = await authService.refreshToken()
+              console.log('✅ Token refresh successful, retrying user fetch...')
+              
+              // Retry getting user data with new token
+              const userResponse = await authService.getCurrentUser()
+              const permissions = authService.getUserPermissions ? authService.getUserPermissions() : []
+              
+              setState({
+                user: userResponse.user || userResponse,
+                tenant: userResponse.tenant || null,
+                permissions,
+                isLoading: false,
+                isAuthenticated: true,
+                isInitialized: true
+              })
+              
+              console.log('✅ Successfully recovered authentication via token refresh')
+              return
+            } catch (refreshError) {
+              console.error('❌ Token refresh failed:', refreshError)
+            }
+          }
+          
+          // Clear invalid tokens and redirect to login
+          console.log('🧹 Clearing invalid authentication tokens...')
           await authService.logout()
           setState({
             user: null,
@@ -140,6 +193,32 @@ export const useAuth = (): AuthContextType => {
           })
         }
       } else {
+        console.log('⚠️  Auth service reports user as not authenticated')
+        
+        // Check if we have tokens but auth service doesn't recognize them
+        if (hasToken) {
+          console.log('🔍 Found token but auth service says not authenticated - attempting validation...')
+          try {
+            // Try to validate the token by calling the backend
+            const userResponse = await authService.getCurrentUser()
+            console.log('✅ Token is actually valid! Updating auth state...')
+            
+            const permissions = authService.getUserPermissions ? authService.getUserPermissions() : []
+            
+            setState({
+              user: userResponse.user || userResponse,
+              tenant: userResponse.tenant || null,
+              permissions,
+              isLoading: false,
+              isAuthenticated: true,
+              isInitialized: true
+            })
+            return
+          } catch (validationError) {
+            console.log('❌ Token validation failed, clearing auth state')
+          }
+        }
+        
         setState({
           user: null,
           tenant: null,
@@ -150,7 +229,7 @@ export const useAuth = (): AuthContextType => {
         })
       }
     } catch (error) {
-      console.error('Auth initialization failed:', error)
+      console.error('❌ Auth initialization failed with unexpected error:', error)
       setState({
         user: null,
         tenant: null,
