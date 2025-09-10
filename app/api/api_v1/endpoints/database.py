@@ -269,10 +269,34 @@ async def emergency_admin_setup(
                 applications_granted.append(f"Granted {app_name}")
                 logger.info(f"✅ Granted application access for {app_name}")
         
-        # Step 4: Commit all changes
+        # Step 4: CRITICAL ENUM FIX - Fix application_type case mismatch
+        logger.info("🔧 CRITICAL: Fixing application_type enum case mismatch...")
+        try:
+            # Fix lowercase enum values to match database enum (UPPERCASE)
+            enum_fixes = [
+                ("market_edge", "MARKET_EDGE"),
+                ("causal_edge", "CAUSAL_EDGE"), 
+                ("value_edge", "VALUE_EDGE")
+            ]
+            
+            for old_value, new_value in enum_fixes:
+                result = db.execute(
+                    text("UPDATE user_application_access SET application_type = :new_value WHERE application_type = :old_value"),
+                    {"old_value": old_value, "new_value": new_value}
+                )
+                rows_affected = result.rowcount
+                if rows_affected > 0:
+                    logger.info(f"🔧 Fixed {rows_affected} records: {old_value} -> {new_value}")
+                    applications_granted.append(f"Fixed enum case: {old_value} -> {new_value} ({rows_affected} records)")
+                
+        except Exception as enum_error:
+            logger.warning(f"⚠️  Enum fix attempt failed: {enum_error}")
+            # Don't fail the entire operation for enum fix issues
+        
+        # Step 5: Commit all changes
         try:
             db.commit()
-            logger.info("💾 Database changes committed successfully")
+            logger.info("💾 Database changes committed successfully (including enum fixes)")
         except Exception as commit_error:
             db.rollback()
             logger.error(f"❌ Database commit failed: {commit_error}")
@@ -285,7 +309,7 @@ async def emergency_admin_setup(
                 }
             )
         
-        # Step 5: Verify the changes
+        # Step 6: Verify the changes
         result = db.execute(text("SELECT role FROM users WHERE id = :user_id"), {"user_id": user_id})
         final_role = result.fetchone()[0]
         
