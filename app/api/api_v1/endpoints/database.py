@@ -281,7 +281,7 @@ async def emergency_admin_setup(
             
             for old_value, new_value in enum_fixes:
                 result = db.execute(
-                    text("UPDATE user_application_access SET application_type = :new_value WHERE application_type = :old_value"),
+                    text("UPDATE user_application_access SET application = :new_value WHERE application = :old_value"),
                     {"old_value": old_value, "new_value": new_value}
                 )
                 rows_affected = result.rowcount
