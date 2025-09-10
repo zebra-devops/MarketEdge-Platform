@@ -1,0 +1,93 @@
+{
+  "timestamp": "2025-09-10T18:36:19.050728",
+  "tests": {
+    "cors": {
+      "status": "passed",
+      "status_code": 200,
+      "headers": {
+        "access_control_allow_origin": "https://app.zebra.associates",
+        "access_control_allow_credentials": "true",
+        "access_control_allow_methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+        "access_control_allow_headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID"
+      }
+    },
+    "user_admin": {
+      "status": "error",
+      "error": "role \"postgres\" does not exist"
+    },
+    "endpoint__api_v1_admin_feature-flags": {
+      "status_code": 403,
+      "headers": {
+        "date": "Wed, 10 Sep 2025 18:36:20 GMT",
+        "content-type": "application/json",
+        "transfer-encoding": "chunked",
+        "connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-expose-headers": "Content-Type, Authorization, X-Tenant-ID",
+        "rndr-id": "c96b5f09-cba5-4b95",
+        "vary": "Origin, Accept-Encoding",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "server": "cloudflare",
+        "cf-ray": "97d107be9b919454-LHR",
+        "content-encoding": "gzip",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "accessible": true
+    },
+    "endpoint__api_v1_admin_dashboard_stats": {
+      "status_code": 403,
+      "headers": {
+        "date": "Wed, 10 Sep 2025 18:36:20 GMT",
+        "content-type": "application/json",
+        "transfer-encoding": "chunked",
+        "connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-expose-headers": "Content-Type, Authorization, X-Tenant-ID",
+        "rndr-id": "bf9b47a2-6ef8-4389",
+        "vary": "Origin, Accept-Encoding",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "server": "cloudflare",
+        "cf-ray": "97d107c1cf129454-LHR",
+        "content-encoding": "gzip",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "accessible": true
+    },
+    "endpoint__api_v1_admin_modules": {
+      "status_code": 403,
+      "headers": {
+        "date": "Wed, 10 Sep 2025 18:36:20 GMT",
+        "content-type": "application/json",
+        "transfer-encoding": "chunked",
+        "connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-expose-headers": "Content-Type, Authorization, X-Tenant-ID",
+        "rndr-id": "b0bca8a7-bf91-4214",
+        "vary": "Origin, Accept-Encoding",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "server": "cloudflare",
+        "cf-ray": "97d107c3084f9454-LHR",
+        "content-encoding": "gzip",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "accessible": true
+    },
+    "database_schema": {
+      "status": "error",
+      "error": "role \"postgres\" does not exist"
+    }
+  },
+  "issues": [
+    {
+      "type": "DATABASE_CONNECTION_ERROR",
+      "description": "Failed to connect to database: role \"postgres\" does not exist"
+    }
+  ],
+  "fixes": []
+}

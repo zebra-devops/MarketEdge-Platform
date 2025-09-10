@@ -1,0 +1,50 @@
+{
+  "timestamp": "2025-09-10T19:37:08.900136",
+  "zebra_email": "matt.lindop@zebra.associates",
+  "tests": {
+    "database": {
+      "success": false,
+      "error": "role \"postgres\" does not exist",
+      "error_type": "InvalidAuthorizationSpecificationError"
+    },
+    "auth_endpoints": {
+      "login_endpoint_status": 400,
+      "token_verify_status": 404,
+      "auth_endpoints_available": true
+    },
+    "admin_endpoints": {
+      "/api/v1/admin/users": {
+        "status_code": 403,
+        "exists": true,
+        "requires_auth": true,
+        "cors_working": true
+      },
+      "/api/v1/users/": {
+        "status_code": 403,
+        "exists": true,
+        "requires_auth": true,
+        "cors_working": true
+      },
+      "/api/v1/admin/dashboard/stats": {
+        "status_code": 403,
+        "exists": true,
+        "requires_auth": true,
+        "cors_working": true
+      },
+      "/api/v1/admin/feature-flags": {
+        "status_code": 403,
+        "exists": true,
+        "requires_auth": true,
+        "cors_working": true
+      }
+    }
+  },
+  "issues": [],
+  "fixes": [],
+  "summary": {
+    "total_issues": 0,
+    "total_fixes": 0,
+    "critical_issues": 0,
+    "admin_access_blocked": false
+  }
+}
