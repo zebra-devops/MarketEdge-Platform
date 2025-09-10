@@ -1,0 +1,39 @@
+{
+  "timestamp": "2025-09-09T13:58:40.529934",
+  "issue": "applicationtype enum case mismatch",
+  "tests": {
+    "current_error": {
+      "status_code": 500,
+      "response_body": "{\"detail\":{\"error\":\"Admin verification failed\",\"user_email\":\"matt.lindop@zebra.associates\",\"message\":\"'market_edge' is not among the defined enum values. Enum name: applicationtype. Possible values: MARKET_EDGE, CAUSAL_EDGE, VALUE_EDGE\"}}",
+      "has_enum_error": true
+    },
+    "enum_analysis": {
+      "python_enum_file": "/Users/matt/Sites/MarketEdge/app/models/user_application_access.py",
+      "current_python_values": [],
+      "expected_database_values": [
+        "MARKET_EDGE",
+        "CAUSAL_EDGE",
+        "VALUE_EDGE"
+      ],
+      "mismatch_identified": true
+    },
+    "post_fix_test": {
+      "status_code": 500,
+      "response_body": "{\"detail\":{\"error\":\"Admin verification failed\",\"user_email\":\"matt.lindop@zebra.associates\",\"message\":\"'market_edge' is not among the defined enum values. Enum name: applicationtype. Possible values: MARKET_EDGE, CAUSAL_EDGE, VALUE_EDGE\"}}",
+      "fixed": false
+    }
+  },
+  "fixes_applied": [
+    {
+      "type": "PYTHON_ENUM_FIX",
+      "file": "/Users/matt/Sites/MarketEdge/app/models/user_application_access.py",
+      "backup": "/Users/matt/Sites/MarketEdge/app/models/user_application_access.py.backup_20250909_135840",
+      "changes": [
+        "market_edge -> MARKET_EDGE",
+        "causal_edge -> CAUSAL_EDGE",
+        "value_edge -> VALUE_EDGE"
+      ]
+    }
+  ],
+  "success": false
+}

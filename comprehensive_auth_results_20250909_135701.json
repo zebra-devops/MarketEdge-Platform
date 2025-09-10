@@ -1,0 +1,183 @@
+{
+  "timestamp": "2025-09-09T13:56:58.659533",
+  "environment": "production",
+  "tests": {
+    "production_db": {
+      "status": "skipped",
+      "reason": "Production database URL not available in environment"
+    },
+    "endpoint__api_v1_admin_users": {
+      "status_code": 403,
+      "response_body": {
+        "detail": "Not authenticated"
+      },
+      "headers": {
+        "date": "Tue, 09 Sep 2025 13:56:59 GMT",
+        "content-type": "application/json",
+        "transfer-encoding": "chunked",
+        "connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-expose-headers": "Content-Type, Authorization, X-Tenant-ID",
+        "rndr-id": "64038061-d40b-4a93",
+        "vary": "Origin, Accept-Encoding",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "server": "cloudflare",
+        "cf-ray": "97c7312c0ead0030-LHR",
+        "content-encoding": "gzip",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "expected_auth": true,
+      "server_error": false
+    },
+    "endpoint__api_v1_admin_feature-flags": {
+      "status_code": 403,
+      "response_body": {
+        "detail": "Not authenticated"
+      },
+      "headers": {
+        "date": "Tue, 09 Sep 2025 13:56:59 GMT",
+        "content-type": "application/json",
+        "transfer-encoding": "chunked",
+        "connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-expose-headers": "Content-Type, Authorization, X-Tenant-ID",
+        "rndr-id": "0eff16dc-7c0b-4de3",
+        "vary": "Origin, Accept-Encoding",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "server": "cloudflare",
+        "cf-ray": "97c7312d7a4d0030-LHR",
+        "content-encoding": "gzip",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "expected_auth": true,
+      "server_error": false
+    },
+    "endpoint__api_v1_admin_dashboard_stats": {
+      "status_code": 403,
+      "response_body": {
+        "detail": "Not authenticated"
+      },
+      "headers": {
+        "date": "Tue, 09 Sep 2025 13:56:59 GMT",
+        "content-type": "application/json",
+        "transfer-encoding": "chunked",
+        "connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-expose-headers": "Content-Type, Authorization, X-Tenant-ID",
+        "rndr-id": "28ad9033-adcb-4268",
+        "vary": "Origin, Accept-Encoding",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "server": "cloudflare",
+        "cf-ray": "97c73130a9b80030-LHR",
+        "content-encoding": "gzip",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "expected_auth": true,
+      "server_error": false
+    },
+    "endpoint__api_v1_admin_modules": {
+      "status_code": 403,
+      "response_body": {
+        "detail": "Not authenticated"
+      },
+      "headers": {
+        "date": "Tue, 09 Sep 2025 13:57:00 GMT",
+        "content-type": "application/json",
+        "transfer-encoding": "chunked",
+        "connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-expose-headers": "Content-Type, Authorization, X-Tenant-ID",
+        "rndr-id": "817e7027-6888-458d",
+        "vary": "Origin, Accept-Encoding",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "server": "cloudflare",
+        "cf-ray": "97c731320cc40030-LHR",
+        "content-encoding": "gzip",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "expected_auth": true,
+      "server_error": false
+    },
+    "jwt_format": {
+      "status": "error",
+      "error": "Signature has expired"
+    },
+    "admin_verification": {
+      "status": "failed",
+      "status_code": 500,
+      "response": "{\"detail\":{\"error\":\"Admin verification failed\",\"user_email\":\"matt.lindop@zebra.associates\",\"message\":\"'market_edge' is not among the defined enum values. Enum name: applicationtype. Possible values: MARKET_EDGE, CAUSAL_EDGE, VALUE_EDGE\"}}"
+    },
+    "organization_context": {
+      "status_code": 403,
+      "accessible": false
+    },
+    "auth0_config": {
+      "status_code": 405,
+      "is_redirect": false,
+      "location": null,
+      "accessible": true,
+      "auth0_redirect": false
+    }
+  },
+  "issues": [
+    {
+      "type": "DATABASE_CONFIG_MISSING",
+      "severity": "high",
+      "description": "Production database URL not accessible from local environment",
+      "impact": "Cannot verify user status directly in production database"
+    },
+    {
+      "type": "JWT_FORMAT_ERROR",
+      "severity": "high",
+      "description": "JWT token format validation failed: Signature has expired"
+    },
+    {
+      "type": "ADMIN_VERIFICATION_FAILED",
+      "severity": "high",
+      "description": "Admin verification endpoint failed with status 500"
+    },
+    {
+      "type": "AUTH0_REDIRECT_MISSING",
+      "severity": "high",
+      "description": "Auth endpoint does not redirect to Auth0"
+    }
+  ],
+  "fixes": [],
+  "analysis": {
+    "issue_summary": {
+      "total_issues": 4,
+      "critical_issues": 0,
+      "high_issues": 4
+    },
+    "root_cause_assessment": {
+      "primary": "Authentication Flow Issues",
+      "description": "JWT token validation or Auth0 configuration problems",
+      "confidence": "medium"
+    },
+    "backend_status": {
+      "cors_configured": false,
+      "endpoints_responding": true,
+      "server_errors_found": false
+    },
+    "recommended_actions": [
+      {
+        "priority": "HIGH",
+        "action": "Fix Auth0 Configuration",
+        "description": "Auth0 login redirect not working",
+        "steps": [
+          "Verify Auth0 environment variables",
+          "Check Auth0 domain and client ID",
+          "Test Auth0 callback URL configuration"
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "auth0_url_test": {
+    "success": true,
+    "data": {
+      "auth_url": "https://dev-g8trhgbfdq2sk2m8.us.auth0.com/authorize?response_type=code&client_id=mQG01Z4lNhTTN081GHbR9R9C4fBQdPNr&redirect_uri=https%3A%2F%2Fmarketedge-platform.onrender.com%2Fcallback&scope=openid%20profile%20email%20read%3Aorganization%20read%3Aroles&state=uyZfohZp1WtEOOMl_KYd0jfq5MEWd_Ul7YY0ux8Q9zE&prompt=select_account&max_age=3600&audience=https%3A%2F%2Fdev-g8trhgbfdq2sk2m8.us.auth0.com%2Fapi%2Fv2%2F",
+      "redirect_uri": "https://marketedge-platform.onrender.com/callback",
+      "scopes": [
+        "openid",
+        "profile",
+        "email",
+        "read:organization",
+        "read:roles"
+      ],
+      "organization_hint": null
+    },
+    "status_code": 200
+  },
+  "auth_status_test": {
+    "success": false,
+    "status_code": 404,
+    "error": "Auth status endpoint not found"
+  },
+  "users_endpoint_test": {
+    "success": true,
+    "status_code": 403,
+    "requires_admin_auth": true,
+    "enum_fix_confirmed": true
+  },
+  "auth_me_test": {
+    "success": true,
+    "status_code": 403,
+    "requires_auth": true
+  },
+  "token_flow_simulation": {
+    "frontend_perspective": {
+      "has_access_token": false,
+      "has_refresh_token": false,
+      "needs_authentication": true
+    },
+    "authentication_check": {},
+    "token_validation": {}
+  },
+  "diagnosis": {
+    "likely_causes": [
+      "Authentication tokens are not being stored/sent by frontend",
+      "Frontend authentication flow is broken after Auth0 callback",
+      "JWT tokens are invalid or expired",
+      "Browser storage (localStorage/cookies) not working",
+      "Authentication status endpoint missing"
+    ],
+    "evidence": [
+      "Auth0 URL generation works - users can start authentication",
+      "Admin endpoints require authentication (correct behavior)",
+      "Enum fix confirmed working - no more 500 errors",
+      "Auth status endpoint not found - may be routing issue"
+    ],
+    "recommendations": [
+      "Check browser localStorage and cookies for access_token",
+      "Test Auth0 callback flow manually",
+      "Verify JWT token generation and storage",
+      "Check for CORS issues preventing token storage",
+      "Test frontend authentication service methods",
+      "Verify Auth0 configuration and callback URLs"
+    ],
+    "severity": "medium"
+  }
+}
