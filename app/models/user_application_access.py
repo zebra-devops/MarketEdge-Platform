@@ -13,6 +13,10 @@ class ApplicationType(str, enum.Enum):
     MARKET_EDGE = "MARKET_EDGE"
     CAUSAL_EDGE = "CAUSAL_EDGE"
     VALUE_EDGE = "VALUE_EDGE"
+    # Temporary lowercase aliases for database migration
+    market_edge = "market_edge"
+    causal_edge = "causal_edge"
+    value_edge = "value_edge"
 
 
 class InvitationStatus(str, enum.Enum):
