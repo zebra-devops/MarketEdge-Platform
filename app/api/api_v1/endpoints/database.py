@@ -677,6 +677,7 @@ async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
                 "message": str(e),
                 "timestamp": "2025-09-08T17:00:00Z"
             }
+        )
 
 @router.post("/emergency/fix-enum-case-mismatch")
 async def emergency_fix_enum_case_mismatch(db: Session = Depends(get_db)):
@@ -754,6 +755,4 @@ async def emergency_fix_enum_case_mismatch(db: Session = Depends(get_db)):
                 "message": str(e),
                 "recommendation": "Check database connection and table structure"
             }
-        )
-
         )
