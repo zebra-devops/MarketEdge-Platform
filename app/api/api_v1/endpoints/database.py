@@ -677,4 +677,83 @@ async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
                 "message": str(e),
                 "timestamp": "2025-09-08T17:00:00Z"
             }
+
+@router.post("/emergency/fix-enum-case-mismatch")
+async def emergency_fix_enum_case_mismatch(db: Session = Depends(get_db)):
+    """EMERGENCY: Fix application enum case mismatch for £925K Zebra Associates"""
+    try:
+        logger.info("🚨 EMERGENCY: Fixing application enum case mismatch...")
+        
+        # Apply the critical enum case fix
+        enum_fixes = [
+            ("market_edge", "MARKET_EDGE"),
+            ("causal_edge", "CAUSAL_EDGE"), 
+            ("value_edge", "VALUE_EDGE")
+        ]
+        
+        fixes_applied = []
+        total_rows_fixed = 0
+        
+        for old_value, new_value in enum_fixes:
+            try:
+                result = db.execute(
+                    text("UPDATE user_application_access SET application = :new_value WHERE application = :old_value"),
+                    {"old_value": old_value, "new_value": new_value}
+                )
+                rows_affected = result.rowcount
+                if rows_affected > 0:
+                    logger.info(f"🔧 Fixed {rows_affected} records: {old_value} -> {new_value}")
+                    fixes_applied.append({
+                        "from": old_value,
+                        "to": new_value, 
+                        "rows_affected": rows_affected
+                    })
+                    total_rows_fixed += rows_affected
+                else:
+                    logger.info(f"📊 No records found for {old_value}")
+                    
+            except Exception as fix_error:
+                logger.error(f"❌ Error fixing {old_value}: {fix_error}")
+                fixes_applied.append({
+                    "from": old_value,
+                    "to": new_value,
+                    "error": str(fix_error)
+                })
+        
+        # Commit the fixes
+        try:
+            db.commit()
+            logger.info(f"💾 Enum case fixes committed - {total_rows_fixed} records updated")
+        except Exception as commit_error:
+            db.rollback()
+            logger.error(f"❌ Failed to commit enum fixes: {commit_error}")
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": "Failed to commit enum fixes",
+                    "message": str(commit_error)
+                }
+            )
+        
+        return {
+            "success": True,
+            "message": "Enum case mismatch fixed successfully",
+            "fixes_applied": fixes_applied,
+            "total_rows_fixed": total_rows_fixed,
+            "business_impact": "£925K Zebra Associates opportunity should now be unblocked",
+            "next_step": "Test admin verification endpoint",
+            "timestamp": "2025-09-10T12:00:00Z"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Emergency enum fix failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "Emergency enum fix failed",
+                "message": str(e),
+                "recommendation": "Check database connection and table structure"
+            }
+        )
+
         )
