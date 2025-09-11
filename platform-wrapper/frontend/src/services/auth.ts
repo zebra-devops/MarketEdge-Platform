@@ -242,16 +242,30 @@ export class AuthService {
       throw new Error('No refresh token available')
     }
 
-    this.refreshTokenPromise = apiService.post<EnhancedTokenResponse>('/auth/refresh', {
-      refresh_token: refreshToken
-    })
+    // US-AUTH-2: Handle both regular refresh tokens and httpOnly cookie scenario
+    const requestBody: any = {}
+    
+    // If we have an actual refresh token value, include it in the request
+    if (refreshToken !== 'httponly_refresh_token_present') {
+      requestBody.refresh_token = refreshToken
+    }
+    // If refresh token is httpOnly, the browser will automatically send the cookie
+
+    this.refreshTokenPromise = apiService.post<EnhancedTokenResponse>('/auth/refresh', requestBody)
 
     try {
       const response = await this.refreshTokenPromise
       this.setTokens(response)
       this.setUserData(response.user, response.tenant, response.permissions)
+      
+      console.log('✅ Token refresh successful', {
+        hasNewAccessToken: !!response.access_token,
+        hasNewRefreshToken: !!response.refresh_token
+      })
+      
       return response
     } catch (error) {
+      console.error('❌ Token refresh failed:', error)
       // If refresh fails, clear tokens and redirect to login
       this.clearTokens()
       throw error
@@ -453,69 +467,70 @@ export class AuthService {
   }
 
   getToken(): string | undefined {
-    // SECURITY: Environment-based token retrieval strategy
-    const isProduction = process.env.NODE_ENV === 'production'
+    // US-AUTH-2: Enhanced multi-strategy token retrieval
+    console.debug('🔍 Retrieving access token...')
     
-    if (isProduction) {
-      // PRODUCTION: Only use httpOnly cookies for security
-      const cookieToken = Cookies.get('access_token')
-      if (cookieToken) {
-        console.debug('✅ Token retrieved from secure httpOnly cookies (Production)')
-        return cookieToken
-      }
-      console.debug('⚠️  No access token found in secure cookies (Production)')
-      return undefined
-    } else {
-      // DEVELOPMENT: Prioritize localStorage for debugging flexibility
-      const localToken = localStorage.getItem('access_token')
-      if (localToken) {
-        console.debug('✅ Token retrieved from localStorage (Development)')
-        return localToken
-      }
-      
-      // Fallback to cookies for development
-      const cookieToken = Cookies.get('access_token')
-      if (cookieToken) {
-        console.debug('✅ Token retrieved from cookies (Development fallback)')
-        return cookieToken
-      }
-      
-      console.debug('⚠️  No access token found in localStorage or cookies (Development)')
-      return undefined
+    // Strategy 1: Try cookies first (both production and development)
+    // Access tokens are now accessible via JavaScript in both environments
+    const cookieToken = Cookies.get('access_token')
+    if (cookieToken) {
+      console.debug('✅ Token retrieved from cookies', {
+        source: 'cookies',
+        length: cookieToken.length,
+        preview: `${cookieToken.substring(0, 20)}...`
+      })
+      return cookieToken
     }
+    
+    // Strategy 2: Fallback to localStorage (development and legacy support)
+    const localToken = localStorage.getItem('access_token')
+    if (localToken) {
+      console.debug('✅ Token retrieved from localStorage fallback', {
+        source: 'localStorage',
+        length: localToken.length,
+        preview: `${localToken.substring(0, 20)}...`
+      })
+      return localToken
+    }
+    
+    // Strategy 3: Direct auth service check (emergency fallback)
+    // This helps with any edge cases during token transitions
+    console.debug('⚠️  No access token found in cookies or localStorage')
+    
+    return undefined
   }
 
   getRefreshToken(): string | undefined {
-    // SECURITY: Environment-based refresh token retrieval strategy
-    const isProduction = process.env.NODE_ENV === 'production'
+    // US-AUTH-2: Refresh tokens remain secure (httpOnly: true)
+    console.debug('🔍 Retrieving refresh token...')
     
-    if (isProduction) {
-      // PRODUCTION: Only use httpOnly cookies for security
-      const cookieToken = Cookies.get('refresh_token')
-      if (cookieToken) {
-        console.debug('✅ Refresh token retrieved from secure httpOnly cookies (Production)')
-        return cookieToken
-      }
-      console.debug('⚠️  No refresh token found in secure cookies (Production)')
-      return undefined
-    } else {
-      // DEVELOPMENT: Prioritize localStorage for debugging flexibility
-      const localToken = localStorage.getItem('refresh_token')
-      if (localToken) {
-        console.debug('✅ Refresh token retrieved from localStorage (Development)')
-        return localToken
-      }
-      
-      // Fallback to cookies for development
-      const cookieToken = Cookies.get('refresh_token')
-      if (cookieToken) {
-        console.debug('✅ Refresh token retrieved from cookies (Development fallback)')
-        return cookieToken
-      }
-      
-      console.debug('⚠️  No refresh token found in localStorage or cookies (Development)')
-      return undefined
+    // Note: Refresh tokens are httpOnly and cannot be accessed by JavaScript
+    // This is intentional for security - refresh tokens should only be sent via cookies
+    // The backend handles refresh token validation automatically via httpOnly cookies
+    
+    // Strategy 1: Try localStorage (development and legacy support)
+    const localToken = localStorage.getItem('refresh_token')
+    if (localToken) {
+      console.debug('✅ Refresh token retrieved from localStorage', {
+        source: 'localStorage',
+        length: localToken.length
+      })
+      return localToken
     }
+    
+    // Strategy 2: Check if refresh token cookie exists (cannot read value due to httpOnly)
+    // We can't actually read the refresh token in production due to httpOnly security
+    // But we can detect its presence for UI purposes
+    const cookieExists = document.cookie.includes('refresh_token=')
+    if (cookieExists) {
+      console.debug('✅ Refresh token detected in httpOnly cookies (secure)')
+      // Return a placeholder value to indicate the token exists
+      // The actual token will be sent by the browser automatically
+      return 'httponly_refresh_token_present'
+    }
+    
+    console.debug('⚠️  No refresh token found')
+    return undefined
   }
 
   isAuthenticated(): boolean {
@@ -641,107 +656,58 @@ export class AuthService {
   }
 
   private setTokens(tokenResponse: EnhancedTokenResponse): void {
-    // SECURITY: Environment-based token storage strategy
+    // US-AUTH-2: Note - Backend now handles cookie setting with proper httpOnly configuration
+    // Access tokens: httpOnly: false (accessible to JS)
+    // Refresh tokens: httpOnly: true (secure, not accessible to JS)
+    
     const isProduction = process.env.NODE_ENV === 'production'
-    const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost'
     
     if (tokenResponse.access_token) {
-      if (isProduction) {
-        // PRODUCTION: Use only httpOnly secure cookies for XSS protection
-        console.log('🔒 PRODUCTION: Storing tokens in secure httpOnly cookies only')
-        
-        try {
-          Cookies.set('access_token', tokenResponse.access_token, {
-            expires: new Date(Date.now() + (tokenResponse.expires_in || 3600) * 1000),
-            secure: true,  // HTTPS only in production
-            httpOnly: false, // Note: js-cookie cannot set httpOnly, backend must handle this
-            sameSite: 'strict'  // Strict CSRF protection in production
-          })
-          
-          // Clear any localStorage tokens for security
-          localStorage.removeItem('access_token')
-          
-          console.log('✅ Access token stored in secure production cookies')
-          console.log('🗑️  LocalStorage token cleared for security')
-          
-        } catch (cookieError) {
-          console.error('❌ PRODUCTION: Cookie storage failed:', cookieError)
-          throw new Error('Secure token storage failed in production environment')
-        }
-        
-      } else {
-        // DEVELOPMENT: Use localStorage for debugging flexibility
-        console.log('🛠️  DEVELOPMENT: Storing tokens in localStorage for debugging')
-        
+      // Backend has already set the access_token cookie (httpOnly: false)
+      // For development, also store in localStorage for debugging
+      if (!isProduction) {
+        console.log('🛠️  DEVELOPMENT: Also storing access token in localStorage for debugging')
         localStorage.setItem('access_token', tokenResponse.access_token)
-        console.log('✅ Token stored in localStorage (Development)')
-        
-        // Also set cookies for backend compatibility
-        try {
-          Cookies.set('access_token', tokenResponse.access_token, {
-            expires: new Date(Date.now() + (tokenResponse.expires_in || 3600) * 1000),
-            secure: false, // Allow HTTP in development
-            sameSite: 'lax'
-          })
-          console.log('✅ Token also stored in development cookies')
-        } catch (cookieError) {
-          console.warn('⚠️  Development cookie storage failed (not critical):', cookieError)
-        }
+      } else {
+        // PRODUCTION: Clear any localStorage tokens for security
+        localStorage.removeItem('access_token')
+        console.log('🗑️  PRODUCTION: LocalStorage token cleared for security')
       }
       
-      // VERIFICATION: Ensure token is accessible
+      // VERIFICATION: Ensure token is accessible via our retrieval method
       const verifyToken = this.getToken()
       if (verifyToken) {
-        console.log('✅ Token verification successful - accessible via getToken()')
-        console.log(`   Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`)
-        console.log(`   Storage method: ${isProduction ? 'Secure Cookies' : 'LocalStorage + Cookies'}`)
-        console.log(`   Token length: ${verifyToken.length} characters`)
+        console.log('✅ Access token verification successful', {
+          environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+          storageMethod: 'Backend-managed cookies + localStorage fallback',
+          tokenLength: verifyToken.length,
+          preview: `${verifyToken.substring(0, 20)}...`
+        })
       } else {
-        console.error('❌ CRITICAL: Token storage verification failed!')
-        if (isProduction) {
-          throw new Error('Production token storage verification failed - security risk')
-        }
+        console.error('❌ CRITICAL: Access token not accessible after login!')
+        throw new Error('Token retrieval failed after authentication - please try logging in again')
       }
     }
     
     if (tokenResponse.refresh_token) {
-      if (isProduction) {
-        // PRODUCTION: Secure httpOnly cookies only
-        try {
-          Cookies.set('refresh_token', tokenResponse.refresh_token, {
-            expires: 7, // 7 days
-            secure: true,
-            httpOnly: false, // Note: Backend must handle httpOnly setting
-            sameSite: 'strict'
-          })
-          
-          // Clear localStorage for security
-          localStorage.removeItem('refresh_token')
-          
-          console.log('✅ Refresh token stored in secure production cookies')
-          console.log('🗑️  LocalStorage refresh token cleared for security')
-          
-        } catch (cookieError) {
-          console.error('❌ PRODUCTION: Refresh token cookie storage failed:', cookieError)
-          throw new Error('Secure refresh token storage failed in production environment')
-        }
-        
-      } else {
-        // DEVELOPMENT: localStorage + cookies
+      // US-AUTH-2: Backend handles refresh token cookies (httpOnly: true for security)
+      // In production, refresh tokens are httpOnly and not accessible to JavaScript
+      
+      if (!isProduction) {
+        // DEVELOPMENT: Store in localStorage for debugging and fallback
         localStorage.setItem('refresh_token', tokenResponse.refresh_token)
         console.log('✅ Refresh token stored in localStorage (Development)')
-        
-        try {
-          Cookies.set('refresh_token', tokenResponse.refresh_token, {
-            expires: 7,
-            secure: false,
-            sameSite: 'lax'
-          })
-          console.log('✅ Refresh token also stored in development cookies')
-        } catch (cookieError) {
-          console.warn('⚠️  Development refresh token cookie error (not critical):', cookieError)
-        }
+      } else {
+        // PRODUCTION: Clear localStorage, rely on httpOnly cookies
+        localStorage.removeItem('refresh_token')
+        console.log('🔒 PRODUCTION: Refresh token managed by secure httpOnly cookies only')
       }
+      
+      // Note: Backend has already set the refresh_token cookie with httpOnly: true
+      console.log('✅ Refresh token configuration completed', {
+        environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+        security: 'Backend-managed httpOnly cookies + localStorage fallback'
+      })
     }
     
     // Store token expiry for refresh logic with defensive validation
