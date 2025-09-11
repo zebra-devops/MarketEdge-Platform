@@ -487,27 +487,43 @@ async def get_security_events(
 @router.get("/dashboard/stats")
 async def get_admin_dashboard_stats(
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get dashboard statistics for admin overview"""
     
+    from sqlalchemy import select, func
+    
     # Get feature flag counts
-    total_flags = db.query(FeatureFlag).count()
-    enabled_flags = db.query(FeatureFlag).filter(FeatureFlag.is_enabled == True).count()
+    total_flags_result = await db.execute(select(func.count()).select_from(FeatureFlag))
+    total_flags = total_flags_result.scalar()
+    
+    enabled_flags_result = await db.execute(
+        select(func.count()).select_from(FeatureFlag).where(FeatureFlag.is_enabled == True)
+    )
+    enabled_flags = enabled_flags_result.scalar()
     
     # Get module counts
-    total_modules = db.query(AnalyticsModule).count()
-    active_modules = db.query(AnalyticsModule).filter(AnalyticsModule.status == ModuleStatus.ACTIVE).count()
+    total_modules_result = await db.execute(select(func.count()).select_from(AnalyticsModule))
+    total_modules = total_modules_result.scalar()
+    
+    active_modules_result = await db.execute(
+        select(func.count()).select_from(AnalyticsModule).where(AnalyticsModule.status == ModuleStatus.ACTIVE)
+    )
+    active_modules = active_modules_result.scalar()
     
     # Get recent activity (last 24 hours)
-    recent_logs = db.query(AuditLog).filter(
-        AuditLog.timestamp >= datetime.utcnow() - timedelta(hours=24)
-    ).count()
+    recent_logs_result = await db.execute(
+        select(func.count()).select_from(AuditLog).where(
+            AuditLog.timestamp >= datetime.utcnow() - timedelta(hours=24)
+        )
+    )
+    recent_logs = recent_logs_result.scalar()
     
     # Get organisation module enablements
-    enabled_org_modules = db.query(OrganisationModule).filter(
-        OrganisationModule.is_enabled == True
-    ).count()
+    enabled_org_modules_result = await db.execute(
+        select(func.count()).select_from(OrganisationModule).where(OrganisationModule.is_enabled == True)
+    )
+    enabled_org_modules = enabled_org_modules_result.scalar()
     
     return {
         "feature_flags": {
@@ -524,7 +540,9 @@ async def get_admin_dashboard_stats(
             "recent_actions_24h": recent_logs
         },
         "system": {
-            "supported_sectors": db.query(SICCode).filter(SICCode.is_supported == True).count()
+            "supported_sectors": (await db.execute(
+                select(func.count()).select_from(SICCode).where(SICCode.is_supported == True)
+            )).scalar()
         }
     }
 
