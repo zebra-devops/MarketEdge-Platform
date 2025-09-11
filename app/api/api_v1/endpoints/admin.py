@@ -120,7 +120,7 @@ async def list_feature_flags(
 async def create_feature_flag(
     flag_data: FeatureFlagCreate,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Create a new feature flag"""
     feature_flag_service = FeatureFlagService(db)
@@ -182,7 +182,7 @@ async def create_feature_flag_override(
     flag_id: str,
     override_data: FeatureFlagOverrideCreate,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Create a feature flag override"""
     feature_flag_service = FeatureFlagService(db)
@@ -209,7 +209,7 @@ async def create_feature_flag_override(
 async def get_feature_flag_analytics(
     flag_id: str,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     days: int = Query(30, ge=1, le=365)
 ):
     """Get usage analytics for a feature flag"""
@@ -230,18 +230,22 @@ async def get_feature_flag_analytics(
 @router.get("/modules")
 async def list_modules(
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     include_inactive: bool = Query(False)
 ):
     """List all analytics modules"""
     module_service = ModuleService(db)
     
-    # Get all modules (admin can see all)
-    query = db.query(AnalyticsModule)
-    if not include_inactive:
-        query = query.filter(AnalyticsModule.status == ModuleStatus.ACTIVE)
+    from sqlalchemy import select
     
-    modules = query.order_by(AnalyticsModule.created_at.desc()).all()
+    # Get all modules (admin can see all)
+    query = select(AnalyticsModule)
+    if not include_inactive:
+        query = query.where(AnalyticsModule.status == ModuleStatus.ACTIVE)
+    
+    query = query.order_by(AnalyticsModule.created_at.desc())
+    result = await db.execute(query)
+    modules = result.scalars().all()
     
     return {
         "modules": [
@@ -269,7 +273,7 @@ async def enable_module_for_organisation(
     module_id: str,
     request: ModuleEnableRequest,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Enable a module for an organisation"""
     module_service = ModuleService(db)
@@ -303,7 +307,7 @@ async def disable_module_for_organisation(
     module_id: str,
     organisation_id: str,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     reason: Optional[str] = Query(None)
 ):
     """Disable a module for an organisation"""
@@ -336,7 +340,7 @@ async def disable_module_for_organisation(
 async def get_module_analytics(
     module_id: str,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     organisation_id: Optional[str] = Query(None),
     days: int = Query(30, ge=1, le=365)
 ):
@@ -362,16 +366,20 @@ async def get_module_analytics(
 @router.get("/sic-codes")
 async def list_sic_codes(
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     supported_only: bool = Query(False)
 ):
     """List SIC codes"""
-    query = db.query(SICCode)
+    from sqlalchemy import select
+    
+    query = select(SICCode)
     
     if supported_only:
-        query = query.filter(SICCode.is_supported == True)
+        query = query.where(SICCode.is_supported == True)
     
-    sic_codes = query.order_by(SICCode.code).all()
+    query = query.order_by(SICCode.code)
+    result = await db.execute(query)
+    sic_codes = result.scalars().all()
     
     return {
         "sic_codes": [
@@ -394,7 +402,7 @@ async def list_sic_codes(
 @router.get("/audit-logs")
 async def get_audit_logs(
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     user_id: Optional[str] = Query(None),
     organisation_id: Optional[str] = Query(None),
     resource_type: Optional[str] = Query(None),
@@ -448,7 +456,7 @@ async def get_audit_logs(
 @router.get("/security-events")
 async def get_security_events(
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     hours: int = Query(24, ge=1, le=168)
 ):
     """Get recent security events"""
@@ -596,7 +604,7 @@ async def reset_rate_limits(
     request: RateLimitResetRequest,
     current_user: User = Depends(require_admin),
     rate_limiting_service: RateLimitingService = Depends(get_rate_limiting_service),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Reset rate limits for a specific tenant/user"""
     try:
