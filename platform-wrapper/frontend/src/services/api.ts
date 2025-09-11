@@ -4,11 +4,11 @@ import { TokenResponse, RefreshTokenRequest } from '@/types/auth'
 import { Organisation, OrganisationCreate, IndustryOption } from '@/types/api'
 
 class ApiService {
-  private client: AxiosInstance
+  private axiosClient: AxiosInstance
   private currentOrganizationId: string | null = null
 
   constructor() {
-    this.client = axios.create({
+    this.axiosClient = axios.create({
       baseURL: process.env.NEXT_PUBLIC_API_BASE_URL + '/api/v1',
       timeout: 60000, // 60 second timeout to handle Render cold starts
       withCredentials: true, // Include cookies for cross-origin requests
@@ -28,47 +28,67 @@ class ApiService {
     this.currentOrganizationId = null
   }
 
+  // Public getter to access the axios instance for special cases like file uploads/downloads
+  get client(): AxiosInstance {
+    return this.axiosClient
+  }
+
   private setupInterceptors() {
-    this.client.interceptors.request.use(
+    this.axiosClient.interceptors.request.use(
       (config) => {
-        // CRITICAL FIX: Enhanced token retrieval with multiple fallback strategies
+        // SECURITY: Environment-aware token retrieval matching auth service strategy
         let token = null
+        const isProduction = process.env.NODE_ENV === 'production'
         
-        // Strategy 1: Try localStorage first (preferred for local development)
-        try {
-          token = localStorage.getItem('access_token')
-          if (token) {
-            console.log('🔑 Token retrieved from localStorage (Strategy 1)')
-          }
-        } catch (localStorageError) {
-          console.warn('LocalStorage access failed:', localStorageError)
-        }
-        
-        // Strategy 2: Fallback to cookies
-        if (!token) {
+        if (isProduction) {
+          // PRODUCTION: Only use cookies for security (httpOnly cookies handled by backend)
           try {
             token = Cookies.get('access_token')
             if (token) {
-              console.log('🔑 Token retrieved from cookies (Strategy 2)')
+              console.log('🔑 Token retrieved from secure cookies (Production)')
             }
           } catch (cookieError) {
-            console.warn('Cookie access failed:', cookieError)
+            console.warn('Production cookie access failed:', cookieError)
           }
-        }
-        
-        // Strategy 3: Try to get token from auth service directly
-        if (!token && typeof window !== 'undefined') {
+        } else {
+          // DEVELOPMENT: Multi-strategy approach for debugging flexibility
+          
+          // Strategy 1: Try localStorage first (preferred for local development)
           try {
-            // Import auth service dynamically to avoid circular dependency
-            const authModule = require('./auth')
-            if (authModule?.authService?.getToken) {
-              token = authModule.authService.getToken()
-              if (token) {
-                console.log('🔑 Token retrieved from auth service (Strategy 3)')
-              }
+            token = localStorage.getItem('access_token')
+            if (token) {
+              console.log('🔑 Token retrieved from localStorage (Development - Strategy 1)')
             }
-          } catch (authServiceError) {
-            console.warn('Auth service token retrieval failed:', authServiceError)
+          } catch (localStorageError) {
+            console.warn('LocalStorage access failed:', localStorageError)
+          }
+          
+          // Strategy 2: Fallback to cookies
+          if (!token) {
+            try {
+              token = Cookies.get('access_token')
+              if (token) {
+                console.log('🔑 Token retrieved from cookies (Development - Strategy 2)')
+              }
+            } catch (cookieError) {
+              console.warn('Cookie access failed:', cookieError)
+            }
+          }
+          
+          // Strategy 3: Try to get token from auth service directly
+          if (!token && typeof window !== 'undefined') {
+            try {
+              // Import auth service dynamically to avoid circular dependency
+              const authModule = require('./auth')
+              if (authModule?.authService?.getToken) {
+                token = authModule.authService.getToken()
+                if (token) {
+                  console.log('🔑 Token retrieved from auth service (Development - Strategy 3)')
+                }
+              }
+            } catch (authServiceError) {
+              console.warn('Auth service token retrieval failed:', authServiceError)
+            }
           }
         }
         
@@ -77,7 +97,13 @@ class ApiService {
         const requiresAuth = !isAuthRequest && !config.url?.includes('/health') && !config.url?.includes('/cors-debug')
         
         console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`)
-        console.log(`🔐 Token Status: ${token ? `FOUND (${token.length} chars, starts with: ${token.substring(0, 20)}...)` : 'NOT FOUND'}`)
+        // SECURITY: Only log token details in development
+        const isProduction = process.env.NODE_ENV === 'production'
+        if (isProduction) {
+          console.log(`🔐 Token Status: ${token ? 'FOUND' : 'NOT FOUND'}`)
+        } else {
+          console.log(`🔐 Token Status: ${token ? `FOUND (${token.length} chars, starts with: ${token.substring(0, 20)}...)` : 'NOT FOUND'}`)
+        }
         
         if (!token && requiresAuth) {
           console.error('🚨 CRITICAL: No access token for protected endpoint!')
@@ -117,7 +143,7 @@ class ApiService {
       (error) => Promise.reject(error)
     )
 
-    this.client.interceptors.response.use(
+    this.axiosClient.interceptors.response.use(
       (response) => response,
       async (error) => {
         // PRODUCTION DEBUG: Log response errors for troubleshooting
@@ -146,17 +172,26 @@ class ApiService {
           originalRequest._retry = true
 
           try {
-            // FIXED: Prioritize localStorage for refresh token in local dev
-            let refreshToken = localStorage.getItem('refresh_token')
-            if (!refreshToken) {
+            // SECURITY: Environment-aware refresh token retrieval
+            let refreshToken = null
+            const isProduction = process.env.NODE_ENV === 'production'
+            
+            if (isProduction) {
+              // PRODUCTION: Only use cookies for security
               refreshToken = Cookies.get('refresh_token')
+            } else {
+              // DEVELOPMENT: Prioritize localStorage for debugging
+              refreshToken = localStorage.getItem('refresh_token')
+              if (!refreshToken) {
+                refreshToken = Cookies.get('refresh_token')
+              }
             }
             
             if (refreshToken) {
               const response = await this.refreshToken({ refresh_token: refreshToken })
               Cookies.set('access_token', response.access_token)
               originalRequest.headers.Authorization = `Bearer ${response.access_token}`
-              return this.client(originalRequest)
+              return this.axiosClient(originalRequest)
             }
           } catch (refreshError) {
             console.error('Token refresh failed during 401 handling:', refreshError)
@@ -185,29 +220,39 @@ class ApiService {
   }
 
   private clearTokens() {
+    // SECURITY: Environment-aware token clearing
+    const isProduction = process.env.NODE_ENV === 'production'
+    
+    // Always clear cookies
     Cookies.remove('access_token')
     Cookies.remove('refresh_token')
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
+    
+    if (!isProduction) {
+      // DEVELOPMENT: Also clear localStorage
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+    }
+    
+    console.log(`🗑️  Tokens cleared for ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} environment`)
   }
 
   async get<T>(url: string): Promise<T> {
-    const response: AxiosResponse<T> = await this.client.get(url)
+    const response: AxiosResponse<T> = await this.axiosClient.get(url)
     return response.data
   }
 
   async post<T>(url: string, data?: any): Promise<T> {
-    const response: AxiosResponse<T> = await this.client.post(url, data)
+    const response: AxiosResponse<T> = await this.axiosClient.post(url, data)
     return response.data
   }
 
   async put<T>(url: string, data?: any): Promise<T> {
-    const response: AxiosResponse<T> = await this.client.put(url, data)
+    const response: AxiosResponse<T> = await this.axiosClient.put(url, data)
     return response.data
   }
 
   async delete<T>(url: string): Promise<T> {
-    const response: AxiosResponse<T> = await this.client.delete(url)
+    const response: AxiosResponse<T> = await this.axiosClient.delete(url)
     return response.data
   }
 

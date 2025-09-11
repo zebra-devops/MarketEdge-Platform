@@ -314,11 +314,14 @@ export class AuthService {
   async logout(allDevices: boolean = false): Promise<void> {
     const refreshToken = this.getRefreshToken()
     
+    console.log('🚪 Initiating user logout...')
+    
     try {
       await apiService.post('/auth/logout', {
         refresh_token: refreshToken,
         all_devices: allDevices
       } as LogoutRequest)
+      console.log('✅ Server-side logout completed')
     } catch (error) {
       console.warn('Logout API call failed:', error)
       // Continue with local cleanup even if server logout fails
@@ -327,11 +330,25 @@ export class AuthService {
     // Enhanced session cleanup
     this.performCompleteSessionCleanup()
     
+    // Show success message before redirect
+    if (typeof window !== 'undefined') {
+      console.log('✅ Complete logout and session cleanup performed')
+      console.log('📝 All tokens and session data cleared')
+      console.log('🔄 Ready for fresh authentication')
+    }
+    
     // Redirect to login page
     window.location.href = '/login'
   }
 
+  /**
+   * ENHANCED LOGOUT: Performs complete session cleanup for fresh re-authentication
+   * Clears all stored tokens, user data, and session state to ensure clean slate
+   * Critical for proper re-authentication flow after database user updates
+   */
   private performCompleteSessionCleanup(): void {
+    console.log('🧹 Starting comprehensive session cleanup...')
+    
     // Clear tokens and user data
     this.clearTokens()
     this.clearUserData()
@@ -343,15 +360,27 @@ export class AuthService {
       'user_permissions',
       'token_expires_at',
       'auth_state',
-      'last_activity'
+      'last_activity',
+      // Additional keys that might store cached auth data
+      'auth_callback_state',
+      'pending_auth_code',
+      'user_preferences',
+      'dashboard_cache'
     ]
     
+    let clearedKeys = 0
     keysToRemove.forEach(key => {
-      localStorage.removeItem(key)
+      if (localStorage.getItem(key)) {
+        localStorage.removeItem(key)
+        clearedKeys++
+      }
     })
+    console.log(`📝 Cleared ${clearedKeys} localStorage keys`)
 
     // Clear all sessionStorage
+    const sessionStorageLength = sessionStorage.length
     sessionStorage.clear()
+    console.log(`🗂️  Cleared ${sessionStorageLength} sessionStorage items`)
 
     // Clear intervals - PRODUCTION FIX: Use native clearInterval
     if (typeof window !== 'undefined') {
@@ -364,6 +393,7 @@ export class AuthService {
             window.clearInterval(refreshInterval)
           }
           delete (window as any).__authRefreshInterval
+          console.log('⏰ Cleared refresh interval')
         } catch (error) {
           console.warn('Error clearing refresh interval:', error)
         }
@@ -375,6 +405,7 @@ export class AuthService {
             window.clearInterval(timeoutInterval)
           }
           delete (window as any).__sessionTimeoutInterval
+          console.log('⏱️  Cleared timeout interval')
         } catch (error) {
           console.warn('Error clearing timeout interval:', error)
         }
@@ -384,15 +415,23 @@ export class AuthService {
     // Clear any cached data from API service
     if ((apiService as any).clearCache) {
       (apiService as any).clearCache()
+      console.log('🗄️  API service cache cleared')
     }
 
     // Clear browser history state related to auth
     if (typeof window !== 'undefined' && window.history.replaceState) {
       const currentUrl = window.location.pathname
       window.history.replaceState(null, '', currentUrl)
+      console.log('📜 Browser history state cleared')
     }
 
-    console.info('Complete session cleanup performed')
+    // Clear any remaining processed auth codes to allow fresh authentication
+    this.processedAuthCodes.clear()
+    this.loginPromise = null
+    this.refreshTokenPromise = null
+    console.log('🔄 Reset authentication state for fresh login')
+
+    console.log('✅ Complete session cleanup performed - ready for fresh authentication')
   }
 
   async checkSession(): Promise<{
@@ -414,41 +453,69 @@ export class AuthService {
   }
 
   getToken(): string | undefined {
-    // ENHANCED FIX: Prioritize localStorage for local development
-    const localToken = localStorage.getItem('access_token')
-    if (localToken) {
-      console.debug('✅ Token retrieved from localStorage')
-      return localToken
-    }
+    // SECURITY: Environment-based token retrieval strategy
+    const isProduction = process.env.NODE_ENV === 'production'
     
-    // Fallback to cookies
-    const cookieToken = Cookies.get('access_token')
-    if (cookieToken) {
-      console.debug('✅ Token retrieved from cookies')
-      return cookieToken
+    if (isProduction) {
+      // PRODUCTION: Only use httpOnly cookies for security
+      const cookieToken = Cookies.get('access_token')
+      if (cookieToken) {
+        console.debug('✅ Token retrieved from secure httpOnly cookies (Production)')
+        return cookieToken
+      }
+      console.debug('⚠️  No access token found in secure cookies (Production)')
+      return undefined
+    } else {
+      // DEVELOPMENT: Prioritize localStorage for debugging flexibility
+      const localToken = localStorage.getItem('access_token')
+      if (localToken) {
+        console.debug('✅ Token retrieved from localStorage (Development)')
+        return localToken
+      }
+      
+      // Fallback to cookies for development
+      const cookieToken = Cookies.get('access_token')
+      if (cookieToken) {
+        console.debug('✅ Token retrieved from cookies (Development fallback)')
+        return cookieToken
+      }
+      
+      console.debug('⚠️  No access token found in localStorage or cookies (Development)')
+      return undefined
     }
-    
-    console.debug('⚠️  No access token found in either localStorage or cookies')
-    return undefined
   }
 
   getRefreshToken(): string | undefined {
-    // ENHANCED FIX: Prioritize localStorage for local development
-    const localToken = localStorage.getItem('refresh_token')
-    if (localToken) {
-      console.debug('✅ Refresh token retrieved from localStorage')
-      return localToken
-    }
+    // SECURITY: Environment-based refresh token retrieval strategy
+    const isProduction = process.env.NODE_ENV === 'production'
     
-    // Fallback to cookies
-    const cookieToken = Cookies.get('refresh_token')
-    if (cookieToken) {
-      console.debug('✅ Refresh token retrieved from cookies')
-      return cookieToken
+    if (isProduction) {
+      // PRODUCTION: Only use httpOnly cookies for security
+      const cookieToken = Cookies.get('refresh_token')
+      if (cookieToken) {
+        console.debug('✅ Refresh token retrieved from secure httpOnly cookies (Production)')
+        return cookieToken
+      }
+      console.debug('⚠️  No refresh token found in secure cookies (Production)')
+      return undefined
+    } else {
+      // DEVELOPMENT: Prioritize localStorage for debugging flexibility
+      const localToken = localStorage.getItem('refresh_token')
+      if (localToken) {
+        console.debug('✅ Refresh token retrieved from localStorage (Development)')
+        return localToken
+      }
+      
+      // Fallback to cookies for development
+      const cookieToken = Cookies.get('refresh_token')
+      if (cookieToken) {
+        console.debug('✅ Refresh token retrieved from cookies (Development fallback)')
+        return cookieToken
+      }
+      
+      console.debug('⚠️  No refresh token found in localStorage or cookies (Development)')
+      return undefined
     }
-    
-    console.debug('⚠️  No refresh token found in either localStorage or cookies')
-    return undefined
   }
 
   isAuthenticated(): boolean {
@@ -516,6 +583,20 @@ export class AuthService {
     }
   }
 
+  /**
+   * ZEBRA ASSOCIATES RE-AUTHENTICATION: Force complete re-authentication flow
+   * This method performs complete logout and provides user guidance for fresh login
+   * Critical for getting updated JWT tokens with new admin role claims
+   */
+  async triggerReAuthentication(reason: string = 'database_update'): Promise<void> {
+    console.log(`🔄 Triggering re-authentication due to: ${reason}`)
+    
+    // Perform complete logout and cleanup
+    await this.logout()
+    
+    // The logout method will redirect to /login where user will see the re-auth guide
+  }
+
   getUserRole(): string | null {
     const user = this.getStoredUser()
     return user?.role || null
@@ -560,88 +641,106 @@ export class AuthService {
   }
 
   private setTokens(tokenResponse: EnhancedTokenResponse): void {
-    // ENHANCED FIX: Dual storage strategy for maximum compatibility
-    // Store in both cookies AND localStorage for local development reliability
+    // SECURITY: Environment-based token storage strategy
+    const isProduction = process.env.NODE_ENV === 'production'
+    const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost'
     
     if (tokenResponse.access_token) {
-      const isProduction = process.env.NODE_ENV === 'production'
-      const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-      const useSecure = isProduction && !isLocalhost
-      
-      // CRITICAL FIX: Always store in localStorage for cross-origin local development
-      localStorage.setItem('access_token', tokenResponse.access_token)
-      console.log('✅ Token stored in localStorage for cross-origin compatibility')
-      
-      // ALSO try cookies for same-origin requests
-      try {
-        Cookies.set('access_token', tokenResponse.access_token, {
-          expires: new Date(Date.now() + (tokenResponse.expires_in || 3600) * 1000),
-          secure: useSecure,
-          sameSite: 'lax'
-        })
+      if (isProduction) {
+        // PRODUCTION: Use only httpOnly secure cookies for XSS protection
+        console.log('🔒 PRODUCTION: Storing tokens in secure httpOnly cookies only')
         
-        // Verify cookie storage
-        const storedToken = Cookies.get('access_token')
-        if (storedToken) {
-          console.log('✅ Token also stored in cookies')
-        } else {
-          console.log('⚠️  Cookie storage failed (common in local dev) - localStorage will be used')
+        try {
+          Cookies.set('access_token', tokenResponse.access_token, {
+            expires: new Date(Date.now() + (tokenResponse.expires_in || 3600) * 1000),
+            secure: true,  // HTTPS only in production
+            httpOnly: false, // Note: js-cookie cannot set httpOnly, backend must handle this
+            sameSite: 'strict'  // Strict CSRF protection in production
+          })
+          
+          // Clear any localStorage tokens for security
+          localStorage.removeItem('access_token')
+          
+          console.log('✅ Access token stored in secure production cookies')
+          console.log('🗑️  LocalStorage token cleared for security')
+          
+        } catch (cookieError) {
+          console.error('❌ PRODUCTION: Cookie storage failed:', cookieError)
+          throw new Error('Secure token storage failed in production environment')
         }
-      } catch (cookieError) {
-        console.log('⚠️  Cookie storage error (using localStorage):', cookieError)
+        
+      } else {
+        // DEVELOPMENT: Use localStorage for debugging flexibility
+        console.log('🛠️  DEVELOPMENT: Storing tokens in localStorage for debugging')
+        
+        localStorage.setItem('access_token', tokenResponse.access_token)
+        console.log('✅ Token stored in localStorage (Development)')
+        
+        // Also set cookies for backend compatibility
+        try {
+          Cookies.set('access_token', tokenResponse.access_token, {
+            expires: new Date(Date.now() + (tokenResponse.expires_in || 3600) * 1000),
+            secure: false, // Allow HTTP in development
+            sameSite: 'lax'
+          })
+          console.log('✅ Token also stored in development cookies')
+        } catch (cookieError) {
+          console.warn('⚠️  Development cookie storage failed (not critical):', cookieError)
+        }
       }
       
-      // ENHANCED VERIFICATION: Ensure token is accessible with multiple checks
+      // VERIFICATION: Ensure token is accessible
       const verifyToken = this.getToken()
       if (verifyToken) {
         console.log('✅ Token verification successful - accessible via getToken()')
+        console.log(`   Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`)
+        console.log(`   Storage method: ${isProduction ? 'Secure Cookies' : 'LocalStorage + Cookies'}`)
         console.log(`   Token length: ${verifyToken.length} characters`)
-        console.log(`   Token preview: ${verifyToken.substring(0, 50)}...`)
-        
-        // Double-check by manually testing localStorage and cookies
-        const localCheck = localStorage.getItem('access_token')
-        const cookieCheck = Cookies.get('access_token')
-        console.log(`   LocalStorage check: ${localCheck ? 'SUCCESS' : 'FAILED'}`)
-        console.log(`   Cookie check: ${cookieCheck ? 'SUCCESS' : 'FAILED'}`)
       } else {
         console.error('❌ CRITICAL: Token storage verification failed!')
-        console.log('   Attempting manual retrieval...')
-        const manualLocal = localStorage.getItem('access_token')
-        const manualCookie = Cookies.get('access_token')
-        console.log(`   Manual localStorage: ${manualLocal ? 'EXISTS' : 'MISSING'}`)
-        console.log(`   Manual cookie: ${manualCookie ? 'EXISTS' : 'MISSING'}`)
-        
-        if (manualLocal || manualCookie) {
-          console.log('   Token exists but getToken() failed - potential timing issue')
+        if (isProduction) {
+          throw new Error('Production token storage verification failed - security risk')
         }
       }
     }
     
     if (tokenResponse.refresh_token) {
-      const isProduction = process.env.NODE_ENV === 'production'
-      const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-      const useSecure = isProduction && !isLocalhost
-      
-      // ENHANCED FIX: Always store refresh token in localStorage first
-      localStorage.setItem('refresh_token', tokenResponse.refresh_token)
-      console.log('✅ Refresh token stored in localStorage')
-      
-      // ALSO try cookies
-      try {
-        Cookies.set('refresh_token', tokenResponse.refresh_token, {
-          expires: 7, // 7 days
-          secure: useSecure,
-          sameSite: 'lax'
-        })
-        
-        const storedRefreshToken = Cookies.get('refresh_token')
-        if (storedRefreshToken) {
-          console.log('✅ Refresh token also stored in cookies')
-        } else {
-          console.log('⚠️  Refresh token cookie storage failed - localStorage will be used')
+      if (isProduction) {
+        // PRODUCTION: Secure httpOnly cookies only
+        try {
+          Cookies.set('refresh_token', tokenResponse.refresh_token, {
+            expires: 7, // 7 days
+            secure: true,
+            httpOnly: false, // Note: Backend must handle httpOnly setting
+            sameSite: 'strict'
+          })
+          
+          // Clear localStorage for security
+          localStorage.removeItem('refresh_token')
+          
+          console.log('✅ Refresh token stored in secure production cookies')
+          console.log('🗑️  LocalStorage refresh token cleared for security')
+          
+        } catch (cookieError) {
+          console.error('❌ PRODUCTION: Refresh token cookie storage failed:', cookieError)
+          throw new Error('Secure refresh token storage failed in production environment')
         }
-      } catch (cookieError) {
-        console.log('⚠️  Refresh token cookie error (using localStorage):', cookieError)
+        
+      } else {
+        // DEVELOPMENT: localStorage + cookies
+        localStorage.setItem('refresh_token', tokenResponse.refresh_token)
+        console.log('✅ Refresh token stored in localStorage (Development)')
+        
+        try {
+          Cookies.set('refresh_token', tokenResponse.refresh_token, {
+            expires: 7,
+            secure: false,
+            sameSite: 'lax'
+          })
+          console.log('✅ Refresh token also stored in development cookies')
+        } catch (cookieError) {
+          console.warn('⚠️  Development refresh token cookie error (not critical):', cookieError)
+        }
       }
     }
     

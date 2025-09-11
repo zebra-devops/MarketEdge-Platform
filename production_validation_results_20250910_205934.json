@@ -1,0 +1,129 @@
+{
+  "summary": {
+    "total_tests": 16,
+    "passed": 16,
+    "failed": 0,
+    "warnings": 0,
+    "errors": 0,
+    "success_rate": "100.0%"
+  },
+  "test_results": [
+    {
+      "test": "Service Health Check",
+      "status": "PASS",
+      "details": "Status: healthy, Response time: 0.96s",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:27.045205"
+    },
+    {
+      "test": "Production Mode",
+      "status": "PASS",
+      "details": "Service running in production configuration",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:27.045246"
+    },
+    {
+      "test": "CORS Preflight /api/v1/admin/dashboard/stats",
+      "status": "PASS",
+      "details": "Status: 200, Origin: https://app.zebra.associates, Credentials: true",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:27.322336"
+    },
+    {
+      "test": "CORS Preflight /api/v1/admin/feature-flags",
+      "status": "PASS",
+      "details": "Status: 200, Origin: https://app.zebra.associates, Credentials: true",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:27.623155"
+    },
+    {
+      "test": "CORS Preflight /api/v1/admin/users",
+      "status": "PASS",
+      "details": "Status: 200, Origin: https://app.zebra.associates, Credentials: true",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:28.225480"
+    },
+    {
+      "test": "CORS Preflight /api/v1/admin/modules",
+      "status": "PASS",
+      "details": "Status: 200, Origin: https://app.zebra.associates, Credentials: true",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:29.119804"
+    },
+    {
+      "test": "CORS Preflight /api/v1/auth/auth0-url",
+      "status": "PASS",
+      "details": "Status: 200, Origin: https://app.zebra.associates, Credentials: true",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:29.400319"
+    },
+    {
+      "test": "CORS Preflight /api/v1/users",
+      "status": "PASS",
+      "details": "Status: 200, Origin: https://app.zebra.associates, Credentials: true",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:29.717982"
+    },
+    {
+      "test": "Auth Required /api/v1/admin/dashboard/stats",
+      "status": "PASS",
+      "details": "403 + CORS headers present (authentication working correctly)",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:30.327821"
+    },
+    {
+      "test": "Auth Required /api/v1/admin/feature-flags",
+      "status": "PASS",
+      "details": "403 + CORS headers present (authentication working correctly)",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:31.095393"
+    },
+    {
+      "test": "Auth Required /api/v1/admin/users",
+      "status": "PASS",
+      "details": "403 + CORS headers present (authentication working correctly)",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:31.431727"
+    },
+    {
+      "test": "Auth Required /api/v1/admin/modules",
+      "status": "PASS",
+      "details": "403 + CORS headers present (authentication working correctly)",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:31.752639"
+    },
+    {
+      "test": "User Provisioning",
+      "status": "PASS",
+      "details": "matt.lindop@zebra.associates exists with admin privileges",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:32.804281"
+    },
+    {
+      "test": "Frontend Call Admin Dashboard Stats",
+      "status": "PASS",
+      "details": "CORS working, needs Authorization header",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:33.829720"
+    },
+    {
+      "test": "Frontend Call Feature Flags List",
+      "status": "PASS",
+      "details": "CORS working, needs Authorization header",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:34.121717"
+    },
+    {
+      "test": "Integration Analysis",
+      "status": "PASS",
+      "details": "CORS working perfectly. 2 endpoints need JWT authentication.",
+      "expected": true,
+      "timestamp": "2025-09-10T20:59:34.121737"
+    }
+  ],
+  "timestamp": "2025-09-10T20:59:34.121849",
+  "environment": {
+    "backend_url": "https://marketedge-platform.onrender.com",
+    "frontend_origin": "https://app.zebra.associates"
+  }
+}

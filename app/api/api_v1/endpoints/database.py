@@ -3,19 +3,109 @@ Database testing and diagnostic endpoints.
 Provides endpoints for testing database connectivity, user creation flows, and debugging 500 errors.
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, status
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Dict, Any, Optional
 import logging
+import time
+from datetime import datetime, timedelta
 from app.core.database import get_db
+from app.core.config import settings
 from app.models import user as user_models, organisation as organisation_models, user_application_access
 from app.models.user import UserRole
 from app.models.user_application_access import ApplicationType, UserApplicationAccess
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, require_super_admin
 import uuid
 
 logger = logging.getLogger(__name__)
+
+# Rate limiting storage for emergency endpoints
+emergency_endpoint_access = {}
+EMERGENCY_RATE_LIMIT_PER_HOUR = 10
+EMERGENCY_RATE_LIMIT_WINDOW = 3600  # 1 hour in seconds
+
+def check_emergency_rate_limit(user_id: str, endpoint: str) -> bool:
+    """Check if user is within rate limits for emergency endpoints"""
+    current_time = time.time()
+    key = f"{user_id}:{endpoint}"
+    
+    if key not in emergency_endpoint_access:
+        emergency_endpoint_access[key] = []
+    
+    # Clean old entries
+    emergency_endpoint_access[key] = [
+        timestamp for timestamp in emergency_endpoint_access[key]
+        if current_time - timestamp < EMERGENCY_RATE_LIMIT_WINDOW
+    ]
+    
+    # Check rate limit
+    if len(emergency_endpoint_access[key]) >= EMERGENCY_RATE_LIMIT_PER_HOUR:
+        return False
+    
+    # Record this access
+    emergency_endpoint_access[key].append(current_time)
+    return True
+
+def log_security_event(event_type: str, user_id: str, endpoint: str, details: Dict[str, Any]):
+    """Log security events for emergency endpoint access"""
+    logger.warning(
+        f"SECURITY EVENT: {event_type}",
+        extra={
+            "event": event_type,
+            "user_id": user_id,
+            "endpoint": endpoint,
+            "timestamp": datetime.utcnow().isoformat(),
+            "details": details,
+            "environment": settings.ENVIRONMENT
+        }
+    )
+
+def check_production_emergency_access(current_user, endpoint: str) -> bool:
+    """Check if emergency endpoint access is allowed in production"""
+    if not settings.is_production:
+        return True
+    
+    # In production, only allow access for specific authorized user
+    if current_user.email != "matt.lindop@zebra.associates":
+        log_security_event(
+            "UNAUTHORIZED_EMERGENCY_ACCESS_ATTEMPT",
+            str(current_user.id),
+            endpoint,
+            {
+                "user_email": current_user.email,
+                "user_role": current_user.role.value,
+                "reason": "Emergency endpoint access denied in production for non-authorized user"
+            }
+        )
+        return False
+    
+    # Check rate limiting
+    if not check_emergency_rate_limit(str(current_user.id), endpoint):
+        log_security_event(
+            "EMERGENCY_RATE_LIMIT_EXCEEDED",
+            str(current_user.id),
+            endpoint,
+            {
+                "user_email": current_user.email,
+                "reason": f"Rate limit exceeded: {EMERGENCY_RATE_LIMIT_PER_HOUR} requests per hour"
+            }
+        )
+        return False
+    
+    # Log authorized access
+    log_security_event(
+        "AUTHORIZED_EMERGENCY_ACCESS",
+        str(current_user.id),
+        endpoint,
+        {
+            "user_email": current_user.email,
+            "user_role": current_user.role.value,
+            "reason": "Authorized emergency access granted"
+        }
+    )
+    
+    return True
 
 router = APIRouter()
 
@@ -196,10 +286,18 @@ async def test_database_transaction(
 
 @router.post("/emergency-admin-setup")
 async def emergency_admin_setup(
-    db: Session = Depends(get_db)
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: user_models.User = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """
     EMERGENCY: Set up admin privileges for matt.lindop@zebra.associates
+    
+    SECURITY: This endpoint is secured in production and requires:
+    - Valid authentication token
+    - Admin role or authorized user (matt.lindop@zebra.associates)
+    - Rate limiting (10 requests per hour)
+    - Comprehensive security logging
     
     This endpoint:
     1. Finds the user matt.lindop@zebra.associates
@@ -211,6 +309,33 @@ async def emergency_admin_setup(
     Uses direct SQL to avoid SQLAlchemy enum issues.
     """
     try:
+        # SECURITY CHECK: Validate production access
+        if not check_production_emergency_access(current_user, "emergency-admin-setup"):
+            if settings.is_production:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Not found"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Emergency endpoint access denied"
+                )
+        
+        # SECURITY LOG: Record emergency endpoint access
+        logger.warning(
+            "EMERGENCY ENDPOINT ACCESS: emergency-admin-setup",
+            extra={
+                "event": "emergency_admin_setup_access",
+                "user_id": str(current_user.id),
+                "user_email": current_user.email,
+                "user_role": current_user.role.value,
+                "endpoint": "/api/v1/database/emergency-admin-setup",
+                "timestamp": datetime.utcnow().isoformat(),
+                "environment": settings.ENVIRONMENT,
+                "ip_address": request.client.host if request.client else "unknown"
+            }
+        )
         admin_email = "matt.lindop@zebra.associates"
         logger.info(f"🚨 EMERGENCY: Setting up admin privileges for {admin_email}")
         
@@ -446,9 +571,29 @@ async def verify_admin_access(
 
 
 @router.post("/emergency/seed-modules-feature-flags")
-async def emergency_seed_modules_feature_flags(db: Session = Depends(get_db)):
-    """EMERGENCY: Seed missing modules and feature flags for £925K Zebra Associates"""
+async def emergency_seed_modules_feature_flags(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: user_models.User = Depends(get_current_user)
+):
+    """EMERGENCY: Seed missing modules and feature flags for £925K Zebra Associates
+    
+    SECURITY: This endpoint is secured in production and requires valid authentication.
+    """
     try:
+        # SECURITY CHECK: Validate production access
+        if not check_production_emergency_access(current_user, "emergency/seed-modules-feature-flags"):
+            if settings.is_production:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Not found"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Emergency endpoint access denied"
+                )
+        
         logger.info("🚨 EMERGENCY: Seeding modules and feature flags for Zebra Associates")
         
         # Create feature flags if table exists
@@ -542,9 +687,29 @@ async def emergency_seed_modules_feature_flags(db: Session = Depends(get_db)):
 
 
 @router.post("/emergency/create-feature-flags-table")
-async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
-    """EMERGENCY: Create missing feature_flags table for £925K Zebra Associates"""
+async def emergency_create_feature_flags_table(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: user_models.User = Depends(get_current_user)
+):
+    """EMERGENCY: Create missing feature_flags table for £925K Zebra Associates
+    
+    SECURITY: This endpoint is secured in production and requires valid authentication.
+    """
     try:
+        # SECURITY CHECK: Validate production access
+        if not check_production_emergency_access(current_user, "emergency/create-feature-flags-table"):
+            if settings.is_production:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Not found"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Emergency endpoint access denied"
+                )
+        
         logger.info("🚨 EMERGENCY: Creating missing feature_flags table for matt.lindop@zebra.associates")
         
         created_objects = []
@@ -680,9 +845,29 @@ async def emergency_create_feature_flags_table(db: Session = Depends(get_db)):
         )
 
 @router.post("/emergency/fix-enum-case-mismatch")
-async def emergency_fix_enum_case_mismatch(db: Session = Depends(get_db)):
-    """EMERGENCY: Fix application enum case mismatch for £925K Zebra Associates"""
+async def emergency_fix_enum_case_mismatch(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: user_models.User = Depends(get_current_user)
+):
+    """EMERGENCY: Fix application enum case mismatch for £925K Zebra Associates
+    
+    SECURITY: This endpoint is secured in production and requires valid authentication.
+    """
     try:
+        # SECURITY CHECK: Validate production access
+        if not check_production_emergency_access(current_user, "emergency/fix-enum-case-mismatch"):
+            if settings.is_production:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Not found"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Emergency endpoint access denied"
+                )
+        
         logger.info("🚨 EMERGENCY: Fixing application enum case mismatch...")
         
         # Apply the critical enum case fix

@@ -155,17 +155,12 @@ export default function BulkUserImport({ organisationId, onImportComplete }: Bul
 
   const downloadTemplate = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${organisationId}/users/import/template`, {
-        headers: {
-          'Authorization': `Bearer ${currentUser?.access_token}`,
-        },
+      // Use apiService.client to access the underlying axios instance for blob handling
+      const response = await apiService.client.get(`/organizations/${organisationId}/users/import/template`, {
+        responseType: 'blob'
       })
       
-      if (!response.ok) {
-        throw new Error('Failed to download template')
-      }
-      
-      const blob = await response.blob()
+      const blob = response.data
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -176,9 +171,15 @@ export default function BulkUserImport({ organisationId, onImportComplete }: Bul
       document.body.removeChild(a)
       
       toast.success('Template downloaded successfully')
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to download template:', error)
-      toast.error('Failed to download template')
+      if (error.response?.status === 403) {
+        toast.error('Access denied: Admin privileges required')
+      } else if (error.response?.status === 401) {
+        toast.error('Authentication required: Please log in again')
+      } else {
+        toast.error('Failed to download template')
+      }
     }
   }
 
@@ -191,20 +192,14 @@ export default function BulkUserImport({ organisationId, onImportComplete }: Bul
       const formData = new FormData()
       formData.append('file', selectedFile)
       
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${organisationId}/users/import/preview`, {
-        method: 'POST',
+      // Use apiService.client to access the underlying axios instance for FormData handling
+      const response = await apiService.client.post(`/organizations/${organisationId}/users/import/preview`, formData, {
         headers: {
-          'Authorization': `Bearer ${currentUser?.access_token}`,
+          'Content-Type': 'multipart/form-data',
         },
-        body: formData,
       })
       
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Validation failed')
-      }
-      
-      const validationResult: ImportPreviewResponse = await response.json()
+      const validationResult: ImportPreviewResponse = response.data
       setPreviewData(validationResult)
       
       if (validationResult.is_valid) {
@@ -214,7 +209,13 @@ export default function BulkUserImport({ organisationId, onImportComplete }: Bul
       }
     } catch (error: any) {
       console.error('Validation failed:', error)
-      toast.error(error.message || 'File validation failed')
+      if (error.response?.status === 403) {
+        toast.error('Access denied: Admin privileges required')
+      } else if (error.response?.status === 401) {
+        toast.error('Authentication required: Please log in again')
+      } else {
+        toast.error(error.response?.data?.detail || error.message || 'File validation failed')
+      }
     } finally {
       setIsValidating(false)
     }
@@ -229,29 +230,19 @@ export default function BulkUserImport({ organisationId, onImportComplete }: Bul
       const formData = new FormData()
       formData.append('file', selectedFile)
       
-      const importRequest = {
-        send_invitations: sendInvitations,
-        skip_duplicates: skipDuplicates,
-        default_role: 'viewer'
-      }
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/organizations/${organisationId}/users/import?${new URLSearchParams({
+      const params = new URLSearchParams({
         send_invitations: sendInvitations.toString(),
         skip_duplicates: skipDuplicates.toString(),
-      })}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${currentUser?.access_token}`,
-        },
-        body: formData,
       })
       
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Import failed')
-      }
+      // Use apiService.client to access the underlying axios instance for FormData handling
+      const response = await apiService.client.post(`/organizations/${organisationId}/users/import?${params}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
       
-      const batchResult: ImportBatchResponse = await response.json()
+      const batchResult: ImportBatchResponse = response.data
       setImportBatch(batchResult)
       
       toast.success('Import started! Processing in background...')
@@ -261,7 +252,13 @@ export default function BulkUserImport({ organisationId, onImportComplete }: Bul
       
     } catch (error: any) {
       console.error('Import failed:', error)
-      toast.error(error.message || 'Import failed')
+      if (error.response?.status === 403) {
+        toast.error('Access denied: Admin privileges required')
+      } else if (error.response?.status === 401) {
+        toast.error('Authentication required: Please log in again')
+      } else {
+        toast.error(error.response?.data?.detail || error.message || 'Import failed')
+      }
     } finally {
       setIsUploading(false)
     }

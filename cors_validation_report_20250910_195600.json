@@ -1,0 +1,216 @@
+{
+  "report_metadata": {
+    "timestamp": "2025-09-10T19:56:00.943895",
+    "total_execution_time": 5.221,
+    "test_environment": "production",
+    "base_url": "https://marketedge-platform.onrender.com",
+    "test_origin": "https://app.zebra.associates",
+    "business_context": "\u00a3925K Zebra Associates opportunity validation"
+  },
+  "summary": {
+    "total_tests": 8,
+    "passed": 0,
+    "failed": 8,
+    "warnings": 0,
+    "pass_rate": 0.0,
+    "critical_tests": 7,
+    "critical_passed": 0,
+    "critical_pass_rate": 0.0,
+    "avg_response_time": 0.151,
+    "business_ready": false
+  },
+  "cors_analysis": {
+    "cors_enabled_endpoints": 0,
+    "total_cors_tests": 6,
+    "cors_header_coverage": {},
+    "zebra_associates_origin_supported": 0,
+    "credentials_support": 0,
+    "cors_status": "ISSUES_DETECTED"
+  },
+  "authentication_analysis": {
+    "total_auth_endpoints": 4,
+    "proper_auth_rejection": 0,
+    "auth_401_responses": 0,
+    "auth_403_responses": 0,
+    "auth_endpoints_with_cors": 0,
+    "authentication_status": "MISCONFIGURED",
+    "issue_analysis": {
+      "cors_blocking_auth": 4,
+      "missing_jwt_tokens": "Admin endpoints properly reject unauthenticated requests",
+      "root_cause": "Authentication required - CORS working correctly"
+    }
+  },
+  "detailed_results": [
+    {
+      "test_name": "cors_preflight_admin_dashboard",
+      "description": "CORS preflight for admin dashboard stats - CRITICAL for Zebra Associates",
+      "endpoint": "/api/v1/admin/dashboard/stats",
+      "method": "OPTIONS",
+      "result": "FAIL",
+      "status_code": 0,
+      "execution_time": 0.195,
+      "critical": true,
+      "cors_headers_present": {},
+      "error_message": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "response_sample": null
+    },
+    {
+      "test_name": "cors_actual_admin_dashboard",
+      "description": "Actual CORS request for admin dashboard - tests authentication requirement",
+      "endpoint": "/api/v1/admin/dashboard/stats",
+      "method": "GET",
+      "result": "FAIL",
+      "status_code": 0,
+      "execution_time": 0.141,
+      "critical": true,
+      "cors_headers_present": {},
+      "error_message": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "response_sample": null
+    },
+    {
+      "test_name": "cors_test_endpoint",
+      "description": "Dedicated CORS test endpoint verification",
+      "endpoint": "/cors-test",
+      "method": "GET",
+      "result": "FAIL",
+      "status_code": 0,
+      "execution_time": 0.14,
+      "critical": true,
+      "cors_headers_present": {},
+      "error_message": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "response_sample": null
+    },
+    {
+      "test_name": "service_health_check",
+      "description": "Service availability and health check",
+      "endpoint": "/health",
+      "method": "GET",
+      "result": "FAIL",
+      "status_code": 0,
+      "execution_time": 0.146,
+      "critical": true,
+      "cors_headers_present": {},
+      "error_message": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "response_sample": null
+    },
+    {
+      "test_name": "system_status_check",
+      "description": "System status and route verification",
+      "endpoint": "/system/status",
+      "method": "GET",
+      "result": "FAIL",
+      "status_code": 0,
+      "execution_time": 0.142,
+      "critical": false,
+      "cors_headers_present": {},
+      "error_message": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "response_sample": null
+    },
+    {
+      "test_name": "auth_endpoint_cors",
+      "description": "Authentication endpoint CORS validation",
+      "endpoint": "/api/v1/auth/me",
+      "method": "GET",
+      "result": "FAIL",
+      "status_code": 0,
+      "execution_time": 0.149,
+      "critical": true,
+      "cors_headers_present": {},
+      "error_message": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "response_sample": null
+    },
+    {
+      "test_name": "admin_feature_flags_cors",
+      "description": "Admin feature flags endpoint CORS",
+      "endpoint": "/api/v1/admin/feature-flags",
+      "method": "GET",
+      "result": "FAIL",
+      "status_code": 0,
+      "execution_time": 0.145,
+      "critical": true,
+      "cors_headers_present": {},
+      "error_message": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "response_sample": null
+    },
+    {
+      "test_name": "admin_modules_cors",
+      "description": "Admin modules endpoint CORS",
+      "endpoint": "/api/v1/admin/modules",
+      "method": "GET",
+      "result": "FAIL",
+      "status_code": 0,
+      "execution_time": 0.152,
+      "critical": true,
+      "cors_headers_present": {},
+      "error_message": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "response_sample": null
+    }
+  ],
+  "critical_failures": [
+    {
+      "test_name": "cors_preflight_admin_dashboard",
+      "endpoint": "/api/v1/admin/dashboard/stats",
+      "status_code": 0,
+      "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "impact": "BLOCKS \u00a3925K OPPORTUNITY"
+    },
+    {
+      "test_name": "cors_actual_admin_dashboard",
+      "endpoint": "/api/v1/admin/dashboard/stats",
+      "status_code": 0,
+      "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "impact": "BLOCKS \u00a3925K OPPORTUNITY"
+    },
+    {
+      "test_name": "cors_test_endpoint",
+      "endpoint": "/cors-test",
+      "status_code": 0,
+      "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "impact": "BLOCKS \u00a3925K OPPORTUNITY"
+    },
+    {
+      "test_name": "service_health_check",
+      "endpoint": "/health",
+      "status_code": 0,
+      "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "impact": "BLOCKS \u00a3925K OPPORTUNITY"
+    },
+    {
+      "test_name": "auth_endpoint_cors",
+      "endpoint": "/api/v1/auth/me",
+      "status_code": 0,
+      "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "impact": "BLOCKS \u00a3925K OPPORTUNITY"
+    },
+    {
+      "test_name": "admin_feature_flags_cors",
+      "endpoint": "/api/v1/admin/feature-flags",
+      "status_code": 0,
+      "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "impact": "BLOCKS \u00a3925K OPPORTUNITY"
+    },
+    {
+      "test_name": "admin_modules_cors",
+      "endpoint": "/api/v1/admin/modules",
+      "status_code": 0,
+      "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "impact": "BLOCKS \u00a3925K OPPORTUNITY"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "category": "AUTHENTICATION",
+      "title": "Unexpected Authentication Responses",
+      "description": "Found 4 endpoints with unexpected auth behavior",
+      "action": "Review authentication middleware configuration"
+    },
+    {
+      "priority": "CRITICAL",
+      "category": "BUSINESS_IMPACT",
+      "title": "\u00a3925K Opportunity Status",
+      "description": "CORS is functional. Authentication system ready. Need valid JWT tokens for frontend.",
+      "action": "1. Generate valid JWT tokens for matt.lindop@zebra.associates 2. Provide tokens to frontend 3. Test complete user journey"
+    }
+  ]
+}

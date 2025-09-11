@@ -103,16 +103,25 @@ export default function LoginPage() {
   }
 
   const clearSession = () => {
+    console.log('🧹 User requested session clearing...')
+    
     // Clear any stored tokens
     localStorage.clear()
     sessionStorage.clear()
+    
     // Clear URL parameters
     window.history.replaceState({}, document.title, window.location.pathname)
+    
     // Reset refs
     processedCodeRef.current = null
     isProcessingRef.current = false
     setIsProcessingCallback(false)
-    toast.success('Session cleared. Try logging in again.')
+    
+    console.log('✅ Manual session cleanup completed')
+    console.log('📝 All browser storage cleared')
+    console.log('🔄 Ready for fresh authentication attempt')
+    
+    toast.success('Session cleared! Ready for fresh login with updated permissions.')
   }
 
   if (isProcessingCallback) {
@@ -136,6 +145,17 @@ export default function LoginPage() {
           <p className="mt-2 text-center text-sm text-gray-600">
             Access your business intelligence tools
           </p>
+          
+          {/* Re-authentication guidance */}
+          <div className="mt-4 p-4 bg-blue-50 rounded-md border border-blue-200">
+            <div className="text-sm text-blue-800">
+              <p className="font-semibold">🔄 Need to refresh your permissions?</p>
+              <p className="mt-1">
+                If you've recently had your account updated, click "Clear Session" first, 
+                then sign in again to get fresh tokens with your latest permissions.
+              </p>
+            </div>
+          </div>
         </div>
         <div className="mt-8 space-y-6">
           <div className="rounded-md shadow-sm space-y-3">
@@ -149,10 +169,10 @@ export default function LoginPage() {
             </Button>
             <Button
               onClick={clearSession}
-              className="group relative w-full flex justify-center py-2 px-4 text-sm font-medium rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+              className="group relative w-full flex justify-center py-2 px-4 text-sm font-medium rounded-md bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-300"
               size="sm"
             >
-              Clear Session & Get Fresh Code
+              🔄 Clear Session & Refresh Permissions
             </Button>
           </div>
         </div>
