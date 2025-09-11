@@ -181,8 +181,8 @@ def require_role(required_roles: List[UserRole]):
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """Require admin role"""
-    if current_user.role != UserRole.admin:
+    """Require admin role (admin or super_admin)"""
+    if current_user.role not in [UserRole.admin, UserRole.super_admin]:
         logger.warning("Admin role required", extra={
             "event": "auth_admin_required",
             "user_id": str(current_user.id),
@@ -197,7 +197,7 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
 
 async def require_super_admin(current_user: User = Depends(get_current_user)) -> User:
     """Require super admin role for cross-tenant operations"""
-    if current_user.role != UserRole.admin:
+    if current_user.role != UserRole.super_admin:
         logger.warning("Super admin role required", extra={
             "event": "auth_super_admin_required",
             "user_id": str(current_user.id),
