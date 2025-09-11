@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Security Test</title>
+</head>
+<body>
+    <h1>Production Security Validation</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Test frontend security configuration
+        function testProductionSecurity() {
+            const results = document.getElementById('results');
+            let testResults = [];
+            
+            // Test 1: Check if we're in production environment
+            const isProduction = window.location.hostname !== 'localhost';
+            testResults.push(`Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+            
+            // Test 2: Check localStorage for tokens (should be empty in production)
+            const localStorageToken = localStorage.getItem('access_token');
+            const localStorageRefreshToken = localStorage.getItem('refresh_token');
+            testResults.push(`localStorage access_token: ${localStorageToken ? 'FOUND (SECURITY RISK)' : 'NOT FOUND (SECURE)'}`);
+            testResults.push(`localStorage refresh_token: ${localStorageRefreshToken ? 'FOUND (SECURITY RISK)' : 'NOT FOUND (SECURE)'}`);
+            
+            // Test 3: Check cookies (can only see non-httpOnly cookies)
+            const documentCookies = document.cookie;
+            testResults.push(`Document cookies visible: ${documentCookies || 'NONE'}`);
+            
+            // Test 4: Test CORS headers
+            testResults.push(`Origin: ${window.location.origin}`);
+            testResults.push(`Referrer Policy: ${document.referrerPolicy || 'DEFAULT'}`);
+            
+            // Test 5: Check security headers via inspection
+            testResults.push(`HTTPS: ${window.location.protocol === 'https:' ? 'YES (SECURE)' : 'NO (INSECURE)'}`);
+            
+            // Display results
+            results.innerHTML = testResults.map(result => `<p>${result}</p>`).join('');
+            
+            // Test 6: Attempt to access backend health endpoint
+            fetch('https://marketedge-platform.onrender.com/health')
+                .then(response => {
+                    testResults.push(`Backend health check: ${response.status === 200 ? 'SUCCESS' : 'FAILED'}`);
+                    results.innerHTML = testResults.map(result => `<p>${result}</p>`).join('');
+                })
+                .catch(error => {
+                    testResults.push(`Backend health check: ERROR - ${error.message}`);
+                    results.innerHTML = testResults.map(result => `<p>${result}</p>`).join('');
+                });
+        }
+        
+        // Run tests on load
+        window.onload = testProductionSecurity;
+    </script>
+</body>
+</html>

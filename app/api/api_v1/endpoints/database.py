@@ -518,7 +518,7 @@ async def verify_admin_access(
             UserApplicationAccess.has_access == True
         ).all()
         
-        accessible_apps = [access.application_type for access in user_app_access]
+        accessible_apps = [access.application for access in user_app_access]
         
         # Verify Epic access requirements
         epic_access_check = {
