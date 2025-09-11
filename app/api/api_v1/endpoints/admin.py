@@ -9,7 +9,7 @@ from ....core.database import get_db, get_async_db
 from ....auth.dependencies import get_current_user, require_admin
 from ....models.user import User
 from ....models.feature_flags import FeatureFlag, FeatureFlagOverride
-from ....models.modules import AnalyticsModule, OrganisationModule
+from ....models.modules import AnalyticsModule, OrganisationModule, ModuleStatus
 from ....models.audit_log import AuditLog, AdminAction
 from ....models.sectors import SICCode
 from ....services.feature_flag_service import FeatureFlagService
@@ -239,7 +239,7 @@ async def list_modules(
     # Get all modules (admin can see all)
     query = db.query(AnalyticsModule)
     if not include_inactive:
-        query = query.filter(AnalyticsModule.status == "active")
+        query = query.filter(AnalyticsModule.status == ModuleStatus.ACTIVE)
     
     modules = query.order_by(AnalyticsModule.created_at.desc()).all()
     
@@ -497,7 +497,7 @@ async def get_admin_dashboard_stats(
     
     # Get module counts
     total_modules = db.query(AnalyticsModule).count()
-    active_modules = db.query(AnalyticsModule).filter(AnalyticsModule.status == "active").count()
+    active_modules = db.query(AnalyticsModule).filter(AnalyticsModule.status == ModuleStatus.ACTIVE).count()
     
     # Get recent activity (last 24 hours)
     recent_logs = db.query(AuditLog).filter(
