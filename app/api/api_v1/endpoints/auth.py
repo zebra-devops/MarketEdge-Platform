@@ -641,33 +641,44 @@ async def login(
         tenant_id=str(user.organisation_id)
     )
     
-    # Set secure HTTP-only cookies for tokens with production-ready settings
-    cookie_settings = settings.get_cookie_settings()
+    # US-AUTH-1: Differentiated cookie settings for access and refresh tokens
+    base_cookie_settings = settings.get_cookie_settings()
+    
+    # Access token: Make accessible to frontend JavaScript (httpOnly: False)
+    access_cookie_settings = base_cookie_settings.copy()
+    access_cookie_settings["httponly"] = False  # Allow frontend access
     
     response.set_cookie(
         key="access_token",
         value=access_token,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert minutes to seconds
-        **cookie_settings
+        **access_cookie_settings
     )
+    
+    # Refresh token: Keep secure (httpOnly: True)
+    refresh_cookie_settings = base_cookie_settings.copy()
+    refresh_cookie_settings["httponly"] = True  # Keep secure
     
     response.set_cookie(
         key="refresh_token", 
         value=refresh_token,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,  # Convert days to seconds
-        **cookie_settings
+        **refresh_cookie_settings
     )
     
-    # Set additional security cookies
+    # Session security cookie: Keep secure (httpOnly: True)
+    session_cookie_settings = base_cookie_settings.copy()
+    session_cookie_settings["httponly"] = True  # Keep secure
+    
     response.set_cookie(
         key="session_security",
         value="verified",
         max_age=settings.SESSION_TIMEOUT_MINUTES * 60,
-        **cookie_settings
+        **session_cookie_settings
     )
     
     # CSRF protection cookie (readable by JS for CSRF token)
-    csrf_cookie_settings = cookie_settings.copy()
+    csrf_cookie_settings = base_cookie_settings.copy()
     csrf_cookie_settings["httponly"] = False  # Allow JS access for CSRF protection
     response.set_cookie(
         key="csrf_token",
@@ -795,33 +806,44 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
         token_family=token_family
     )
     
-    # Update secure cookies with production-ready settings
-    cookie_settings = settings.get_cookie_settings()
+    # US-AUTH-1: Differentiated cookie settings for access and refresh tokens
+    base_cookie_settings = settings.get_cookie_settings()
+    
+    # Access token: Make accessible to frontend JavaScript (httpOnly: False)
+    access_cookie_settings = base_cookie_settings.copy()
+    access_cookie_settings["httponly"] = False  # Allow frontend access
     
     response.set_cookie(
         key="access_token",
         value=new_access_token,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        **cookie_settings
+        **access_cookie_settings
     )
+    
+    # Refresh token: Keep secure (httpOnly: True)
+    refresh_cookie_settings = base_cookie_settings.copy()
+    refresh_cookie_settings["httponly"] = True  # Keep secure
     
     response.set_cookie(
         key="refresh_token",
         value=new_refresh_token,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
-        **cookie_settings
+        **refresh_cookie_settings
     )
     
-    # Update session security cookie
+    # Session security cookie: Keep secure (httpOnly: True)
+    session_cookie_settings = base_cookie_settings.copy()
+    session_cookie_settings["httponly"] = True  # Keep secure
+    
     response.set_cookie(
         key="session_security",
         value="verified",
         max_age=settings.SESSION_TIMEOUT_MINUTES * 60,
-        **cookie_settings
+        **session_cookie_settings
     )
     
     # Update CSRF token
-    csrf_cookie_settings = cookie_settings.copy()
+    csrf_cookie_settings = base_cookie_settings.copy()
     csrf_cookie_settings["httponly"] = False
     response.set_cookie(
         key="csrf_token",
