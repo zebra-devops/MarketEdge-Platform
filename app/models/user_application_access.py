@@ -31,7 +31,7 @@ class UserApplicationAccess(Base):
     __tablename__ = "user_application_access"
     
     user_id: Mapped[uuid.UUID] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=False)
-    application: Mapped[str] = mapped_column(String(50), nullable=False)
+    application: Mapped[str] = mapped_column("application", String(50), nullable=False)
     has_access: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     granted_by: Mapped[uuid.UUID] = mapped_column(CompatibleUUID(), ForeignKey("users.id"), nullable=True)
     granted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
