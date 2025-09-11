@@ -8,7 +8,7 @@ from ..models.organisation import Organisation
 from .jwt import verify_token, extract_tenant_context_from_token, should_refresh_token
 from ..core.logging import logger
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)  # Disable auto_error to handle manually
 
 
 async def get_current_user(
@@ -23,12 +23,17 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
+    # Handle missing Authorization header with proper 401 status
     if not credentials:
         logger.warning("No credentials provided", extra={
             "event": "auth_no_credentials",
             "path": request.url.path
         })
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
     # Verify token with enhanced validation
     payload = verify_token(credentials.credentials, expected_type="access")
