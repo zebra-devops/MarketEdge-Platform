@@ -8,9 +8,40 @@ from ..core.database import get_db, get_async_db
 from ..models.user import User, UserRole
 from ..models.organisation import Organisation
 from .jwt import verify_token, extract_tenant_context_from_token, should_refresh_token
+from ..auth.auth0 import auth0_client
+from ..core.config import settings
 from ..core.logging import logger
+import httpx
 
 security = HTTPBearer(auto_error=False)  # Disable auto_error to handle manually
+
+async def verify_auth0_token(token: str) -> Optional[Dict[str, Any]]:
+    """Verify Auth0 token directly by calling Auth0 userinfo endpoint"""
+    try:
+        # Get user info from Auth0 using the token
+        user_info = await auth0_client.get_user_info(token)
+        if not user_info:
+            logger.warning("Failed to verify Auth0 token - no user info returned")
+            return None
+        
+        # Extract relevant claims from Auth0 user info
+        # Auth0 tokens have different structure than internal tokens
+        return {
+            "sub": user_info.get("sub"),
+            "email": user_info.get("email"), 
+            "user_role": user_info.get("user_role", "viewer"),
+            "role": user_info.get("user_role", "viewer"),  # For compatibility
+            "organisation_id": user_info.get("organisation_id"),
+            "tenant_id": user_info.get("organisation_id"),  # For compatibility
+            "type": "auth0_access",  # Distinguish from internal tokens
+            "iss": user_info.get("iss", f"https://{settings.AUTH0_DOMAIN}/"),
+            "aud": [f"https://{settings.AUTH0_DOMAIN}/userinfo"],
+            "permissions": user_info.get("permissions", [])
+        }
+        
+    except Exception as e:
+        logger.warning(f"Auth0 token verification failed: {e}")
+        return None
 
 
 async def get_current_user(
@@ -39,12 +70,28 @@ async def get_current_user(
     
     # Verify token with enhanced validation
     payload = verify_token(credentials.credentials, expected_type="access")
+    
+    # CRITICAL FIX: Fallback to Auth0 token verification if internal JWT fails
+    # This supports Matt.Lindop's Auth0 tokens for the £925K Zebra opportunity
     if payload is None:
-        logger.warning("Token verification failed", extra={
-            "event": "auth_token_invalid",
+        logger.info("Internal JWT verification failed, trying Auth0 token verification", extra={
+            "event": "auth_fallback_to_auth0",
             "path": request.url.path
         })
-        raise credentials_exception
+        
+        payload = await verify_auth0_token(credentials.credentials)
+        if payload is None:
+            logger.warning("Both internal JWT and Auth0 token verification failed", extra={
+                "event": "auth_token_invalid_both",
+                "path": request.url.path
+            })
+            raise credentials_exception
+        else:
+            logger.info("Auth0 token verification successful", extra={
+                "event": "auth0_token_verified",
+                "path": request.url.path,
+                "user_email": payload.get("email")
+            })
     
     user_id: str = payload.get("sub")
     tenant_id: str = payload.get("tenant_id")
@@ -259,10 +306,13 @@ def get_current_user_sync(
     
     # Verify token with enhanced validation
     payload = verify_token(credentials.credentials, expected_type="access")
+    
+    # NOTE: Sync version doesn't support Auth0 fallback - use async endpoints for Auth0 tokens
     if payload is None:
-        logger.warning("Token verification failed", extra={
-            "event": "auth_token_invalid",
-            "path": request.url.path
+        logger.warning("Token verification failed in sync context", extra={
+            "event": "auth_token_invalid_sync",
+            "path": request.url.path,
+            "note": "Use async endpoints for Auth0 token support"
         })
         raise credentials_exception
     
