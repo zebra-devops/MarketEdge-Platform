@@ -35,10 +35,9 @@ app = FastAPI(
     root_path="",
 )
 
-# Add middleware in correct order for CORS to work
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
-app.add_middleware(ErrorHandlerMiddleware)
-app.add_middleware(LoggingMiddleware)
+# CRITICAL FIX: CORSMiddleware MUST be added FIRST for error responses to have CORS headers
+# In FastAPI/Starlette, middleware executes in REVERSE order during response processing
+# This ensures CORS headers are added to ALL responses, including 500 errors
 
 # Comprehensive CORS configuration for production deployment
 allowed_origins = []
@@ -66,6 +65,8 @@ for origin in critical_origins:
         allowed_origins.append(origin)
 
 logger.info(f"FastAPI CORSMiddleware configured with origins: {allowed_origins}")
+
+# Add CORS middleware FIRST (runs last in response chain)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -75,6 +76,11 @@ app.add_middleware(
     expose_headers=["Content-Type", "Authorization", "X-Tenant-ID"],
     max_age=600,
 )
+
+# Add other middleware AFTER CORS
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+app.add_middleware(ErrorHandlerMiddleware)
+app.add_middleware(LoggingMiddleware)
 
 # Include full API router with Epic 1 and Epic 2 endpoints - CRITICAL FOR £925K OPPORTUNITY
 logger.info(f"🎯 Including API router with prefix: {settings.API_V1_STR}")
