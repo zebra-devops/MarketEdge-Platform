@@ -9,6 +9,7 @@ import uuid
 
 class UserRole(str, enum.Enum):
     """Legacy user roles - maintained for backward compatibility"""
+    super_admin = "super_admin"
     admin = "admin"
     analyst = "analyst"
     viewer = "viewer"
@@ -16,6 +17,7 @@ class UserRole(str, enum.Enum):
 
 # Mapping between legacy and enhanced roles
 LEGACY_TO_ENHANCED_ROLE_MAPPING = {
+    UserRole.super_admin: EnhancedUserRole.super_admin,
     UserRole.admin: EnhancedUserRole.org_admin,
     UserRole.analyst: EnhancedUserRole.user,
     UserRole.viewer: EnhancedUserRole.viewer,

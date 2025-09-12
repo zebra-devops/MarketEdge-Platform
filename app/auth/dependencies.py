@@ -1,8 +1,10 @@
 from typing import Optional, List, Dict, Any
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session, joinedload
-from ..core.database import get_db
+from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from ..core.database import get_db, get_async_db
 from ..models.user import User, UserRole
 from ..models.organisation import Organisation
 from .jwt import verify_token, extract_tenant_context_from_token, should_refresh_token
@@ -14,9 +16,9 @@ security = HTTPBearer(auto_error=False)  # Disable auto_error to handle manually
 async def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ) -> User:
-    """Enhanced user authentication with multi-tenant context validation"""
+    """Enhanced user authentication with multi-tenant context validation - ASYNC version"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -56,8 +58,13 @@ async def get_current_user(
         })
         raise credentials_exception
     
-    # Get user with organization loaded
-    user = db.query(User).options(joinedload(User.organisation)).filter(User.id == user_id).first()
+    # Get user with organization loaded - using async query
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.organisation))
+        .filter(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
     if user is None:
         logger.warning("User not found", extra={
             "event": "auth_user_not_found",
@@ -185,8 +192,8 @@ def require_role(required_roles: List[UserRole]):
     return role_dependency
 
 
-def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    """Require admin role (admin or super_admin)"""
+async def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Require admin role (admin or super_admin) - ASYNC version"""
     if current_user.role not in [UserRole.admin, UserRole.super_admin]:
         logger.warning("Admin role required", extra={
             "event": "auth_admin_required",
@@ -218,6 +225,134 @@ async def require_super_admin(current_user: User = Depends(get_current_user)) ->
 async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
     """Get current user and ensure they have admin role"""
     if current_user.role != UserRole.admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator privileges required"
+        )
+    return current_user
+
+
+# Synchronous versions for backwards compatibility
+def get_current_user_sync(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
+    """Synchronous version of get_current_user for sync endpoints"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    # Handle missing Authorization header with proper 401 status
+    if not credentials:
+        logger.warning("No credentials provided", extra={
+            "event": "auth_no_credentials",
+            "path": request.url.path
+        })
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Verify token with enhanced validation
+    payload = verify_token(credentials.credentials, expected_type="access")
+    if payload is None:
+        logger.warning("Token verification failed", extra={
+            "event": "auth_token_invalid",
+            "path": request.url.path
+        })
+        raise credentials_exception
+    
+    user_id: str = payload.get("sub")
+    tenant_id: str = payload.get("tenant_id")
+    user_role: str = payload.get("role")
+    
+    if user_id is None:
+        logger.warning("Missing user ID in token", extra={
+            "event": "auth_missing_user_id",
+            "token_jti": payload.get("jti"),
+            "path": request.url.path
+        })
+        raise credentials_exception
+    
+    # Get user with organization loaded - using sync query
+    user = db.query(User).options(joinedload(User.organisation)).filter(User.id == user_id).first()
+    if user is None:
+        logger.warning("User not found", extra={
+            "event": "auth_user_not_found",
+            "user_id": user_id,
+            "path": request.url.path
+        })
+        raise credentials_exception
+    
+    if not user.is_active:
+        logger.warning("Inactive user attempted access", extra={
+            "event": "auth_user_inactive",
+            "user_id": user_id,
+            "path": request.url.path
+        })
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive"
+        )
+    
+    # Validate tenant context
+    if tenant_id and str(user.organisation_id) != tenant_id:
+        logger.error("Tenant context mismatch", extra={
+            "event": "auth_tenant_mismatch",
+            "user_id": user_id,
+            "token_tenant_id": tenant_id,
+            "user_tenant_id": str(user.organisation_id),
+            "path": request.url.path
+        })
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant context mismatch"
+        )
+    
+    # Validate role consistency
+    if user_role and user.role.value != user_role:
+        logger.warning("Role mismatch detected", extra={
+            "event": "auth_role_mismatch",
+            "user_id": user_id,
+            "token_role": user_role,
+            "user_role": user.role.value,
+            "path": request.url.path
+        })
+    
+    # Check if token needs refresh
+    if should_refresh_token(payload, threshold_minutes=5):
+        logger.info("Token approaching expiration", extra={
+            "event": "auth_token_expiring",
+            "user_id": user_id,
+            "token_jti": payload.get("jti")
+        })
+    
+    # Store tenant context in request state for use by endpoints
+    request.state.tenant_context = extract_tenant_context_from_token(payload)
+    
+    logger.debug("User authentication successful", extra={
+        "event": "auth_success",
+        "user_id": user_id,
+        "tenant_id": tenant_id,
+        "role": user_role,
+        "path": request.url.path
+    })
+    
+    return user
+
+
+def require_admin_sync(current_user: User = Depends(get_current_user_sync)) -> User:
+    """Synchronous version of require_admin for sync endpoints"""
+    if current_user.role not in [UserRole.admin, UserRole.super_admin]:
+        logger.warning("Admin role required", extra={
+            "event": "auth_admin_required",
+            "user_id": str(current_user.id),
+            "user_role": current_user.role.value
+        })
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Administrator privileges required"
