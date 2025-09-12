@@ -131,19 +131,39 @@ async def get_current_user(
             detail="User account is inactive"
         )
     
-    # Validate tenant context
+        # Validate tenant context with Auth0 organization mapping
     if tenant_id and str(user.organisation_id) != tenant_id:
-        logger.error("Tenant context mismatch", extra={
-            "event": "auth_tenant_mismatch",
-            "user_id": user_id,
-            "token_tenant_id": tenant_id,
-            "user_tenant_id": str(user.organisation_id),
-            "path": request.url.path
-        })
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tenant context mismatch"
-        )
+        # Auth0 organization ID mapping for Zebra Associates opportunity
+        auth0_org_mapping = {
+            "zebra-associates-org-id": "835d4f24-cff2-43e8-a470-93216a3d99a3",
+            "zebra-associates": "835d4f24-cff2-43e8-a470-93216a3d99a3",
+            "zebra": "835d4f24-cff2-43e8-a470-93216a3d99a3",
+        }
+        
+        # Try to map Auth0 organization ID to database UUID
+        mapped_tenant_id = auth0_org_mapping.get(tenant_id, tenant_id)
+        
+        if str(user.organisation_id) != mapped_tenant_id:
+            logger.error("Tenant context mismatch after Auth0 mapping", extra={
+                "event": "auth_tenant_mismatch",
+                "user_id": user_id,
+                "token_tenant_id": tenant_id,
+                "mapped_tenant_id": mapped_tenant_id,
+                "user_tenant_id": str(user.organisation_id),
+                "path": request.url.path
+            })
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tenant context mismatch"
+            )
+        else:
+            logger.info("Auth0 organization mapping successful", extra={
+                "event": "auth0_org_mapping_success",
+                "original_tenant_id": tenant_id,
+                "mapped_tenant_id": mapped_tenant_id,
+                "user_org_id": str(user.organisation_id),
+                "path": request.url.path
+            })
     
     # Validate role consistency
     if user_role and user.role.value != user_role:
