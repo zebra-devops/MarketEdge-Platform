@@ -1,5 +1,6 @@
 from typing import Optional, Dict, Any
 from sqlalchemy import Column, String, Boolean, Integer, DateTime, Text, ForeignKey, Enum as SQLEnum
+from sqlalchemy.dialects.postgresql import INET
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 import uuid
@@ -59,7 +60,7 @@ class AuditLog(Base):
     context_data: Mapped[Dict[str, Any]] = mapped_column(CompatibleJSON(), nullable=False, default=dict)  # Additional context
     
     # Request information
-    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)  # IPv4/IPv6 compatible
+    ip_address: Mapped[Optional[str]] = mapped_column(INET, nullable=True)  # IPv4/IPv6 compatible
     user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     request_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     

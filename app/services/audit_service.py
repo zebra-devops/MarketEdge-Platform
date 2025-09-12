@@ -44,7 +44,7 @@ class AuditService:
             description=description,
             severity=severity,
             changes=changes or {},
-            metadata=metadata or {},
+            context_data=metadata or {},
             ip_address=ip_address,
             user_agent=user_agent,
             request_id=request_id,
