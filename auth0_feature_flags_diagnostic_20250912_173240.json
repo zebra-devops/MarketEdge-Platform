@@ -1,0 +1,52 @@
+{
+  "database_tables": {
+    "users": {
+      "exists": true,
+      "count": 4
+    },
+    "organisations": {
+      "exists": true,
+      "count": 7
+    },
+    "feature_flags": {
+      "exists": true,
+      "count": 5
+    },
+    "audit_logs": {
+      "exists": true,
+      "count": 3
+    }
+  },
+  "auth0_verification": {
+    "success": true,
+    "payload": {
+      "sub": "auth0|matt_lindop_zebra_id",
+      "email": "matt.lindop@zebra.associates",
+      "user_role": "super_admin",
+      "role": "super_admin",
+      "organisation_id": "zebra-associates-org-id",
+      "tenant_id": "zebra-associates-org-id",
+      "type": "auth0_access",
+      "iss": "https://dev-g8trhgbfdq2sk2m8.us.auth0.com/",
+      "aud": [
+        "https://dev-g8trhgbfdq2sk2m8.us.auth0.com/userinfo"
+      ],
+      "permissions": [
+        "read:admin",
+        "write:admin",
+        "manage:feature_flags"
+      ]
+    }
+  },
+  "test_user": {
+    "created": false,
+    "user_id": "f96ed2fb-0c58-445a-855a-e0d66f56fbcf",
+    "role": "super_admin"
+  },
+  "get_current_user": {
+    "success": false,
+    "error_type": "HTTPException",
+    "status_code": 403,
+    "detail": "Tenant context mismatch"
+  }
+}

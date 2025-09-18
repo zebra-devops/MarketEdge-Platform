@@ -1,0 +1,34 @@
+{
+  "timestamp": "2025-09-12T17:53:33.767684",
+  "base_url": "https://marketedge-platform.onrender.com",
+  "tests": [
+    {
+      "method": "GET",
+      "endpoint": "/health",
+      "url": "https://marketedge-platform.onrender.com/health",
+      "origin": "https://app.zebra.associates",
+      "timestamp": "2025-09-12T17:53:33.767717",
+      "success": false,
+      "error": "Connection error: Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+      "response": {},
+      "cors_analysis": {
+        "compliant": false,
+        "origin_allowed": null,
+        "issues": [
+          "Missing Access-Control-Allow-Origin header",
+          "No CORS headers present"
+        ]
+      },
+      "stability_analysis": {
+        "connection_failed": true
+      }
+    }
+  ],
+  "summary": {
+    "total_tests": 0,
+    "successful_tests": 0,
+    "failed_tests": 0,
+    "backend_stable": false,
+    "cors_working": false
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "timestamp": "2025-09-12T17:57:13.870431",
+  "backend_stable": true,
+  "cors_working": true,
+  "auth_flow_ready": true,
+  "tests": [
+    {
+      "test": "health_check",
+      "status_code": 200,
+      "cors_headers": {
+        "allow_origin": "https://app.zebra.associates",
+        "allow_credentials": "true"
+      },
+      "success": true
+    },
+    {
+      "test": "auth_endpoint_cors",
+      "status_code": 401,
+      "cors_headers": {
+        "allow_origin": "https://app.zebra.associates",
+        "allow_credentials": "true"
+      },
+      "success": true
+    },
+    {
+      "test": "cors_preflight",
+      "status_code": 200,
+      "allow_methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+      "success": true
+    }
+  ]
+}
