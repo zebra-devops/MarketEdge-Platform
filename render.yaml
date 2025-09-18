@@ -1,189 +1,31 @@
-# Render Blueprint for MarketEdge Platform
-# Epic 2: Railway to Render Migration - Single Service Architecture
-# Updated: 2025-09-01
-# Version: 3.0.0 - Gunicorn + FastAPI Single Service
-
-services:
-  # Main web service - Single-service container (Gunicorn + FastAPI)
-  - type: web
-    name: marketedge-platform
-    runtime: docker
-    # repo: https://github.com/zebraassociates-projects/platform-wrapper
-    dockerfilePath: Dockerfile
-    dockerContext: .
-    startCommand: gunicorn app.main_stable_production:app --config gunicorn_production.conf.py
-    
-    # Resource allocation
-    plan: standard  # Provides adequate resources for production
-    
-    # Health check configuration
-    healthCheckPath: /health
-    numInstances: 1  # Start with 1, scale as needed
-    
-    # Persistent storage for logs
-    disk:
-      name: marketedge-logs
-      mountPath: /var/log/app
-      sizeGB: 5  # Reduced for single-service deployment
-    
-    # Environment variables
-    envVars:
-      # ===== Core Application Settings =====
-      # PORT is set automatically by Render for single-service deployment
-      - key: ENVIRONMENT
-        value: production
-      - key: DEBUG
-        value: false
-      - key: LOG_LEVEL
-        value: INFO
-      # Ensure production mode and disable emergency fallbacks
-      - key: EMERGENCY_MODE
-        value: false
-      - key: PRODUCTION_MODE
-        value: true
-      - key: PROJECT_NAME
-        value: Platform Wrapper
-      - key: PROJECT_VERSION
-        value: 3.0.0
-      - key: API_V1_STR
-        value: /api/v1
-      
-      # ===== Database Configuration =====
-      - key: DATABASE_URL
-        fromDatabase:
-          name: marketedge-postgres
-          property: connectionString
-      
-      # ===== Redis Configuration =====
-      - key: REDIS_URL
-        fromDatabase:
-          name: marketedge-redis
-          property: connectionString
-      
-      # ===== Auth0 Configuration =====
-      - key: AUTH0_DOMAIN
-        value: dev-g8trhgbfdq2sk2m8.us.auth0.com
-      - key: AUTH0_CLIENT_ID
-        sync: false  # Set manually in Render dashboard
-      - key: AUTH0_CLIENT_SECRET
-        sync: false  # Set manually in Render dashboard
-      - key: AUTH0_CALLBACK_URL
-        value: https://marketedge-platform.onrender.com/callback
-      
-      # ===== Security & JWT =====
-      - key: JWT_SECRET_KEY
-        generateValue: true  # Render generates secure random value
-      - key: JWT_ALGORITHM
-        value: HS256
-      - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: 30
-      - key: REFRESH_TOKEN_EXPIRE_DAYS
-        value: 7
-      
-      # ===== CORS Configuration - CRITICAL FOR £925K OPPORTUNITY =====
-      - key: CORS_ORIGINS
-        value: '["https://app.zebra.associates","https://marketedge-frontend.onrender.com","http://localhost:3000","http://localhost:3001"]'
-      - key: CORS_ALLOWED_ORIGINS
-        value: https://app.zebra.associates,https://marketedge-frontend.onrender.com,http://localhost:3000,http://localhost:3001
-      - key: CORS_ALLOW_CREDENTIALS
-        value: true
-      - key: ZEBRA_ASSOCIATES_ORIGIN
-        value: https://app.zebra.associates
-      
-      # ===== Rate Limiting =====
-      - key: RATE_LIMIT_ENABLED
-        value: true
-      - key: RATE_LIMIT_REQUESTS_PER_MINUTE
-        value: 60
-      - key: RATE_LIMIT_BURST_SIZE
-        value: 10
-      
-      # ===== Data Layer Configuration =====
-      - key: DATA_LAYER_ENABLED
-        value: false
-      # Uncomment if enabling Supabase integration
-      # - key: DATA_LAYER_SUPABASE__URL
-      #   sync: false
-      # - key: DATA_LAYER_SUPABASE__KEY
-      #   sync: false
-      
-      # ===== Monitoring & Performance =====
-      - key: ENABLE_METRICS
-        value: true
-      - key: METRICS_PORT
-        value: 9090
-      - key: TRACE_ENABLED
-        value: false  # Enable for debugging
-      
-      # ===== Multi-tenant Configuration =====
-      - key: MULTI_TENANT_ENABLED
-        value: true
-      - key: DEFAULT_TENANT_ID
-        value: default
-      
-      # ===== Feature Flags =====
-      - key: FEATURE_USER_MANAGEMENT
-        value: true
-      - key: FEATURE_ADMIN_PANEL
-        value: true
-      - key: FEATURE_MARKET_EDGE
-        value: true
-      - key: FEATURE_CAUSAL_EDGE
-        value: true
-      - key: FEATURE_VALUE_EDGE
-        value: true
-
-# Database services
-databases:
-  # PostgreSQL database
-  - name: marketedge-postgres
-    databaseName: marketedge_production
-    user: marketedge_user
-    plan: standard  # Production-ready plan
-    ipAllowList: []  # Configure if needed for security
-    
-  # Redis for caching and rate limiting
-  - name: marketedge-redis
-    plan: standard  # Production-ready plan
-    maxmemoryPolicy: allkeys-lru  # Optimize for cache usage
-    ipAllowList: []  # Configure if needed for security
-
-# Environment variable groups for better organization
-envVarGroups:
-  # Sensitive Auth0 credentials
-  - name: auth0-secrets
-    envVars:
-      - key: AUTH0_CLIENT_ID
-        value: mQG01Z4lNhTTN081GHbR9R9C4fBQdPNr
-        sync: false
-      - key: AUTH0_CLIENT_SECRET
-        sync: false  # Must be set manually for security
-      
-  # Database credentials (if not using auto-connection)
-  - name: database-secrets
-    envVars:
-      - key: DATABASE_PASSWORD
-        sync: false
-      - key: REDIS_PASSWORD
-        sync: false
-      
-  # API keys and external services
-  - name: external-services
-    envVars:
-      - key: SENTRY_DSN
-        sync: false
-      - key: DATADOG_API_KEY
-        sync: false
-      - key: SLACK_WEBHOOK_URL
-        sync: false
-
-# Build configuration
-buildFilter:
-  paths:
-    - ./**
-  ignoredPaths:
-    - tests/**
-    - docs/**
-    - .pytest_cache/**
-    - __pycache__/**
-    - platform-wrapper/**
+type: web
+name: marketedge-platform
+runtime: python3
+plan: free
+buildCommand: |
+  pip install -r requirements.txt
+  echo "Applying migration 003 for analytics_modules table..."
+  python -m alembic upgrade 003
+  echo "Migration 003 applied successfully"
+startCommand: |
+  echo "Starting MarketEdge Platform..."
+  echo "Verifying analytics_modules table exists..."
+  python -c "
+  import asyncio
+  import asyncpg
+  import os
+  async def check():
+      conn = await asyncpg.connect(os.environ['DATABASE_URL'])
+      exists = await conn.fetchval('SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = \'analytics_modules\')')
+      print(f'Analytics modules table exists: {exists}')
+      await conn.close()
+  asyncio.run(check())
+  "
+  gunicorn app.main:app --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+healthCheckPath: /health
+autoDeploy: true
+envVars:
+  - key: ENVIRONMENT
+    value: production
+  - key: DEBUG
+    value: false
