@@ -137,12 +137,12 @@ async def startup_event():
         try:
             from app.core.module_registry import initialize_module_registry
             from app.services.audit_service import AuditService
-            from app.db.session import get_db
-            
+            from app.core.database import get_async_db
+
             logger.info("🔧 Initializing module registry for Zebra Associates...")
-            
+
             # Get database session for initialization
-            async for db_session in get_db():
+            async for db_session in get_async_db():
                 audit_service = AuditService(db_session)
                 await initialize_module_registry(
                     audit_service=audit_service,
