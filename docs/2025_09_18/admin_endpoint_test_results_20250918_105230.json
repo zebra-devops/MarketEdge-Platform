@@ -1,0 +1,192 @@
+{
+  "timestamp": "2025-09-18T10:52:27.255288",
+  "business_context": "\u00a3925K Zebra Associates - Admin endpoint failure diagnosis",
+  "test_url": "https://marketedge-platform.onrender.com",
+  "endpoints": {
+    "/health": {
+      "status_code": 200,
+      "working": true,
+      "test_type": "health_check"
+    },
+    "/api/v1/health": {
+      "status_code": 200,
+      "working": true,
+      "test_type": "health_check"
+    },
+    "/api/v1/admin/feature-flags": {
+      "status_code": 401,
+      "headers": {
+        "Date": "Thu, 18 Sep 2025 09:52:28 GMT",
+        "Content-Type": "application/json",
+        "Transfer-Encoding": "chunked",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-expose-headers": "Content-Type, Authorization, X-Tenant-ID",
+        "rndr-id": "e32e74c5-881b-418d",
+        "vary": "Origin, Accept-Encoding",
+        "www-authenticate": "Bearer",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "980ff3640a4d8a25-LHR",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "response_size": 36,
+      "test_type": "no_auth",
+      "json_response": {
+        "detail": "Authentication required"
+      }
+    },
+    "/api/v1/admin/feature-flags_cors": {
+      "status_code": 200,
+      "headers": {
+        "Date": "Thu, 18 Sep 2025 09:52:29 GMT",
+        "Content-Type": "text/plain; charset=utf-8",
+        "Transfer-Encoding": "chunked",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID",
+        "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-max-age": "600",
+        "rndr-id": "71cd6b5f-9d99-491a",
+        "vary": "Origin, Accept-Encoding",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "980ff365cf079436-LHR",
+        "Content-Encoding": "gzip",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "test_type": "cors_preflight",
+      "cors_analysis": {
+        "access_control_allow_origin": "https://app.zebra.associates",
+        "access_control_allow_methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+        "access_control_allow_headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID",
+        "access_control_allow_credentials": "true"
+      }
+    },
+    "/api/v1/admin/modules": {
+      "status_code": 401,
+      "headers": {
+        "Date": "Thu, 18 Sep 2025 09:52:29 GMT",
+        "Content-Type": "application/json",
+        "Transfer-Encoding": "chunked",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-expose-headers": "Content-Type, Authorization, X-Tenant-ID",
+        "rndr-id": "8fa76c2f-ec90-4505",
+        "vary": "Origin, Accept-Encoding",
+        "www-authenticate": "Bearer",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "980ff367ab0cedf0-LHR",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "response_size": 36,
+      "test_type": "no_auth",
+      "json_response": {
+        "detail": "Authentication required"
+      }
+    },
+    "/api/v1/admin/modules_cors": {
+      "status_code": 200,
+      "headers": {
+        "Date": "Thu, 18 Sep 2025 09:52:30 GMT",
+        "Content-Type": "text/plain; charset=utf-8",
+        "Transfer-Encoding": "chunked",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID",
+        "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-max-age": "600",
+        "rndr-id": "8c9f76d0-f0a9-4a9a",
+        "vary": "Origin, Accept-Encoding",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "980ff36b4d51ef37-LHR",
+        "Content-Encoding": "gzip",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "test_type": "cors_preflight",
+      "cors_analysis": {
+        "access_control_allow_origin": "https://app.zebra.associates",
+        "access_control_allow_methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+        "access_control_allow_headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID",
+        "access_control_allow_credentials": "true"
+      }
+    },
+    "/api/v1/admin/dashboard/stats": {
+      "status_code": 401,
+      "headers": {
+        "Date": "Thu, 18 Sep 2025 09:52:30 GMT",
+        "Content-Type": "application/json",
+        "Transfer-Encoding": "chunked",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-expose-headers": "Content-Type, Authorization, X-Tenant-ID",
+        "rndr-id": "5df013e1-e909-470e",
+        "vary": "Origin, Accept-Encoding",
+        "www-authenticate": "Bearer",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "980ff36d1b7663c4-LHR",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "response_size": 36,
+      "test_type": "no_auth",
+      "json_response": {
+        "detail": "Authentication required"
+      }
+    },
+    "/api/v1/admin/dashboard/stats_cors": {
+      "status_code": 200,
+      "headers": {
+        "Date": "Thu, 18 Sep 2025 09:52:30 GMT",
+        "Content-Type": "text/plain; charset=utf-8",
+        "Transfer-Encoding": "chunked",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID",
+        "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+        "access-control-allow-origin": "https://app.zebra.associates",
+        "access-control-max-age": "600",
+        "rndr-id": "2763adda-deca-4a9f",
+        "vary": "Origin, Accept-Encoding",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "980ff36f0b83d1fa-LHR",
+        "Content-Encoding": "gzip",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "test_type": "cors_preflight",
+      "cors_analysis": {
+        "access_control_allow_origin": "https://app.zebra.associates",
+        "access_control_allow_methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+        "access_control_allow_headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID",
+        "access_control_allow_credentials": "true"
+      }
+    }
+  },
+  "analysis": {
+    "cors_working": true,
+    "server_responding": true,
+    "auth_pattern": "working",
+    "error_classification": "authorization_required"
+  },
+  "recommendations": [
+    {
+      "priority": "HIGH",
+      "issue": "Authentication/authorization required",
+      "action": "Test with valid JWT token from authenticated user session"
+    }
+  ]
+}
