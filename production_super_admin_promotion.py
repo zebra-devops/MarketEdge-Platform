@@ -18,18 +18,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_production_db_url():
-    """Get production database URL from environment or prompt"""
-    db_url = os.getenv('PRODUCTION_DATABASE_URL')
-    if not db_url:
-        print("\n⚠️  PRODUCTION DATABASE CONNECTION REQUIRED")
-        print("=" * 60)
-        print("Please provide the production database URL from Render dashboard:")
-        print("1. Go to https://dashboard.render.com")
-        print("2. Select 'marketedge-platform' service")
-        print("3. Go to Environment tab")
-        print("4. Copy the DATABASE_URL value")
-        print("=" * 60)
-        db_url = input("\nPRODUCTION DATABASE_URL: ").strip()
+    """Get production database URL from environment or use provided URL"""
+    # Use the provided production DATABASE_URL directly
+    db_url = "postgresql://marketedge_user:Qra5HBKofZqoQwQgKNyVnOOwKVRbRPAW@dpg-d2gch62dbo4c73b0kl80-a/marketedge_production"
+    print(f"✅ Using provided production DATABASE_URL for Render deployment")
     return db_url
 
 def connect_to_production_db(db_url):
