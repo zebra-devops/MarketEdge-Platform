@@ -1,0 +1,40 @@
+{
+  "timestamp": "2025-09-18T15:15:23.810391",
+  "business_context": "\u00a3925K Zebra Associates - analytics_modules fix verification",
+  "base_url": "https://marketedge-platform.onrender.com/api/v1",
+  "tests": {
+    "/admin/feature-flags": {
+      "url": "https://marketedge-platform.onrender.com/api/v1/admin/feature-flags",
+      "status_code": 401,
+      "result": "SUCCESS",
+      "message": "Endpoint correctly returns 401 instead of 500",
+      "response_time": 0.277682
+    },
+    "/admin/dashboard/stats": {
+      "url": "https://marketedge-platform.onrender.com/api/v1/admin/dashboard/stats",
+      "status_code": 401,
+      "result": "SUCCESS",
+      "message": "Endpoint correctly returns 401 instead of 500",
+      "response_time": 0.553625
+    },
+    "/admin/modules": {
+      "url": "https://marketedge-platform.onrender.com/api/v1/admin/modules",
+      "status_code": 401,
+      "result": "SUCCESS",
+      "message": "Endpoint correctly returns 401 instead of 500",
+      "response_time": 0.614085
+    },
+    "/admin/organizations": {
+      "url": "https://marketedge-platform.onrender.com/api/v1/admin/organizations",
+      "status_code": 404,
+      "result": "WARNING",
+      "message": "Unexpected status code: 404",
+      "response_time": 0.609207
+    }
+  },
+  "success_rate": 75.0,
+  "successful_tests": 3,
+  "total_tests": 4,
+  "overall_status": "PARTIAL_SUCCESS",
+  "business_impact": "MIXED - Some improvement achieved"
+}
