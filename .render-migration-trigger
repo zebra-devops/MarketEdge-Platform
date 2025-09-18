@@ -1,10 +1,18 @@
-
-# Migration 003 Deployment Trigger
-# Created: 2025-09-18T14:29:10.659842
-# Purpose: Create analytics_modules table for £925K Zebra Associates
+# CRITICAL MIGRATION 003 DEPLOYMENT TRIGGER
+# Created: 2025-09-18T14:50:01.000000
+# Purpose: Force analytics_modules table creation for £925K Zebra Associates
 # Migration: 003_add_phase3_enhancements.py
+# Status: PRODUCTION CRITICAL - Table missing from previous deployments
 
 DEPLOY_MIGRATION_003=true
 MIGRATION_TARGET=003_add_phase3_enhancements
 CRITICAL_BUSINESS_IMPACT=925K_ZEBRA_ASSOCIATES
-TIMESTAMP=1758202150
+DEPLOYMENT_TYPE=FORCED_MIGRATION_WITH_VERIFICATION
+TIMESTAMP=1758203402
+DEPLOYMENT_ATTEMPT=2
+
+# This deployment includes:
+# 1. Explicit migration verification in buildCommand
+# 2. Build failure if tables not created
+# 3. Startup verification before service start
+# 4. Comprehensive error logging
