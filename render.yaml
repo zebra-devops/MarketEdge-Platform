@@ -1,113 +1,17 @@
-type: web
-name: marketedge-platform
-runtime: python3
-plan: free
-buildCommand: |
-  echo "=== STARTING CRITICAL MIGRATION DEPLOYMENT ==="
-  echo "Timestamp: $(date)"
-  echo "Target: analytics_modules table creation"
-  echo "Business Impact: £925K Zebra Associates opportunity"
-  echo ""
-
-  echo "Installing dependencies..."
-  pip install -r requirements.txt
-
-  echo "=== APPLYING MIGRATION 003 ==="
-  echo "Current directory: $(pwd)"
-  echo "Migration file check:"
-  ls -la database/migrations/versions/003_*
-
-  echo "Checking alembic configuration..."
-  cat alembic.ini | grep script_location
-
-  echo "Current migration status:"
-  python -m alembic current || echo "No current migration found"
-
-  echo "Applying migration 003..."
-  python -m alembic upgrade 003
-
-  echo "Verifying migration success..."
-  python -c "
-  import asyncio
-  import asyncpg
-  import os
-  import sys
-
-  async def verify():
-      try:
-          conn = await asyncpg.connect(os.environ['DATABASE_URL'])
-
-          # Check if analytics_modules exists
-          analytics_exists = await conn.fetchval('''
-              SELECT EXISTS (
-                  SELECT 1 FROM information_schema.tables
-                  WHERE table_name = 'analytics_modules'
-              )
-          ''')
-
-          # Check if feature_flags exists
-          flags_exists = await conn.fetchval('''
-              SELECT EXISTS (
-                  SELECT 1 FROM information_schema.tables
-                  WHERE table_name = 'feature_flags'
-              )
-          ''')
-
-          print(f'Analytics modules table exists: {analytics_exists}')
-          print(f'Feature flags table exists: {flags_exists}')
-
-          if not analytics_exists:
-              print('CRITICAL ERROR: analytics_modules table was not created!')
-              sys.exit(1)
-
-          if not flags_exists:
-              print('CRITICAL ERROR: feature_flags table was not created!')
-              sys.exit(1)
-
-          print('SUCCESS: All required tables created')
-          await conn.close()
-
-      except Exception as e:
-          print(f'VERIFICATION FAILED: {e}')
-          sys.exit(1)
-
-  asyncio.run(verify())
-  "
-
-  echo "=== MIGRATION 003 DEPLOYMENT COMPLETE ==="
-
-startCommand: |
-  echo "=== STARTING MARKETEDGE PLATFORM ==="
-  echo "Timestamp: $(date)"
-  echo "Final table verification..."
-
-  python -c "
-  import asyncio
-  import asyncpg
-  import os
-
-  async def final_check():
-      conn = await asyncpg.connect(os.environ['DATABASE_URL'])
-      analytics_exists = await conn.fetchval('SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = \\'analytics_modules\\')')
-      flags_exists = await conn.fetchval('SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = \\'feature_flags\\')')
-
-      print(f'=== TABLE STATUS ===')
-      print(f'Analytics modules: {analytics_exists}')
-      print(f'Feature flags: {flags_exists}')
-      print(f'£925K Zebra Associates: READY' if analytics_exists and flags_exists else 'BLOCKED')
-
-      await conn.close()
-
-  asyncio.run(final_check())
-  "
-
-  echo "Starting application server..."
-  gunicorn app.main:app --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
-
-healthCheckPath: /health
-autoDeploy: true
-envVars:
-  - key: ENVIRONMENT
-    value: production
-  - key: DEBUG
-    value: false
+services:
+  - type: web
+    name: marketedge-backend
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "./render-startup.sh"
+    plan: free
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: RUN_MIGRATIONS
+        value: true
+      - key: PORT
+        fromService:
+          type: web
+          name: marketedge-backend
+          property: port

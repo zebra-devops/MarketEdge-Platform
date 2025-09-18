@@ -1,15 +1,28 @@
 #!/bin/bash
 
-# DEPRECATED: Single-service architecture migration complete
-# This script is no longer used - Gunicorn starts directly from Dockerfile
-# Architecture migrated from: Caddy + supervisord + FastAPI
-# Architecture migrated to: Gunicorn + FastAPI (single service)
+# Render Production Startup Script
+# Includes emergency migration deployment
 
-echo "⚠️  DEPRECATED: render-startup.sh is no longer used"
-echo "🔄 Architecture migrated to single-service deployment"
-echo "✅ Gunicorn starts directly from Dockerfile CMD"
-echo "📦 Single service: Gunicorn + FastAPI on PORT=${PORT:-8000}"
+echo "🚀 MarketEdge Platform Starting..."
+echo "🔧 Checking for emergency migrations..."
 
-# If this script is somehow called, fall back to Gunicorn startup
-echo "🔧 Fallback: Starting Gunicorn directly..."
-exec gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000} --access-logfile - --error-logfile - --log-level info
+# Check if this is a migration deployment
+if [ "$RUN_MIGRATIONS" = "true" ]; then
+    echo "🚨 EMERGENCY MIGRATION MODE"
+    echo "🎯 Creating analytics_modules table"
+
+    python3 apply_production_migrations_emergency.py
+    exit_code=$?
+
+    if [ $exit_code -eq 0 ]; then
+        echo "✅ Emergency migrations completed successfully"
+        echo "🎉 analytics_modules table created"
+    else
+        echo "❌ Emergency migrations failed"
+        exit 1
+    fi
+fi
+
+# Normal startup
+echo "🟢 Starting FastAPI application..."
+exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
