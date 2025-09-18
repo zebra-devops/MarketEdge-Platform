@@ -42,7 +42,8 @@ class AdminService:
                 module_result = await self.db.execute(
                     select(AnalyticsModule).where(AnalyticsModule.id == module_id)
                 )
-                if not module_result.scalar_one_or_none():
+                module = module_result.scalar_one_or_none()
+                if not module:
                     raise ValueError(f"Invalid module_id: {module_id}")
                 query = query.where(FeatureFlag.module_id == module_id)
             
