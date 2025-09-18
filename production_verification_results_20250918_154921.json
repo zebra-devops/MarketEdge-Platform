@@ -1,0 +1,102 @@
+{
+  "timestamp": "2025-09-18T15:49:20.098642",
+  "business_context": "\u00a3925K Zebra Associates",
+  "target_user": "matt.lindop@zebra.associates",
+  "verification_results": {
+    "production_user": {
+      "user_exists": false,
+      "error": "No connection"
+    },
+    "local_user": {
+      "user_exists": true,
+      "user_data": {
+        "id": "f96ed2fb-0c58-445a-855a-e0d66f56fbcf",
+        "email": "matt.lindop@zebra.associates",
+        "first_name": "Matt",
+        "last_name": "Lindop"
+      },
+      "role": "super_admin",
+      "is_active": true,
+      "organisation_id": "835d4f24-cff2-43e8-a470-93216a3d99a3",
+      "organisation_name": "Zebra",
+      "created_at": "2025-08-19T12:14:25.894185+01:00",
+      "updated_at": "2025-09-11T10:38:04.541696+01:00",
+      "organisation_industry": "Technology",
+      "organisation_active": true
+    },
+    "production_enum": {
+      "enum_exists": false
+    },
+    "local_enum": {
+      "enum_exists": true,
+      "enum_values": [
+        "super_admin",
+        "admin",
+        "analyst",
+        "viewer"
+      ],
+      "has_super_admin": true,
+      "enum_order": [
+        "super_admin",
+        "admin",
+        "analyst",
+        "viewer"
+      ]
+    },
+    "production_endpoints": {
+      "health_endpoint": {
+        "status": 200,
+        "response": "{\"status\":\"healthy\",\"mode\":\"STABLE_PRODUCTION_FULL_API\",\"version\":\"1.0.0\",\"timestamp\":1758210561.2204225,\"cors_configured\":true,\"zebra_associates_ready\":true,\"critical_business_ready\":true,\"authentication_endpoints\":\"available\",\"deployment_safe\":true,\"api_router_included\":true,\"api_router_error\":null,\"database_ready\":true,\"database_error\":null,\"message\":\"Stable production mode - full API router with CORS optimization\"}"
+      },
+      "feature_flags_endpoint": {
+        "status": 401,
+        "response": "{\"detail\":\"Authentication required\"}"
+      },
+      "admin_users_endpoint": {
+        "status": 401,
+        "response": "{\"detail\":\"Authentication required\"}"
+      },
+      "ssl_verification": true
+    }
+  },
+  "production_vs_local": {
+    "user_existence_match": false,
+    "role_match": false,
+    "enum_match": false,
+    "critical_discrepancies": [
+      {
+        "type": "user_missing_production",
+        "impact": "CRITICAL: Production missing required user for business opportunity"
+      },
+      {
+        "type": "enum_mismatch",
+        "production_values": [],
+        "local_values": [
+          "super_admin",
+          "admin",
+          "analyst",
+          "viewer"
+        ],
+        "impact": "Enum differences may cause role assignment issues"
+      }
+    ],
+    "warnings": [],
+    "recommendations": [
+      "Create Matt Lindop user in production database",
+      "Add super_admin to UserRole enum in production"
+    ]
+  },
+  "critical_issues": [
+    "Cannot connect to production database",
+    "Environment discrepancy: user_missing_production - CRITICAL: Production missing required user for business opportunity",
+    "Environment discrepancy: enum_mismatch - Enum differences may cause role assignment issues"
+  ],
+  "warnings": [],
+  "success": false,
+  "overall_status": "CRITICAL_ISSUES",
+  "business_impact": {
+    "opportunity_blocked": true,
+    "risk_level": "HIGH",
+    "immediate_action_required": true
+  }
+}
