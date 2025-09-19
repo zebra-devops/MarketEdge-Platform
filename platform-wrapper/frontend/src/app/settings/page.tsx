@@ -71,7 +71,7 @@ export default function SettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (user?.role !== 'admin') {
+    if (user?.role !== 'admin' && user?.role !== 'super_admin') {
       toast.error('Only administrators can update organisation settings')
       return
     }
