@@ -1142,7 +1142,7 @@ async def get_current_user_info(
             "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
             "updated_at": current_user.updated_at.isoformat() if current_user.updated_at else None,
             "application_access": [
-                {"application": access.application.value, "has_access": access.has_access}
+                {"application": access.application.value if hasattr(access.application, 'value') else access.application, "has_access": access.has_access}
                 for access in (current_user.application_access or [])
             ]
         },
