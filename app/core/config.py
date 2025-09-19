@@ -146,7 +146,7 @@ class Settings(BaseSettings):
     def cookie_samesite(self) -> str:
         """Get appropriate SameSite setting for environment"""
         if self.is_production:
-            return "strict"  # Strict in production for maximum security
+            return "none"  # Allow cross-domain with Secure=true
         return self.COOKIE_SAMESITE
     
     def get_cookie_settings(self) -> Dict[str, Any]:
