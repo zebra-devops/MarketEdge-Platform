@@ -37,9 +37,9 @@ export default function AdminPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
-  // Redirect if not admin
+  // Redirect if not admin or super_admin
   useEffect(() => {
-    if (user && user.role !== 'admin') {
+    if (user && user.role !== 'admin' && user.role !== 'super_admin') {
       window.location.href = '/dashboard';
     }
   }, [user]);
@@ -92,11 +92,11 @@ export default function AdminPage() {
     );
   }
 
-  if (user.role !== 'admin') {
-    console.log('🚨 Admin access denied: Insufficient privileges', { 
-      email: user.email, 
+  if (user.role !== 'admin' && user.role !== 'super_admin') {
+    console.log('🚨 Admin access denied: Insufficient privileges', {
+      email: user.email,
       role: user.role,
-      requiredRole: 'admin'
+      requiredRoles: ['admin', 'super_admin']
     });
     
     return (
@@ -112,7 +112,7 @@ export default function AdminPage() {
               Current user: {user.email}
             </p>
             <p className="text-xs text-red-800 mt-1">
-              Current role: {user.role} (Required: admin)
+              Current role: {user.role} (Required: admin or super_admin)
             </p>
           </div>
           <button 
@@ -210,8 +210,12 @@ export default function AdminPage() {
             <div className="flex items-center space-x-4">
               <div className="text-sm text-gray-500">
                 <span className="font-medium text-gray-900">{user.email}</span>
-                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                  Administrator
+                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                  user.role === 'super_admin'
+                    ? 'bg-purple-100 text-purple-800'
+                    : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {user.role === 'super_admin' ? 'Super Administrator' : 'Administrator'}
                 </span>
               </div>
             </div>
