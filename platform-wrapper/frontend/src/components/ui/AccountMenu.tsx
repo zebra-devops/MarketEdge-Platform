@@ -40,8 +40,8 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({ className = '' }) => {
     setIsOpen(false);
   };
 
-  // Check if user has admin role
-  const isAdmin = user?.role === 'admin';
+  // Check if user has admin role (admin or super_admin)
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   if (!user) {
     return null;

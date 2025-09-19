@@ -662,23 +662,23 @@ export class AuthService {
   }
 
   /**
-   * Check if the user has admin access
+   * Check if the user has admin access (admin or super_admin)
    */
   isAdmin(): boolean {
     const user = this.getStoredUser()
-    return user?.role === 'admin'
+    return user?.role === 'admin' || user?.role === 'super_admin'
   }
 
   /**
-   * Require admin access - throws error if user is not admin
+   * Require admin access - throws error if user is not admin or super_admin
    */
   requireAdminAccess(): void {
     if (!this.isAuthenticated()) {
       throw new Error('Authentication required for admin access')
     }
-    
+
     if (!this.isAdmin()) {
-      throw new Error('Admin privileges required for this action')
+      throw new Error('Administrator privileges required for this action')
     }
   }
 
