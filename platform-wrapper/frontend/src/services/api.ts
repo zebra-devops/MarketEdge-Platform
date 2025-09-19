@@ -98,7 +98,6 @@ class ApiService {
         
         console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`)
         // SECURITY: Only log token details in development
-        const isProduction = process.env.NODE_ENV === 'production'
         if (isProduction) {
           console.log(`🔐 Token Status: ${token ? 'FOUND' : 'NOT FOUND'}`)
         } else {
