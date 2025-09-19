@@ -290,8 +290,8 @@ async def require_super_admin(current_user: User = Depends(get_current_user)) ->
 
 
 async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
-    """Get current user and ensure they have admin role"""
-    if current_user.role != UserRole.admin:
+    """Get current user and ensure they have admin or super_admin role"""
+    if current_user.role not in [UserRole.admin, UserRole.super_admin]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Administrator privileges required"
@@ -437,8 +437,8 @@ def require_same_tenant_or_admin(target_tenant_id: str = None):
         current_user: User = Depends(get_current_user)
     ) -> User:
         """Check tenant access permissions"""
-        # Admins can access any tenant
-        if current_user.role == UserRole.admin:
+        # Admins and super_admins can access any tenant
+        if current_user.role in [UserRole.admin, UserRole.super_admin]:
             return current_user
             
         # Get target tenant ID from request if not provided
