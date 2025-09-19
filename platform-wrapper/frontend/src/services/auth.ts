@@ -469,49 +469,119 @@ export class AuthService {
   }
 
   getToken(): string | undefined {
-    // US-AUTH-2: Enhanced multi-strategy token retrieval
-    console.debug('🔍 Retrieving access token...')
+    // CRITICAL FIX: Enhanced environment-aware multi-strategy token retrieval
+    const isProduction = this.detectProductionEnvironment()
+
+    console.debug('🔍 Retrieving access token...', {
+      environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+      windowExists: typeof window !== 'undefined'
+    })
 
     // Strategy 1: Try cookies first (both production and development)
     // Access tokens are now accessible via JavaScript in both environments
-    const cookieToken = Cookies.get('access_token')
-    if (cookieToken) {
-      console.debug('✅ Token retrieved from cookies', {
-        source: 'cookies',
-        length: cookieToken.length,
-        preview: `${cookieToken.substring(0, 20)}...`
-      })
-      // Clear temporary token if cookies are working
-      this.temporaryAccessToken = null
-      return cookieToken
+    let cookieToken: string | undefined
+    try {
+      cookieToken = Cookies.get('access_token')
+      if (cookieToken) {
+        console.debug('✅ Token retrieved from cookies', {
+          source: 'cookies',
+          environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+          length: cookieToken.length,
+          preview: `${cookieToken.substring(0, 20)}...`
+        })
+        // Clear temporary token if cookies are working
+        this.temporaryAccessToken = null
+        return cookieToken
+      }
+    } catch (cookieError) {
+      console.warn('Cookie access failed:', cookieError)
+      // Continue to next strategy
     }
 
     // Strategy 2: Use temporary token if cookies aren't ready yet
     if (this.temporaryAccessToken) {
       console.debug('✅ Token retrieved from temporary storage', {
         source: 'temporary',
+        environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
         length: this.temporaryAccessToken.length,
         preview: `${this.temporaryAccessToken.substring(0, 20)}...`
       })
       return this.temporaryAccessToken
     }
 
-    // Strategy 3: Fallback to localStorage (development and legacy support)
-    const localToken = localStorage.getItem('access_token')
-    if (localToken) {
-      console.debug('✅ Token retrieved from localStorage fallback', {
-        source: 'localStorage',
-        length: localToken.length,
-        preview: `${localToken.substring(0, 20)}...`
-      })
-      return localToken
+    // Strategy 3: Fallback to localStorage (development and emergency fallback)
+    // In production, only use localStorage if cookies completely failed
+    const allowLocalStorage = !isProduction || !cookieToken
+    if (allowLocalStorage) {
+      try {
+        const localToken = localStorage.getItem('access_token')
+        if (localToken) {
+          console.debug('✅ Token retrieved from localStorage fallback', {
+            source: 'localStorage',
+            environment: isProduction ? 'PRODUCTION (Emergency)' : 'DEVELOPMENT',
+            length: localToken.length,
+            preview: `${localToken.substring(0, 20)}...`
+          })
+          return localToken
+        }
+      } catch (localStorageError) {
+        console.warn('LocalStorage access failed:', localStorageError)
+      }
     }
 
-    // Strategy 4: Direct auth service check (emergency fallback)
-    // This helps with any edge cases during token transitions
-    console.debug('⚠️  No access token found in cookies, temporary storage, or localStorage')
+    // Strategy 4: Enhanced debugging for production issues
+    if (isProduction) {
+      console.error('🚨 PRODUCTION: All token retrieval strategies failed', {
+        cookieAttempted: true,
+        temporaryChecked: !!this.temporaryAccessToken,
+        localStorageChecked: allowLocalStorage,
+        currentUrl: typeof window !== 'undefined' ? window.location.href : 'unknown',
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 50) : 'unknown'
+      })
+    }
 
+    console.debug('⚠️  No access token found in any storage method')
     return undefined
+  }
+
+  /**
+   * Enhanced environment detection with multiple fallback methods
+   */
+  private detectProductionEnvironment(): boolean {
+    // Method 1: Standard NODE_ENV check
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
+      return true
+    }
+
+    // Method 2: Check if we're on a production domain
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname
+      const productionDomains = [
+        'app.zebra.associates',
+        'marketedge.app',
+        'marketedge-platform.onrender.com'
+      ]
+
+      if (productionDomains.some(domain => hostname.includes(domain))) {
+        console.debug('✅ Production environment detected via domain:', hostname)
+        return true
+      }
+    }
+
+    // Method 3: Check for HTTPS in production environments
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+      const isLocalhost = window.location.hostname === 'localhost' ||
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname.includes('local')
+
+      if (!isLocalhost) {
+        console.debug('✅ Production environment likely - HTTPS on non-localhost')
+        return true
+      }
+    }
+
+    console.debug('📝 Development environment detected')
+    return false
   }
 
   getRefreshToken(): string | undefined {
@@ -670,11 +740,17 @@ export class AuthService {
   }
 
   private setTokens(tokenResponse: EnhancedTokenResponse): void {
-    // US-AUTH-2: Note - Backend now handles cookie setting with proper httpOnly configuration
+    // CRITICAL FIX: Enhanced token storage with robust environment detection
     // Access tokens: httpOnly: false (accessible to JS)
     // Refresh tokens: httpOnly: true (secure, not accessible to JS)
-    
-    const isProduction = process.env.NODE_ENV === 'production'
+
+    const isProduction = this.detectProductionEnvironment()
+
+    console.debug('🔧 Setting tokens...', {
+      environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+      hasAccessToken: !!tokenResponse.access_token,
+      hasRefreshToken: !!tokenResponse.refresh_token
+    })
     
     if (tokenResponse.access_token) {
       // Store token temporarily for immediate access while cookies are being set
@@ -713,7 +789,13 @@ export class AuthService {
           console.log('✅ Cookie-based token access confirmed, clearing temporary storage')
           this.temporaryAccessToken = null
         } else {
-          console.warn('⚠️  Cookies not accessible after 500ms - may indicate domain/security issues')
+          console.warn('⚠️  Cookies not accessible after 500ms - may indicate domain/security issues', {
+            currentDomain: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
+            protocol: typeof window !== 'undefined' ? window.location.protocol : 'unknown',
+            isProduction: isProduction,
+            cookiesString: typeof document !== 'undefined' ? document.cookie.substring(0, 100) : 'unavailable',
+            suggestion: 'Check cookie domain settings and HTTPS configuration'
+          })
         }
       }, 500) // Give browser time to process Set-Cookie headers
     }

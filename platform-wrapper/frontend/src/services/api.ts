@@ -36,59 +36,66 @@ class ApiService {
   private setupInterceptors() {
     this.axiosClient.interceptors.request.use(
       (config) => {
-        // SECURITY: Environment-aware token retrieval matching auth service strategy
+        // CRITICAL FIX: Unified token retrieval strategy matching auth service exactly
         let token = null
-        const isProduction = process.env.NODE_ENV === 'production'
-        
-        if (isProduction) {
-          // PRODUCTION: Only use cookies for security (httpOnly cookies handled by backend)
-          try {
-            token = Cookies.get('access_token')
-            if (token) {
-              console.log('🔑 Token retrieved from secure cookies (Production)')
-            }
-          } catch (cookieError) {
-            console.warn('Production cookie access failed:', cookieError)
+        const isProduction = this.detectProductionEnvironment()
+
+        console.debug('🔍 API Service token retrieval:', {
+          environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+          url: config.url
+        })
+
+        // UNIFIED STRATEGY: Match auth service getToken() logic exactly
+        // Strategy 1: Try cookies first (both production and development)
+        try {
+          token = Cookies.get('access_token')
+          if (token) {
+            console.debug('✅ Token retrieved from cookies', {
+              source: 'cookies',
+              environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+              length: token.length,
+              preview: `${token.substring(0, 20)}...`
+            })
           }
-        } else {
-          // DEVELOPMENT: Multi-strategy approach for debugging flexibility
-          
-          // Strategy 1: Try localStorage first (preferred for local development)
+        } catch (cookieError) {
+          console.warn('Cookie access failed:', cookieError)
+        }
+
+        // Strategy 2: Use auth service temporary token if cookies fail
+        if (!token && typeof window !== 'undefined') {
+          try {
+            // Import auth service dynamically to avoid circular dependency
+            const authModule = require('./auth')
+            if (authModule?.authService?.getToken) {
+              token = authModule.authService.getToken()
+              if (token) {
+                console.debug('✅ Token retrieved from auth service (includes temporary storage)', {
+                  source: 'authService',
+                  environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+                  length: token.length,
+                  preview: `${token.substring(0, 20)}...`
+                })
+              }
+            }
+          } catch (authServiceError) {
+            console.warn('Auth service token retrieval failed:', authServiceError)
+          }
+        }
+
+        // Strategy 3: Fallback to localStorage (development and emergency fallback)
+        if (!token && !isProduction) {
           try {
             token = localStorage.getItem('access_token')
             if (token) {
-              console.log('🔑 Token retrieved from localStorage (Development - Strategy 1)')
+              console.debug('✅ Token retrieved from localStorage fallback', {
+                source: 'localStorage',
+                environment: 'DEVELOPMENT',
+                length: token.length,
+                preview: `${token.substring(0, 20)}...`
+              })
             }
           } catch (localStorageError) {
             console.warn('LocalStorage access failed:', localStorageError)
-          }
-          
-          // Strategy 2: Fallback to cookies
-          if (!token) {
-            try {
-              token = Cookies.get('access_token')
-              if (token) {
-                console.log('🔑 Token retrieved from cookies (Development - Strategy 2)')
-              }
-            } catch (cookieError) {
-              console.warn('Cookie access failed:', cookieError)
-            }
-          }
-          
-          // Strategy 3: Try to get token from auth service directly
-          if (!token && typeof window !== 'undefined') {
-            try {
-              // Import auth service dynamically to avoid circular dependency
-              const authModule = require('./auth')
-              if (authModule?.authService?.getToken) {
-                token = authModule.authService.getToken()
-                if (token) {
-                  console.log('🔑 Token retrieved from auth service (Development - Strategy 3)')
-                }
-              }
-            } catch (authServiceError) {
-              console.warn('Auth service token retrieval failed:', authServiceError)
-            }
           }
         }
         
@@ -171,18 +178,50 @@ class ApiService {
           originalRequest._retry = true
 
           try {
-            // SECURITY: Environment-aware refresh token retrieval
+            // CRITICAL FIX: Unified refresh token retrieval strategy
             let refreshToken = null
-            const isProduction = process.env.NODE_ENV === 'production'
-            
-            if (isProduction) {
-              // PRODUCTION: Only use cookies for security
-              refreshToken = Cookies.get('refresh_token')
-            } else {
-              // DEVELOPMENT: Prioritize localStorage for debugging
-              refreshToken = localStorage.getItem('refresh_token')
-              if (!refreshToken) {
+            const isProduction = this.detectProductionEnvironment()
+
+            console.debug('🔄 Attempting token refresh...', {
+              environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT'
+            })
+
+            // Strategy 1: Try auth service first (handles httpOnly detection)
+            if (typeof window !== 'undefined') {
+              try {
+                const authModule = require('./auth')
+                if (authModule?.authService?.getRefreshToken) {
+                  refreshToken = authModule.authService.getRefreshToken()
+                  if (refreshToken) {
+                    console.debug('✅ Refresh token obtained from auth service')
+                  }
+                }
+              } catch (authServiceError) {
+                console.warn('Auth service refresh token retrieval failed:', authServiceError)
+              }
+            }
+
+            // Strategy 2: Direct cookie access fallback
+            if (!refreshToken) {
+              try {
                 refreshToken = Cookies.get('refresh_token')
+                if (refreshToken) {
+                  console.debug('✅ Refresh token retrieved from cookies directly')
+                }
+              } catch (cookieError) {
+                console.warn('Cookie refresh token access failed:', cookieError)
+              }
+            }
+
+            // Strategy 3: localStorage fallback (development)
+            if (!refreshToken && !isProduction) {
+              try {
+                refreshToken = localStorage.getItem('refresh_token')
+                if (refreshToken) {
+                  console.debug('✅ Refresh token retrieved from localStorage (development)')
+                }
+              } catch (localStorageError) {
+                console.warn('LocalStorage refresh token access failed:', localStorageError)
               }
             }
             
@@ -218,9 +257,50 @@ class ApiService {
     )
   }
 
+  /**
+   * Enhanced environment detection with multiple fallback methods
+   * Matches auth service logic exactly
+   */
+  private detectProductionEnvironment(): boolean {
+    // Method 1: Standard NODE_ENV check
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
+      return true
+    }
+
+    // Method 2: Check if we're on a production domain
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname
+      const productionDomains = [
+        'app.zebra.associates',
+        'marketedge.app',
+        'marketedge-platform.onrender.com'
+      ]
+
+      if (productionDomains.some(domain => hostname.includes(domain))) {
+        console.debug('✅ Production environment detected via domain:', hostname)
+        return true
+      }
+    }
+
+    // Method 3: Check for HTTPS in production environments
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+      const isLocalhost = window.location.hostname === 'localhost' ||
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname.includes('local')
+
+      if (!isLocalhost) {
+        console.debug('✅ Production environment likely - HTTPS on non-localhost')
+        return true
+      }
+    }
+
+    console.debug('📝 Development environment detected')
+    return false
+  }
+
   private clearTokens() {
-    // SECURITY: Environment-aware token clearing
-    const isProduction = process.env.NODE_ENV === 'production'
+    // CRITICAL FIX: Environment-aware token clearing using robust detection
+    const isProduction = this.detectProductionEnvironment()
     
     // Always clear cookies
     Cookies.remove('access_token')
