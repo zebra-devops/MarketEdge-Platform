@@ -213,13 +213,61 @@ async def login_oauth2(
         )
         refresh_token = create_refresh_token(data={"sub": str(user.id)})
         
+        # CRITICAL FIX: Set cookies for OAuth2 authentication (same as /login endpoint)
+        # US-AUTH-1: Differentiated cookie settings for access and refresh tokens
+        base_cookie_settings = settings.get_cookie_settings()
+
+        # Access token: Make accessible to frontend JavaScript (httpOnly: False)
+        access_cookie_settings = base_cookie_settings.copy()
+        access_cookie_settings["httponly"] = False  # Allow frontend access
+
+        response.set_cookie(
+            key="access_token",
+            value=access_token,
+            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert minutes to seconds
+            **access_cookie_settings
+        )
+
+        # Refresh token: Keep secure (httpOnly: True)
+        refresh_cookie_settings = base_cookie_settings.copy()
+        refresh_cookie_settings["httponly"] = True  # Keep secure
+
+        response.set_cookie(
+            key="refresh_token",
+            value=refresh_token,
+            max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,  # Convert days to seconds
+            **refresh_cookie_settings
+        )
+
+        # Session security cookie: Keep secure (httpOnly: True)
+        session_cookie_settings = base_cookie_settings.copy()
+        session_cookie_settings["httponly"] = True  # Keep secure
+
+        response.set_cookie(
+            key="session_security",
+            value="verified",
+            max_age=settings.SESSION_TIMEOUT_MINUTES * 60,
+            **session_cookie_settings
+        )
+
+        # CSRF protection cookie (readable by JS for CSRF token)
+        csrf_cookie_settings = base_cookie_settings.copy()
+        csrf_cookie_settings["httponly"] = False  # Allow JS access for CSRF protection
+        response.set_cookie(
+            key="csrf_token",
+            value=secrets.token_urlsafe(32),
+            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            **csrf_cookie_settings
+        )
+
         logger.info("OAuth2 authentication successful", extra={
             "event": "oauth2_auth_success",
             "user_id": str(user.id),
             "tenant_id": str(user.organisation_id),
-            "client_ip": client_ip
+            "client_ip": client_ip,
+            "cookies_set": ["access_token", "refresh_token", "session_security", "csrf_token"]
         })
-        
+
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
