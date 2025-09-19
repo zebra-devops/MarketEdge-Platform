@@ -235,6 +235,19 @@ def get_user_permissions(user_role: str, tenant_context: Optional[Dict[str, Any]
     
     # Base permissions by role
     role_permissions = {
+        "super_admin": [
+            # Super admin has all permissions across all tenants
+            "read:users", "write:users", "delete:users",
+            "read:organizations", "write:organizations", "delete:organizations",
+            "read:audit_logs", "read:system_metrics",
+            "manage:feature_flags", "manage:rate_limits",
+            "manage:cross_tenant", "manage:super_admin",
+            # Full application access for super admin
+            "read:market_edge", "read:causal_edge", "read:value_edge",
+            "admin:market_edge", "admin:causal_edge", "admin:value_edge",
+            # Platform administration
+            "manage:platform", "manage:security", "manage:tenants"
+        ],
         "admin": [
             "read:users", "write:users", "delete:users",
             "read:organizations", "write:organizations", "delete:organizations",
