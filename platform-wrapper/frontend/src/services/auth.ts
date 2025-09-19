@@ -47,6 +47,7 @@ export class AuthService {
   private loginPromise: Promise<EnhancedTokenResponse> | null = null
   private readonly tokenRefreshThreshold = 5 * 60 * 1000 // 5 minutes in milliseconds
   private processedAuthCodes: Set<string> = new Set()
+  private temporaryAccessToken: string | null = null // Temporary storage for immediate access
 
   /**
    * Initiate OAuth2 authentication flow with Auth0
@@ -443,6 +444,7 @@ export class AuthService {
     this.processedAuthCodes.clear()
     this.loginPromise = null
     this.refreshTokenPromise = null
+    this.temporaryAccessToken = null
     console.log('🔄 Reset authentication state for fresh login')
 
     console.log('✅ Complete session cleanup performed - ready for fresh authentication')
@@ -469,7 +471,7 @@ export class AuthService {
   getToken(): string | undefined {
     // US-AUTH-2: Enhanced multi-strategy token retrieval
     console.debug('🔍 Retrieving access token...')
-    
+
     // Strategy 1: Try cookies first (both production and development)
     // Access tokens are now accessible via JavaScript in both environments
     const cookieToken = Cookies.get('access_token')
@@ -479,10 +481,22 @@ export class AuthService {
         length: cookieToken.length,
         preview: `${cookieToken.substring(0, 20)}...`
       })
+      // Clear temporary token if cookies are working
+      this.temporaryAccessToken = null
       return cookieToken
     }
-    
-    // Strategy 2: Fallback to localStorage (development and legacy support)
+
+    // Strategy 2: Use temporary token if cookies aren't ready yet
+    if (this.temporaryAccessToken) {
+      console.debug('✅ Token retrieved from temporary storage', {
+        source: 'temporary',
+        length: this.temporaryAccessToken.length,
+        preview: `${this.temporaryAccessToken.substring(0, 20)}...`
+      })
+      return this.temporaryAccessToken
+    }
+
+    // Strategy 3: Fallback to localStorage (development and legacy support)
     const localToken = localStorage.getItem('access_token')
     if (localToken) {
       console.debug('✅ Token retrieved from localStorage fallback', {
@@ -492,11 +506,11 @@ export class AuthService {
       })
       return localToken
     }
-    
-    // Strategy 3: Direct auth service check (emergency fallback)
+
+    // Strategy 4: Direct auth service check (emergency fallback)
     // This helps with any edge cases during token transitions
-    console.debug('⚠️  No access token found in cookies or localStorage')
-    
+    console.debug('⚠️  No access token found in cookies, temporary storage, or localStorage')
+
     return undefined
   }
 
@@ -663,6 +677,9 @@ export class AuthService {
     const isProduction = process.env.NODE_ENV === 'production'
     
     if (tokenResponse.access_token) {
+      // Store token temporarily for immediate access while cookies are being set
+      this.temporaryAccessToken = tokenResponse.access_token
+
       // Backend has already set the access_token cookie (httpOnly: false)
       // For development, also store in localStorage for debugging
       if (!isProduction) {
@@ -673,20 +690,32 @@ export class AuthService {
         localStorage.removeItem('access_token')
         console.log('🗑️  PRODUCTION: LocalStorage token cleared for security')
       }
-      
-      // VERIFICATION: Ensure token is accessible via our retrieval method
+
+      // IMMEDIATE VERIFICATION: This should now work with temporary storage
       const verifyToken = this.getToken()
       if (verifyToken) {
         console.log('✅ Access token verification successful', {
           environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
-          storageMethod: 'Backend-managed cookies + localStorage fallback',
+          storageMethod: 'Temporary + Backend-managed cookies',
           tokenLength: verifyToken.length,
           preview: `${verifyToken.substring(0, 20)}...`
         })
       } else {
-        console.error('❌ CRITICAL: Access token not accessible after login!')
+        console.error('❌ CRITICAL: Token storage and retrieval system failed!')
         throw new Error('Token retrieval failed after authentication - please try logging in again')
       }
+
+      // Schedule cleanup of temporary token after cookies should be ready
+      setTimeout(() => {
+        // Check if cookies are working, if so clear temporary token
+        const cookieToken = Cookies.get('access_token')
+        if (cookieToken) {
+          console.log('✅ Cookie-based token access confirmed, clearing temporary storage')
+          this.temporaryAccessToken = null
+        } else {
+          console.warn('⚠️  Cookies not accessible after 500ms - may indicate domain/security issues')
+        }
+      }, 500) // Give browser time to process Set-Cookie headers
     }
     
     if (tokenResponse.refresh_token) {
@@ -760,6 +789,9 @@ export class AuthService {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('token_expires_at')
+
+    // Clear temporary token storage
+    this.temporaryAccessToken = null
   }
 
   private clearUserData(): void {
