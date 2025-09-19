@@ -8,8 +8,15 @@ class ApiService {
   private currentOrganizationId: string | null = null
 
   constructor() {
+    // CRITICAL FIX: Validate base URL to prevent "Invalid value" fetch errors
+    const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://marketedge-platform.onrender.com'
+    if (!baseURL || baseURL === 'undefined') {
+      console.error('🚨 CRITICAL: NEXT_PUBLIC_API_BASE_URL is undefined! Using fallback.')
+      throw new Error('API base URL not configured')
+    }
+
     this.axiosClient = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_BASE_URL + '/api/v1',
+      baseURL: baseURL + '/api/v1',
       timeout: 60000, // 60 second timeout to handle Render cold starts
       withCredentials: true, // Include cookies for cross-origin requests
       headers: {
@@ -155,18 +162,42 @@ class ApiService {
         }
         
         if (token) {
-          config.headers.Authorization = `Bearer ${token}`
-          console.log('🔒 Authorization header added successfully')
+          // CRITICAL FIX: Validate token format before setting header to prevent "Invalid value" fetch errors
+          const cleanToken = token.trim().replace(/[\n\r\t]/g, '')
+
+          if (!cleanToken) {
+            console.error('🚨 CRITICAL: Token is empty after cleaning!')
+            console.error('   Original token length:', token.length)
+            console.error('   This will cause a fetch "Invalid value" error')
+          } else if (!/^[A-Za-z0-9\-._~+/]+=*$/.test(cleanToken)) {
+            console.error('🚨 CRITICAL: Token contains invalid characters!')
+            console.error('   Token preview:', cleanToken.substring(0, 50))
+            console.error('   This will cause a fetch "Invalid value" error')
+          } else {
+            try {
+              config.headers.Authorization = `Bearer ${cleanToken}`
+              console.log('🔒 Authorization header added successfully')
+            } catch (headerError) {
+              console.error('🚨 CRITICAL: Failed to set Authorization header:', headerError)
+              console.error('   This is the source of the "Invalid value" fetch error')
+              throw new Error(`Invalid Authorization header: ${headerError.message}`)
+            }
+          }
         } else if (requiresAuth) {
           // CRITICAL: For protected endpoints without token, add debug info
           console.error('❌ Making request to protected endpoint without token:', config.url)
           console.error('   This will likely result in a 403 Forbidden error')
         }
         
-        // Add organization context header if set
+        // Add organization context header if set - with validation
         if (this.currentOrganizationId) {
-          config.headers['X-Organization-ID'] = this.currentOrganizationId
-          console.log('🏢 Organization context added:', this.currentOrganizationId)
+          const cleanOrgId = this.currentOrganizationId.trim()
+          if (cleanOrgId && /^[a-zA-Z0-9\-_]+$/.test(cleanOrgId)) {
+            config.headers['X-Organization-ID'] = cleanOrgId
+            console.log('🏢 Organization context added:', cleanOrgId)
+          } else {
+            console.warn('🚨 Invalid organization ID format, skipping header:', this.currentOrganizationId)
+          }
         }
         
         return config
