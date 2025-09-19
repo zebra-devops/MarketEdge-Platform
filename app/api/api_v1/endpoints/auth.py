@@ -471,9 +471,9 @@ async def login_json_body(request: Request) -> Optional[LoginRequest]:
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
-    response: Response, 
-    request: Request, 
-    db: Session = Depends(get_db),
+    response: Response,
+    request: Request,
+    db: AsyncSession = Depends(get_async_db),
     # Form data parameters for legacy support
     code: Optional[str] = Form(None),
     redirect_uri: Optional[str] = Form(None),
@@ -664,26 +664,28 @@ async def login(
     
     # Find or create user in database using sanitized email
     try:
-        user = db.query(User).filter(User.email == sanitized_email).first()
+        result = await db.execute(select(User).filter(User.email == sanitized_email))
+        user = result.scalar_one_or_none()
         if not user:
             # Create user with default organization
-            default_org = db.query(Organisation).filter(Organisation.name == "Default").first()
+            result = await db.execute(select(Organisation).filter(Organisation.name == "Default"))
+            default_org = result.scalar_one_or_none()
             if not default_org:
                 from ....models.organisation import SubscriptionPlan
                 from ....core.rate_limit_config import Industry
                 default_org = Organisation(
-                    name="Default", 
+                    name="Default",
                     industry=Industry.DEFAULT.value,
                     industry_type=Industry.DEFAULT,
                     subscription_plan=SubscriptionPlan.basic
                 )
                 db.add(default_org)
-                db.commit()
-                db.refresh(default_org)
-                
+                await db.commit()
+                await db.refresh(default_org)
+
                 # Set up default tool access for the Default organization
-                _setup_default_tool_access(db, default_org.id)
-            
+                await _setup_default_tool_access_async(db, default_org.id)
+
             from ....models.user import UserRole
             user = User(
                 email=sanitized_email,
@@ -693,9 +695,9 @@ async def login(
                 role=UserRole.viewer
             )
             db.add(user)
-            db.commit()
-            db.refresh(user)
-            
+            await db.commit()
+            await db.refresh(user)
+
             logger.info("New user created", extra={
                 "event": "user_created",
                 "user_id": str(user.id),
@@ -709,7 +711,7 @@ async def login(
             "error_message": str(e),
             "email": sanitized_email
         })
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Database error during authentication"
@@ -717,10 +719,13 @@ async def login(
     
     # Ensure user has organization and application access relationships loaded
     if not user.organisation or not hasattr(user, 'application_access'):
-        user = db.query(User).options(
-            joinedload(User.organisation),
-            joinedload(User.application_access)
-        ).filter(User.id == user.id).first()
+        result = await db.execute(
+            select(User).options(
+                selectinload(User.organisation),
+                selectinload(User.application_access)
+            ).filter(User.id == user.id)
+        )
+        user = result.scalar_one_or_none()
     
     # Get user permissions based on role and tenant context
     tenant_context = {
@@ -1047,15 +1052,18 @@ async def logout(
 @router.get("/me")
 async def get_current_user_info(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get enhanced current user information with tenant context"""
     # Ensure organization and application access are loaded
     if not current_user.organisation or not hasattr(current_user, 'application_access'):
-        current_user = db.query(User).options(
-            joinedload(User.organisation),
-            joinedload(User.application_access)
-        ).filter(User.id == current_user.id).first()
+        result = await db.execute(
+            select(User).options(
+                selectinload(User.organisation),
+                selectinload(User.application_access)
+            ).filter(User.id == current_user.id)
+        )
+        current_user = result.scalar_one_or_none()
     
     # Get user permissions
     tenant_context = {
