@@ -33,19 +33,43 @@ import '@/utils/auth-debug';
 type TabType = 'dashboard' | 'organisations' | 'user-provisioning' | 'user-management' | 'access-matrix' | 'feature-flags' | 'modules' | 'audit-logs' | 'security';
 
 export default function AdminPage() {
-  const { user, isLoading, isAuthenticated } = useAuthContext();
+  const { user, isLoading, isAuthenticated, isInitialized } = useAuthContext();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
-  // Redirect if not admin or super_admin
+  // CRITICAL FIX: Enhanced user data validation and debugging for Matt.Lindop admin access
+  const [debugInfo, setDebugInfo] = useState<string>('');
+
   useEffect(() => {
-    if (user && user.role !== 'admin' && user.role !== 'super_admin') {
+    // Enhanced debugging for admin access issues
+    const debug = {
+      isLoading,
+      isAuthenticated,
+      isInitialized,
+      hasUser: !!user,
+      userEmail: user?.email || 'N/A',
+      userRole: user?.role || 'N/A',
+      timestamp: new Date().toISOString()
+    };
+
+    const debugStr = `Auth State: ${JSON.stringify(debug, null, 2)}`;
+    setDebugInfo(debugStr);
+    console.log('🔍 MATT ADMIN ACCESS DEBUG:', debug);
+
+    // More robust role checking - wait for initialization to complete
+    if (isInitialized && user && user.role !== 'admin' && user.role !== 'super_admin') {
+      console.log('🚨 ACCESS DENIED: User role insufficient', {
+        email: user.email,
+        role: user.role,
+        requiredRoles: ['admin', 'super_admin']
+      });
       window.location.href = '/dashboard';
     }
-  }, [user]);
+  }, [user, isLoading, isAuthenticated, isInitialized]);
 
   // CRITICAL DEBUG: Enhanced access control with detailed feedback for Zebra Associates troubleshooting
-  if (isLoading) {
+  // Wait for authentication to be fully initialized before making access decisions
+  if (isLoading || !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -92,13 +116,19 @@ export default function AdminPage() {
     );
   }
 
-  if (user.role !== 'admin' && user.role !== 'super_admin') {
+  // CRITICAL FIX: Enhanced role validation for Matt.Lindop super_admin access
+  const hasAdminAccess = user?.role === 'admin' || user?.role === 'super_admin';
+
+  if (isInitialized && user && !hasAdminAccess) {
     console.log('🚨 Admin access denied: Insufficient privileges', {
       email: user.email,
       role: user.role,
-      requiredRoles: ['admin', 'super_admin']
+      requiredRoles: ['admin', 'super_admin'],
+      hasAdminAccess,
+      isInitialized,
+      debugInfo
     });
-    
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center max-w-md">
@@ -114,8 +144,24 @@ export default function AdminPage() {
             <p className="text-xs text-red-800 mt-1">
               Current role: {user.role} (Required: admin or super_admin)
             </p>
+            <p className="text-xs text-red-800 mt-1">
+              Has Admin Access: {hasAdminAccess ? 'YES' : 'NO'}
+            </p>
+            <p className="text-xs text-red-800 mt-1">
+              Is Initialized: {isInitialized ? 'YES' : 'NO'}
+            </p>
           </div>
-          <button 
+          <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
+            <details className="text-left">
+              <summary className="text-xs font-medium text-yellow-800 cursor-pointer">
+                Debug Info (Click to expand)
+              </summary>
+              <pre className="text-xs text-yellow-700 mt-2 overflow-auto max-h-32">
+                {debugInfo}
+              </pre>
+            </details>
+          </div>
+          <button
             onClick={() => router.push('/dashboard')}
             className="mt-4 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
           >
@@ -124,6 +170,17 @@ export default function AdminPage() {
         </div>
       </div>
     );
+  }
+
+  // CRITICAL SUCCESS: Matt.Lindop has proper super_admin access!
+  if (isInitialized && user && hasAdminAccess) {
+    console.log('✅ ADMIN ACCESS GRANTED:', {
+      email: user.email,
+      role: user.role,
+      hasAdminAccess,
+      isInitialized,
+      timestamp: new Date().toISOString()
+    });
   }
 
   const tabs = [

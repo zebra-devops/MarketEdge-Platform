@@ -690,7 +690,26 @@ export class AuthService {
   getUserPermissions(): string[] {
     try {
       const permissions = localStorage.getItem('user_permissions')
-      return permissions ? JSON.parse(permissions) : []
+      const parsedPermissions = permissions ? JSON.parse(permissions) : []
+
+      // CRITICAL FIX: If permissions are empty but user has admin role, provide fallback permissions
+      if (parsedPermissions.length === 0) {
+        const user = this.getStoredUser()
+        if (user && (user.role === 'super_admin' || user.role === 'admin')) {
+          console.log('⚠️  PERMISSIONS FALLBACK: User has admin role but no stored permissions', {
+            email: user.email,
+            role: user.role,
+            storedPermissions: parsedPermissions.length
+          })
+
+          // Return minimum admin permissions for access
+          return user.role === 'super_admin'
+            ? ['manage:platform', 'manage:feature_flags', 'manage:super_admin', 'admin:market_edge']
+            : ['manage:feature_flags', 'admin:market_edge']
+        }
+      }
+
+      return parsedPermissions
     } catch {
       return []
     }
@@ -946,13 +965,42 @@ export class AuthService {
     console.debug('🔧 Setting user data...', {
       environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
       email: user.email,
-      role: user.role
+      role: user.role,
+      permissionsCount: permissions.length
     })
+
+    // CRITICAL DEBUG: Log permissions for Matt.Lindop troubleshooting
+    if (user.role === 'super_admin' || user.role === 'admin') {
+      console.log('🔐 ADMIN PERMISSIONS BEING STORED:', {
+        email: user.email,
+        role: user.role,
+        permissions: permissions,
+        permissionsCount: permissions.length,
+        isEmpty: permissions.length === 0
+      })
+    }
 
     // Primary storage: localStorage
     localStorage.setItem('current_user', JSON.stringify(user))
     localStorage.setItem('tenant_info', JSON.stringify(tenant))
     localStorage.setItem('user_permissions', JSON.stringify(permissions))
+
+    // CRITICAL VERIFICATION: Immediately verify permissions were stored correctly
+    const verifyPermissions = localStorage.getItem('user_permissions')
+    const parsedVerify = verifyPermissions ? JSON.parse(verifyPermissions) : []
+
+    if (user.role === 'super_admin' && parsedVerify.length === 0) {
+      console.error('🚨 CRITICAL: Super admin permissions not stored correctly!', {
+        attempted: permissions,
+        stored: parsedVerify,
+        email: user.email
+      })
+    } else {
+      console.log('✅ Permissions verification successful', {
+        stored: parsedVerify.length,
+        expected: permissions.length
+      })
+    }
 
     // CRITICAL FIX: Add session storage backup that includes user data
     // This ensures user data persists during navigation like the token does
