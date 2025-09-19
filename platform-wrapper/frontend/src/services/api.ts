@@ -61,7 +61,7 @@ class ApiService {
           console.warn('Cookie access failed:', cookieError)
         }
 
-        // Strategy 2: Use auth service temporary token if cookies fail
+        // Strategy 2: Use auth service which includes all fallback strategies
         if (!token && typeof window !== 'undefined') {
           try {
             // Import auth service dynamically to avoid circular dependency
@@ -69,7 +69,7 @@ class ApiService {
             if (authModule?.authService?.getToken) {
               token = authModule.authService.getToken()
               if (token) {
-                console.debug('✅ Token retrieved from auth service (includes temporary storage)', {
+                console.debug('✅ Token retrieved from auth service (includes all fallback strategies)', {
                   source: 'authService',
                   environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
                   length: token.length,
@@ -82,7 +82,32 @@ class ApiService {
           }
         }
 
-        // Strategy 3: Fallback to localStorage (development and emergency fallback)
+        // Strategy 3: Direct session storage check (backup for circular dependency issues)
+        if (!token && typeof window !== 'undefined' && sessionStorage) {
+          try {
+            const sessionBackupStr = sessionStorage.getItem('auth_session_backup')
+            if (sessionBackupStr) {
+              const sessionBackup = JSON.parse(sessionBackupStr)
+              if (sessionBackup.access_token) {
+                const age = Date.now() - sessionBackup.timestamp
+                if (age < 3600000) { // 1 hour
+                  token = sessionBackup.access_token
+                  console.debug('✅ Token retrieved from session storage direct access', {
+                    source: 'sessionStorageDirect',
+                    environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+                    age: Math.round(age / 1000) + 's',
+                    length: token.length,
+                    preview: `${token.substring(0, 20)}...`
+                  })
+                }
+              }
+            }
+          } catch (sessionError) {
+            console.warn('Direct session storage access failed:', sessionError)
+          }
+        }
+
+        // Strategy 4: Fallback to localStorage (development and emergency fallback)
         if (!token && !isProduction) {
           try {
             token = localStorage.getItem('access_token')

@@ -48,6 +48,7 @@ export class AuthService {
   private readonly tokenRefreshThreshold = 5 * 60 * 1000 // 5 minutes in milliseconds
   private processedAuthCodes: Set<string> = new Set()
   private temporaryAccessToken: string | null = null // Temporary storage for immediate access
+  private sessionStorageKey = 'auth_session_backup' // Session storage backup for navigation persistence
 
   /**
    * Initiate OAuth2 authentication flow with Auth0
@@ -509,7 +510,45 @@ export class AuthService {
       return this.temporaryAccessToken
     }
 
-    // Strategy 3: Fallback to localStorage (development and emergency fallback)
+    // Strategy 3: CRITICAL FIX - Check session storage for navigation persistence
+    if (typeof window !== 'undefined' && sessionStorage) {
+      try {
+        const sessionBackupStr = sessionStorage.getItem(this.sessionStorageKey)
+        if (sessionBackupStr) {
+          const sessionBackup = JSON.parse(sessionBackupStr)
+          if (sessionBackup.access_token) {
+            // Check if backup is recent (within 1 hour to prevent stale tokens)
+            const age = Date.now() - sessionBackup.timestamp
+            if (age < 3600000) { // 1 hour
+              console.debug('✅ Token retrieved from session storage backup', {
+                source: 'sessionStorage',
+                environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+                age: Math.round(age / 1000) + 's',
+                length: sessionBackup.access_token.length,
+                preview: `${sessionBackup.access_token.substring(0, 20)}...`
+              })
+
+              // Restore to temporary storage for consistency
+              this.temporaryAccessToken = sessionBackup.access_token
+              return sessionBackup.access_token
+            } else {
+              console.warn('Session storage backup is stale, clearing it')
+              sessionStorage.removeItem(this.sessionStorageKey)
+            }
+          }
+        }
+      } catch (sessionError) {
+        console.warn('Session storage access failed:', sessionError)
+        // Clean up corrupted session storage
+        try {
+          sessionStorage.removeItem(this.sessionStorageKey)
+        } catch (cleanupError) {
+          console.warn('Failed to clean up corrupted session storage:', cleanupError)
+        }
+      }
+    }
+
+    // Strategy 4: Fallback to localStorage (development and emergency fallback)
     // In production, only use localStorage if cookies completely failed
     const allowLocalStorage = !isProduction || !cookieToken
     if (allowLocalStorage) {
@@ -529,11 +568,12 @@ export class AuthService {
       }
     }
 
-    // Strategy 4: Enhanced debugging for production issues
+    // Strategy 5: Enhanced debugging for production issues
     if (isProduction) {
       console.error('🚨 PRODUCTION: All token retrieval strategies failed', {
         cookieAttempted: true,
         temporaryChecked: !!this.temporaryAccessToken,
+        sessionStorageChecked: true,
         localStorageChecked: allowLocalStorage,
         currentUrl: typeof window !== 'undefined' ? window.location.href : 'unknown',
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent.substring(0, 50) : 'unknown'
@@ -546,6 +586,7 @@ export class AuthService {
 
   /**
    * Enhanced environment detection with multiple fallback methods
+   * Includes Vercel production domain detection for frontend deployments
    */
   private detectProductionEnvironment(): boolean {
     // Method 1: Standard NODE_ENV check
@@ -559,7 +600,11 @@ export class AuthService {
       const productionDomains = [
         'app.zebra.associates',
         'marketedge.app',
-        'marketedge-platform.onrender.com'
+        'marketedge-platform.onrender.com',
+        // Add Vercel production domain patterns
+        'vercel.app',
+        'zebraassociates-projects.vercel.app',
+        'frontend-36gas2bky-zebraassociates-projects.vercel.app'
       ]
 
       if (productionDomains.some(domain => hostname.includes(domain))) {
@@ -756,6 +801,20 @@ export class AuthService {
       // Store token temporarily for immediate access while cookies are being set
       this.temporaryAccessToken = tokenResponse.access_token
 
+      // CRITICAL FIX: Add session storage backup for navigation persistence
+      // Session storage persists during navigation but clears when tab closes
+      try {
+        const sessionBackup = {
+          access_token: tokenResponse.access_token,
+          timestamp: Date.now(),
+          environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT'
+        }
+        sessionStorage.setItem(this.sessionStorageKey, JSON.stringify(sessionBackup))
+        console.log('✅ Session storage backup created for navigation persistence')
+      } catch (sessionError) {
+        console.warn('Session storage backup failed:', sessionError)
+      }
+
       // Backend has already set the access_token cookie (httpOnly: false)
       // For development, also store in localStorage for debugging
       if (!isProduction) {
@@ -781,23 +840,51 @@ export class AuthService {
         throw new Error('Token retrieval failed after authentication - please try logging in again')
       }
 
-      // Schedule cleanup of temporary token after cookies should be ready
-      setTimeout(() => {
-        // Check if cookies are working, if so clear temporary token
+      // CRITICAL FIX: Enhanced cookie availability detection with extended timeouts
+      // and graceful fallback strategy for production environments
+      let cookieCheckAttempts = 0
+      const maxCookieCheckAttempts = 10 // Up to 5 seconds total
+
+      const checkCookieAvailability = () => {
+        cookieCheckAttempts++
         const cookieToken = Cookies.get('access_token')
+
         if (cookieToken) {
-          console.log('✅ Cookie-based token access confirmed, clearing temporary storage')
+          console.log('✅ Cookie-based token access confirmed, clearing temporary storage', {
+            attempt: cookieCheckAttempts,
+            totalWait: cookieCheckAttempts * 500,
+            environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT'
+          })
           this.temporaryAccessToken = null
+          return
+        }
+
+        if (cookieCheckAttempts < maxCookieCheckAttempts) {
+          // Continue checking every 500ms for up to 5 seconds
+          setTimeout(checkCookieAvailability, 500)
+          console.debug(`Cookie availability check ${cookieCheckAttempts}/${maxCookieCheckAttempts} - retrying in 500ms`)
         } else {
-          console.warn('⚠️  Cookies not accessible after 500ms - may indicate domain/security issues', {
+          // After 5 seconds, cookies still not available - keep temporary token for fallback
+          console.warn('⚠️  CRITICAL: Cookies not accessible after 5 seconds - keeping temporary token as fallback', {
             currentDomain: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
             protocol: typeof window !== 'undefined' ? window.location.protocol : 'unknown',
             isProduction: isProduction,
             cookiesString: typeof document !== 'undefined' ? document.cookie.substring(0, 100) : 'unavailable',
-            suggestion: 'Check cookie domain settings and HTTPS configuration'
+            temporaryTokenLength: this.temporaryAccessToken?.length || 0,
+            fallbackStrategy: 'Temporary token will persist for session continuity'
           })
+
+          // In production, if cookies aren't working after 5 seconds,
+          // we need to keep the temporary token for the session
+          if (isProduction) {
+            console.error('🚨 PRODUCTION: Cookie system appears to be failing - using temporary token fallback')
+            // Don't clear temporary token - it's our only way to maintain auth
+          }
         }
-      }, 500) // Give browser time to process Set-Cookie headers
+      }
+
+      // Start the cookie availability check
+      setTimeout(checkCookieAvailability, 500)
     }
     
     if (tokenResponse.refresh_token) {
@@ -871,6 +958,14 @@ export class AuthService {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('token_expires_at')
+
+    // CRITICAL FIX: Clear session storage backup
+    try {
+      sessionStorage.removeItem(this.sessionStorageKey)
+      console.debug('✅ Session storage backup cleared')
+    } catch (sessionError) {
+      console.warn('Failed to clear session storage backup:', sessionError)
+    }
 
     // Clear temporary token storage
     this.temporaryAccessToken = null
