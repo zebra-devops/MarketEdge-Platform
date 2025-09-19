@@ -378,7 +378,7 @@ async def _create_or_update_user_from_auth0(db: AsyncSession, user_info: dict, c
             status_code=400,
             detail=f"Invalid user information: missing {', '.join(missing_fields)}"
         )
-    
+
     # Sanitize user info fields to prevent injection
     try:
         sanitized_email = sanitize_string_input(user_info["email"], max_length=254)
@@ -387,7 +387,7 @@ async def _create_or_update_user_from_auth0(db: AsyncSession, user_info: dict, c
         sanitized_family_name = sanitize_string_input(user_info.get("family_name", ""), max_length=100) if user_info.get("family_name") else ""
     except ValidationError as e:
         logger.error("User info sanitization failed", extra={
-            "event": "userinfo_sanitization_failed", 
+            "event": "userinfo_sanitization_failed",
             "error": str(e),
             "violation_type": e.violation_type,
             "client_ip": client_ip
@@ -396,10 +396,15 @@ async def _create_or_update_user_from_auth0(db: AsyncSession, user_info: dict, c
             status_code=400,
             detail="Invalid user information format"
         )
-    
+
     # Find or create user in database using sanitized email
     try:
-        result = await db.execute(select(User).filter(User.email == sanitized_email))
+        # CRITICAL FIX: Eager load organisation relationship to prevent lazy loading in async context
+        result = await db.execute(
+            select(User)
+            .options(selectinload(User.organisation))
+            .filter(User.email == sanitized_email)
+        )
         user = result.scalar_one_or_none()
         if not user:
             # Create user with default organization
@@ -432,7 +437,15 @@ async def _create_or_update_user_from_auth0(db: AsyncSession, user_info: dict, c
             db.add(user)
             await db.commit()
             await db.refresh(user)
-            
+
+            # CRITICAL FIX: Reload user with eager loading to prevent lazy loading issues
+            result = await db.execute(
+                select(User)
+                .options(selectinload(User.organisation))
+                .filter(User.id == user.id)
+            )
+            user = result.scalar_one()
+
             logger.info("New user created", extra={
                 "event": "user_created",
                 "user_id": str(user.id),
@@ -664,7 +677,12 @@ async def login(
     
     # Find or create user in database using sanitized email
     try:
-        result = await db.execute(select(User).filter(User.email == sanitized_email))
+        # CRITICAL FIX: Eager load organisation relationship to prevent lazy loading in async context
+        result = await db.execute(
+            select(User)
+            .options(selectinload(User.organisation))
+            .filter(User.email == sanitized_email)
+        )
         user = result.scalar_one_or_none()
         if not user:
             # Create user with default organization
@@ -697,6 +715,14 @@ async def login(
             db.add(user)
             await db.commit()
             await db.refresh(user)
+
+            # CRITICAL FIX: Reload user with eager loading to prevent lazy loading issues
+            result = await db.execute(
+                select(User)
+                .options(selectinload(User.organisation))
+                .filter(User.id == user.id)
+            )
+            user = result.scalar_one()
 
             logger.info("New user created", extra={
                 "event": "user_created",
