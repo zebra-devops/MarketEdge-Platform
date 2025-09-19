@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Form, Body
 from fastapi.security import HTTPBearer
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import text
+from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text, select
 from pydantic import BaseModel, ValidationError as PydanticValidationError
 from typing import Dict, Any, Optional
 from datetime import timedelta
 import secrets
-from ....core.database import get_db
+from ....core.database import get_db, get_async_db
 from ....models.user import User
 from ....models.organisation import Organisation
 from ....auth.jwt import (
@@ -36,7 +37,7 @@ security = HTTPBearer()
 
 
 def _setup_default_tool_access(db: Session, organisation_id: str):
-    """Set up default tool access for a new organization"""
+    """Set up default tool access for a new organization - SYNC VERSION"""
     try:
         from ....models.tool import Tool
         from ....models.organisation_tool_access import OrganisationToolAccess
@@ -84,6 +85,61 @@ def _setup_default_tool_access(db: Session, organisation_id: str):
         })
         # Don't raise exception - tool access can be set up later
         db.rollback()
+
+
+async def _setup_default_tool_access_async(db: AsyncSession, organisation_id: str):
+    """Set up default tool access for a new organization - ASYNC VERSION"""
+    try:
+        from ....models.tool import Tool
+        from ....models.organisation_tool_access import OrganisationToolAccess
+
+        # Get all available tools
+        result = await db.execute(select(Tool).filter(Tool.is_active == True))
+        tools = result.scalars().all()
+
+        logger.info(f"Setting up default tool access for organization {organisation_id}", extra={
+            "event": "default_tool_access_setup",
+            "organisation_id": organisation_id,
+            "tools_count": len(tools)
+        })
+
+        # Create basic access for all tools for the Default organization
+        for tool in tools:
+            # Check if access already exists
+            result = await db.execute(
+                select(OrganisationToolAccess).filter(
+                    OrganisationToolAccess.organisation_id == organisation_id,
+                    OrganisationToolAccess.tool_id == tool.id
+                )
+            )
+            existing_access = result.scalar_one_or_none()
+
+            if not existing_access:
+                tool_access = OrganisationToolAccess(
+                    organisation_id=organisation_id,
+                    tool_id=tool.id,
+                    subscription_tier="basic",
+                    features_enabled=["basic_access"],
+                    usage_limits={"daily_requests": 100, "monthly_requests": 3000}
+                )
+                db.add(tool_access)
+
+        await db.commit()
+
+        logger.info(f"Default tool access setup completed for organization {organisation_id}", extra={
+            "event": "default_tool_access_complete",
+            "organisation_id": organisation_id
+        })
+
+    except Exception as e:
+        logger.error(f"Failed to set up default tool access for organization {organisation_id}", extra={
+            "event": "default_tool_access_error",
+            "organisation_id": organisation_id,
+            "error": str(e),
+            "error_type": type(e).__name__
+        })
+        # Don't raise exception - tool access can be set up later
+        await db.rollback()
 
 
 class LoginRequest(BaseModel):
@@ -143,7 +199,7 @@ async def login_oauth2(
     login_data: LoginRequest,
     response: Response,
     request: Request,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """OAuth2 authentication endpoint for JSON requests"""
     # Add security headers
@@ -306,7 +362,7 @@ async def login_oauth2(
         raise HTTPException(status_code=500, detail=f"Internal server error during authentication: {type(e).__name__}: {str(e)}")
 
 
-async def _create_or_update_user_from_auth0(db: Session, user_info: dict, client_ip: str) -> User:
+async def _create_or_update_user_from_auth0(db: AsyncSession, user_info: dict, client_ip: str) -> User:
     """Create or update user from Auth0 user info"""
     # Enhanced user info validation with sanitization
     required_fields = ["email", "sub"]
@@ -343,10 +399,12 @@ async def _create_or_update_user_from_auth0(db: Session, user_info: dict, client
     
     # Find or create user in database using sanitized email
     try:
-        user = db.query(User).filter(User.email == sanitized_email).first()
+        result = await db.execute(select(User).filter(User.email == sanitized_email))
+        user = result.scalar_one_or_none()
         if not user:
             # Create user with default organization
-            default_org = db.query(Organisation).filter(Organisation.name == "Default").first()
+            result = await db.execute(select(Organisation).filter(Organisation.name == "Default"))
+            default_org = result.scalar_one_or_none()
             if not default_org:
                 from ....models.organisation import SubscriptionPlan
                 from ....core.rate_limit_config import Industry
@@ -357,12 +415,12 @@ async def _create_or_update_user_from_auth0(db: Session, user_info: dict, client
                     subscription_plan=SubscriptionPlan.basic
                 )
                 db.add(default_org)
-                db.commit()
-                db.refresh(default_org)
-                
+                await db.commit()
+                await db.refresh(default_org)
+
                 # Set up default tool access for the Default organization
-                _setup_default_tool_access(db, default_org.id)
-            
+                await _setup_default_tool_access_async(db, default_org.id)
+
             from ....models.user import UserRole
             user = User(
                 email=sanitized_email,
@@ -372,8 +430,8 @@ async def _create_or_update_user_from_auth0(db: Session, user_info: dict, client
                 role=UserRole.viewer
             )
             db.add(user)
-            db.commit()
-            db.refresh(user)
+            await db.commit()
+            await db.refresh(user)
             
             logger.info("New user created", extra={
                 "event": "user_created",
@@ -391,7 +449,7 @@ async def _create_or_update_user_from_auth0(db: Session, user_info: dict, client
             "error_message": str(e),
             "email": sanitized_email
         })
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             status_code=500,
             detail="Database error during authentication"
@@ -770,7 +828,7 @@ async def login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, db: Session = Depends(get_db)):
+async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, db: AsyncSession = Depends(get_async_db)):
     """Enhanced token refresh with tenant validation and rotation"""
     # Verify refresh token
     payload = verify_token(refresh_data.refresh_token, expected_type="refresh")
@@ -798,10 +856,12 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
         )
     
     # Validate user exists and is active
-    user = db.query(User).options(
-        joinedload(User.organisation),
-        joinedload(User.application_access)
-    ).filter(User.id == user_id).first()
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.organisation), selectinload(User.application_access))
+        .filter(User.id == user_id)
+    )
+    user = result.scalar_one_or_none()
     if not user or not user.is_active:
         logger.warning("User not found or inactive during refresh", extra={
             "event": "refresh_user_invalid",
@@ -1142,7 +1202,7 @@ async def extend_session(
 
 
 @router.post("/emergency/fix-database-schema")
-async def emergency_fix_database_schema(db: Session = Depends(get_db)):
+async def emergency_fix_database_schema(db: AsyncSession = Depends(get_async_db)):
     """EMERGENCY: Fix database schema for authentication - Add missing user columns"""
     try:
         logger.info("EMERGENCY: Starting database schema fix", extra={
@@ -1227,7 +1287,7 @@ async def emergency_fix_database_schema(db: Session = Depends(get_db)):
 
 
 @router.post("/emergency/create-user-application-access-table")
-async def emergency_create_user_application_access_table(db: Session = Depends(get_db)):
+async def emergency_create_user_application_access_table(db: AsyncSession = Depends(get_async_db)):
     """EMERGENCY: Create missing user_application_access table for authentication"""
     try:
         logger.info("EMERGENCY: Starting user_application_access table creation", extra={
