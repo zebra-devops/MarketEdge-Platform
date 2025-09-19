@@ -334,7 +334,7 @@ async def login_oauth2(
                 "email": user.email,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "role": user.role.value,
+                "role": user.role.value if hasattr(user.role, 'value') else user.role,
                 "is_active": user.is_active,
                 "created_at": user.created_at.isoformat() if user.created_at else None,
                 "updated_at": user.updated_at.isoformat() if user.updated_at else None
@@ -343,9 +343,9 @@ async def login_oauth2(
                 "id": str(user.organisation.id),
                 "name": user.organisation.name,
                 "industry": user.organisation.industry,
-                "subscription_plan": user.organisation.subscription_plan.value
+                "subscription_plan": user.organisation.subscription_plan.value if hasattr(user.organisation.subscription_plan, 'value') else user.organisation.subscription_plan
             } if user.organisation else None,
-            permissions=get_user_permissions(user.role.value)
+            permissions=get_user_permissions(user.role.value if hasattr(user.role, 'value') else user.role)
         )
         
     except HTTPException:
@@ -783,7 +783,7 @@ async def login(
     tenant_context = {
         "industry": user.organisation.industry if user.organisation else "default"
     }
-    permissions = get_user_permissions(user.role.value, tenant_context)
+    permissions = get_user_permissions(user.role.value if hasattr(user.role, 'value') else user.role, tenant_context)
     
     # Create enhanced tokens with tenant context
     token_data_payload = {
@@ -794,7 +794,7 @@ async def login(
     access_token = create_access_token(
         data=token_data_payload,
         tenant_id=str(user.organisation_id),
-        user_role=user.role.value,
+        user_role=user.role.value if hasattr(user.role, 'value') else user.role,
         permissions=permissions,
         industry=user.organisation.industry if user.organisation else "default"
     )
@@ -854,7 +854,7 @@ async def login(
         "event": "auth_success",
         "user_id": str(user.id),
         "organisation_id": str(user.organisation_id),
-        "user_role": user.role.value,
+        "user_role": user.role.value if hasattr(user.role, 'value') else user.role,
         "permissions_count": len(permissions),
         "tenant_industry": tenant_context["industry"]
     })
@@ -869,7 +869,7 @@ async def login(
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "role": user.role.value,
+            "role": user.role.value if hasattr(user.role, 'value') else user.role,
             "is_active": user.is_active,
             "created_at": user.created_at.isoformat() if user.created_at else None,
             "updated_at": user.updated_at.isoformat() if user.updated_at else None
@@ -878,7 +878,7 @@ async def login(
             "id": str(user.organisation.id),
             "name": user.organisation.name,
             "industry": user.organisation.industry,
-            "subscription_plan": user.organisation.subscription_plan.value
+            "subscription_plan": user.organisation.subscription_plan.value if hasattr(user.organisation.subscription_plan, 'value') else user.organisation.subscription_plan
         } if user.organisation else None,
         permissions=permissions
     )
@@ -953,7 +953,7 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
     tenant_context = {
         "industry": user.organisation.industry if user.organisation else "Technology"
     }
-    permissions = get_user_permissions(user.role.value, tenant_context)
+    permissions = get_user_permissions(user.role.value if hasattr(user.role, 'value') else user.role, tenant_context)
     
     # Create new tokens with rotation
     token_data_payload = {
@@ -964,7 +964,7 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
     new_access_token = create_access_token(
         data=token_data_payload,
         tenant_id=str(user.organisation_id),
-        user_role=user.role.value,
+        user_role=user.role.value if hasattr(user.role, 'value') else user.role,
         permissions=permissions,
         industry=user.organisation.industry if user.organisation else "default"
     )
@@ -1040,7 +1040,7 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "role": user.role.value,
+            "role": user.role.value if hasattr(user.role, 'value') else user.role,
             "is_active": user.is_active,
             "created_at": user.created_at.isoformat() if user.created_at else None,
             "updated_at": user.updated_at.isoformat() if user.updated_at else None
@@ -1049,7 +1049,7 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
             "id": str(user.organisation.id),
             "name": user.organisation.name,
             "industry": user.organisation.industry,
-            "subscription_plan": user.organisation.subscription_plan.value
+            "subscription_plan": user.organisation.subscription_plan.value if hasattr(user.organisation.subscription_plan, 'value') else user.organisation.subscription_plan
         } if user.organisation else None,
         permissions=permissions
     )
@@ -1128,7 +1128,7 @@ async def get_current_user_info(
     tenant_context = {
         "industry": current_user.organisation.industry if current_user.organisation else "Technology"
     }
-    permissions = get_user_permissions(current_user.role.value, tenant_context)
+    permissions = get_user_permissions(current_user.role.value if hasattr(current_user.role, 'value') else current_user.role, tenant_context)
     
     return {
         "user": {
@@ -1136,7 +1136,7 @@ async def get_current_user_info(
             "email": current_user.email,
             "first_name": current_user.first_name,
             "last_name": current_user.last_name,
-            "role": current_user.role.value,
+            "role": current_user.role.value if hasattr(current_user.role, 'value') else current_user.role,
             "organisation_id": str(current_user.organisation_id),
             "is_active": current_user.is_active,
             "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
@@ -1150,7 +1150,7 @@ async def get_current_user_info(
             "id": str(current_user.organisation_id),
             "name": current_user.organisation.name if current_user.organisation else "Default",
             "industry": current_user.organisation.industry if current_user.organisation else "Technology",
-            "subscription_plan": current_user.organisation.subscription_plan.value if current_user.organisation else "basic"
+            "subscription_plan": (current_user.organisation.subscription_plan.value if hasattr(current_user.organisation.subscription_plan, 'value') else current_user.organisation.subscription_plan) if current_user.organisation else "basic"
         },
         "permissions": permissions,
         "session": {
@@ -1216,7 +1216,7 @@ async def check_session(current_user: User = Depends(get_current_user)):
         "authenticated": True,
         "user_id": str(current_user.id),
         "tenant_id": str(current_user.organisation_id),
-        "role": current_user.role.value,
+        "role": current_user.role.value if hasattr(current_user.role, 'value') else current_user.role,
         "active": current_user.is_active
     }
 
