@@ -509,8 +509,8 @@ async def verify_admin_access(
                 "message": "User not found in database"
             }
         
-        # Check role
-        is_admin = user.role == UserRole.admin
+        # Check role (admin or super_admin)
+        is_admin = user.role in [UserRole.admin, UserRole.super_admin]
         
         # Check application access
         user_app_access = db.query(UserApplicationAccess).filter(
