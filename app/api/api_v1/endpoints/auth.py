@@ -1691,7 +1691,145 @@ async def emergency_create_user_application_access_table(db: AsyncSession = Depe
             logger.info("Created indexes for user_invitations")
         else:
             operations.append("user_invitations_table_already_exists")
-            
+
+        # EMERGENCY ADDITION: Create missing hierarchy tables for authentication fix
+        logger.info("EMERGENCY: Creating missing hierarchy tables for OAuth fix")
+
+        # Create hierarchy enum types if they don't exist
+        try:
+            cur.execute("""
+                DO $$ BEGIN
+                    CREATE TYPE hierarchylevel AS ENUM ('ORGANIZATION', 'LOCATION', 'DEPARTMENT', 'USER');
+                EXCEPTION
+                    WHEN duplicate_object THEN
+                        RAISE NOTICE 'Type hierarchylevel already exists, skipping...';
+                END $$
+            """)
+            operations.append("hierarchylevel_enum_created")
+            logger.info("Created hierarchylevel enum")
+        except Exception as e:
+            logger.info(f"HierarchyLevel enum: {str(e)}")
+
+        try:
+            cur.execute("""
+                DO $$ BEGIN
+                    CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer');
+                EXCEPTION
+                    WHEN duplicate_object THEN
+                        RAISE NOTICE 'Type enhanceduserrole already exists, skipping...';
+                END $$
+            """)
+            operations.append("enhanceduserrole_enum_created")
+            logger.info("Created enhanceduserrole enum")
+        except Exception as e:
+            logger.info(f"EnhancedUserRole enum: {str(e)}")
+
+        # Create organization_hierarchy table (required for foreign keys)
+        try:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS organization_hierarchy (
+                    id UUID NOT NULL DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                    name VARCHAR(255) NOT NULL,
+                    slug VARCHAR(100) NOT NULL,
+                    description TEXT,
+                    parent_id UUID,
+                    level hierarchylevel NOT NULL,
+                    hierarchy_path VARCHAR(500) NOT NULL,
+                    depth INTEGER NOT NULL DEFAULT 0,
+                    legacy_organisation_id UUID,
+                    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                    settings TEXT,
+                    CONSTRAINT organization_hierarchy_pkey PRIMARY KEY (id),
+                    CONSTRAINT organization_hierarchy_parent_id_fkey
+                        FOREIGN KEY (parent_id) REFERENCES organization_hierarchy(id),
+                    CONSTRAINT organization_hierarchy_legacy_organisation_id_fkey
+                        FOREIGN KEY (legacy_organisation_id) REFERENCES organisations(id),
+                    CONSTRAINT uq_hierarchy_slug_parent
+                        UNIQUE (slug, parent_id)
+                )
+            """)
+            operations.append("organization_hierarchy_table_created")
+            logger.info("Created organization_hierarchy table")
+        except Exception as e:
+            logger.info(f"Organization hierarchy table: {str(e)}")
+
+        # Create user_hierarchy_assignments table - THIS IS THE MISSING TABLE CAUSING OAUTH FAILURES
+        try:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS user_hierarchy_assignments (
+                    id UUID NOT NULL DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                    user_id UUID NOT NULL,
+                    hierarchy_node_id UUID NOT NULL,
+                    role enhanceduserrole NOT NULL,
+                    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+                    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                    CONSTRAINT user_hierarchy_assignments_pkey PRIMARY KEY (id),
+                    CONSTRAINT user_hierarchy_assignments_user_id_fkey
+                        FOREIGN KEY (user_id) REFERENCES users(id),
+                    CONSTRAINT user_hierarchy_assignments_hierarchy_node_id_fkey
+                        FOREIGN KEY (hierarchy_node_id) REFERENCES organization_hierarchy(id),
+                    CONSTRAINT uq_user_hierarchy_assignment
+                        UNIQUE (user_id, hierarchy_node_id)
+                )
+            """)
+            operations.append("user_hierarchy_assignments_table_created")
+            logger.info("CRITICAL: Created user_hierarchy_assignments table - OAuth should now work!")
+        except Exception as e:
+            logger.info(f"User hierarchy assignments table: {str(e)}")
+
+        # Create hierarchy_permission_overrides table
+        try:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS hierarchy_permission_overrides (
+                    id UUID NOT NULL DEFAULT gen_random_uuid(),
+                    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                    user_id UUID NOT NULL,
+                    hierarchy_node_id UUID NOT NULL,
+                    permission VARCHAR(100) NOT NULL,
+                    granted BOOLEAN NOT NULL DEFAULT FALSE,
+                    reason VARCHAR(500),
+                    granted_by UUID,
+                    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                    CONSTRAINT hierarchy_permission_overrides_pkey PRIMARY KEY (id),
+                    CONSTRAINT hierarchy_permission_overrides_user_id_fkey
+                        FOREIGN KEY (user_id) REFERENCES users(id),
+                    CONSTRAINT hierarchy_permission_overrides_hierarchy_node_id_fkey
+                        FOREIGN KEY (hierarchy_node_id) REFERENCES organization_hierarchy(id),
+                    CONSTRAINT hierarchy_permission_overrides_granted_by_fkey
+                        FOREIGN KEY (granted_by) REFERENCES users(id),
+                    CONSTRAINT uq_user_permission_override
+                        UNIQUE (user_id, hierarchy_node_id, permission)
+                )
+            """)
+            operations.append("hierarchy_permission_overrides_table_created")
+            logger.info("Created hierarchy_permission_overrides table")
+        except Exception as e:
+            logger.info(f"Hierarchy permission overrides table: {str(e)}")
+
+        # Create necessary indexes for hierarchy tables
+        try:
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_user_hierarchy_user_active ON user_hierarchy_assignments (user_id, is_active)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_user_hierarchy_node_role ON user_hierarchy_assignments (hierarchy_node_id, role)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_permission_override_user_active ON hierarchy_permission_overrides (user_id, is_active)")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_permission_override_node_permission ON hierarchy_permission_overrides (hierarchy_node_id, permission)")
+            operations.append("hierarchy_indexes_created")
+            logger.info("Created indexes for hierarchy tables")
+        except Exception as e:
+            logger.info(f"Hierarchy indexes creation: {str(e)}")
+
+        # Update alembic version to mark migration as applied
+        try:
+            cur.execute("UPDATE alembic_version SET version_num = '80105006e3d3' WHERE version_num = '010'")
+            operations.append("alembic_version_updated_to_80105006e3d3")
+            logger.info("CRITICAL: Updated Alembic version to 80105006e3d3")
+        except Exception as e:
+            logger.info(f"Alembic version update: {str(e)}")
+
         # Commit changes
         conn.commit()
         cur.close()
