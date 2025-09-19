@@ -186,6 +186,162 @@ git push origin [current-branch]
 - **Pre-Implementation Standards** - Technical validation requirements before development begins
 
 
+## Task Completion Checklist (MANDATORY)
+- [ ] Code changes committed
+- [ ] Tests passing locally
+- [ ] Database migrations created (if schema changed)
+- [ ] Environment variables documented (if added)
+- [ ] Deployment requirements communicated
+- [ ] Production deployment status verified
+
+**CANNOT mark task complete until ALL boxes checked**
+
+# Code Reviewer Agent - Environment Management Updates
+
+Add these sections to cr.md:
+
+## Failure Recovery Protocol
+
+When reviewing emergency sync migrations:
+
+### 1. PRIORITY REVIEW - Sync migrations get expedited review
+Emergency production sync migrations jump to front of review queue.
+
+### 2. SAFETY CHECK - Extra validation for production fixes
+
+#### Critical Validation Points
+- [ ] Migration won't delete existing data
+- [ ] Rollback procedure exists and tested
+- [ ] Tenant isolation maintained
+- [ ] No breaking changes to existing functionality
+- [ ] Performance impact assessed
+
+#### Sync Migration Review Checklist
+```
+Emergency Migration Review:
+- Purpose clearly stated: ✅
+- Only additive changes: ✅  
+- Rollback tested: ✅
+- Tenant boundaries respected: ✅
+- No data loss possible: ✅
+- Performance impact: Minimal (adds indexes)
+```
+
+### 3. COMMUNICATE - Clear deployment requirements
+```
+Sync Migration Review Complete:
+- File: migrations/sync_production_2025_01_15.py
+- Verdict: APPROVED for production
+- Prerequisites: Backup production database first
+- Risk level: LOW - only adds missing structures
+- Deploy window: Can deploy immediately
+- Special instructions: Monitor query performance after indexes added
+```
+
+## Review Communication Templates
+
+### Deployment Requirements Language
+
+#### Migration Reviews
+- ❌ WRONG: "Code approved"
+- ✅ CORRECT: "Code approved - requires database migration migrations/add_users.py before deploy"
+
+#### Configuration Changes
+- ❌ WRONG: "Review complete"
+- ✅ CORRECT: "Review complete - new env vars needed: STRIPE_KEY, WEBHOOK_SECRET"
+
+#### Risk Communication
+- ❌ WRONG: "Looks good"
+- ✅ CORRECT: "Approved with CONDITIONS: deploy to staging first, monitor for 1 hour"
+
+### Post-Review Status Templates
+
+#### Standard Review Complete
+```
+Review Complete:
+- Code: ✅ Approved
+- Migrations: 1 required (migrations/add_preferences.py)
+- Env vars: 2 new required (API_KEY, SECRET)
+- Deploy order: migrations first, then code
+- Risk: Medium - affects authentication flow
+- Testing requirements: Verify auth flow in staging
+```
+
+#### High-Risk Review Complete
+```
+Review Complete - HIGH RISK:
+- Code: ⚠️ Approved with conditions
+- Critical changes: Modifies core authentication
+- Migrations: 2 required (list specific files)
+- Deploy requirements:
+  1. Backup production database
+  2. Deploy to staging first
+  3. Run full test suite in staging
+  4. Monitor for 2 hours
+  5. Then deploy to production during low-traffic window
+- Rollback plan: Document specific steps
+```
+
+#### Emergency Fix Review
+```
+Emergency Fix Review - EXPEDITED:
+- Issue: Production authentication broken
+- Fix: ✅ Approved for immediate deployment
+- Risk: Acceptable given current outage
+- Migrations: None
+- Deploy: Immediately to production
+- Post-deploy: Monitor error rates for 30 minutes
+```
+
+### Migration-Specific Review Language
+
+#### Safe Migration
+```
+Migration Review - SAFE:
+- Type: Additive only (new tables/columns)
+- Data risk: None
+- Rollback: Simple DROP operations
+- Deploy timing: Any time
+```
+
+#### Risky Migration
+```
+Migration Review - CAUTION REQUIRED:
+- Type: Modifies existing data
+- Data risk: HIGH - affects user records
+- Required steps:
+  1. Test on production data copy
+  2. Backup before deployment
+  3. Deploy during maintenance window
+  4. Have rollback script ready
+```
+
+### Environment Configuration Reviews
+
+When reviewing code with environment dependencies:
+
+```
+Environment Configuration Required:
+- New variables: 
+  * STRIPE_KEY (payment processing)
+  * WEBHOOK_SECRET (webhook validation)
+  * CACHE_TTL (optional, defaults to 3600)
+- Must be set in:
+  * Local development (.env)
+  * Staging environment
+  * Production environment (before code deploy)
+- Deployment will fail without: STRIPE_KEY, WEBHOOK_SECRET
+```
+
+### Review Priority Levels
+
+Communicate review urgency clearly:
+
+1. **EMERGENCY** - Production down, review immediately
+2. **URGENT** - Production degraded, review within 1 hour  
+3. **NORMAL** - Standard feature, review in sequence
+4. **LOW** - Documentation/cleanup, review when available
+
 ## Code Review Commit Requirements
 
 After EACH review cycle:

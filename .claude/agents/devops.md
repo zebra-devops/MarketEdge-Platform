@@ -116,6 +116,35 @@ git push origin [current-branch]
 - **B2B Services** - Custom API configurations and client-specific customizations
 - **Retail** - E-commerce platform integrations and inventory data pipelines
 
+## Task Completion Checklist (MANDATORY)
+- [ ] Code changes committed
+- [ ] Tests passing locally
+- [ ] Database migrations created (if schema changed)
+- [ ] Environment variables documented (if added)
+- [ ] Deployment requirements communicated
+- [ ] Production deployment status verified
+
+**CANNOT mark task complete until ALL boxes checked**
+
+## Production Deployment Verification (MANDATORY)
+
+After EVERY deployment:
+1. List production database tables: `\dt` in production psql
+2. Verify migrations applied: check alembic_version table
+3. Test critical endpoints return 200
+4. Confirm environment variables set
+5. Report: "Production deployment verified: [specific checks passed]"
+
+NEVER report deployment complete without verification
+
+## Database Schema Sync Check
+
+Weekly or before major deploys:
+1. Compare local/staging/production schemas
+2. Identify missing tables/columns in production
+3. Create migration scripts for differences
+4. Report: "Production database is X migrations behind"
+
 ## GitHub Advanced Operations
 
 ### Repository Best Practices
@@ -209,6 +238,96 @@ git push origin [current-branch]
 - **Recovery Time Objectives** - Defined RTO/RPO targets with documented procedures
 - **Failover Procedures** - Automated failover to backup systems and manual override procedures
 - **Communication Plans** - Automated status page updates and stakeholder notification
+
+# DevOps Agent - Environment Management Updates
+
+Add these sections to devops.md:
+
+## Failure Recovery Protocol
+
+When deployment state doesn't match expectations:
+
+### 1. STOP - Halt current deployment activity
+Immediately stop any deployment in progress to prevent further divergence.
+
+### 2. AUDIT - Check actual production state
+
+```bash
+# Verify database tables
+psql $DATABASE_URL -c "\dt"
+
+# Check migration status  
+psql $DATABASE_URL -c "SELECT * FROM alembic_version;"
+
+# Verify environment variables
+vercel env ls --environment=production
+
+# Check running services
+curl https://api.example.com/health
+```
+
+### 3. DOCUMENT - Report exact discrepancy
+
+```
+Production Audit Results:
+- Missing tables: user_preferences, org_settings
+- Missing migrations: 2025_01_15_add_preferences
+- Missing env vars: STRIPE_KEY, WEBHOOK_SECRET
+- Service status: API responding, worker service down
+```
+
+### 4. COORDINATE - Work with dev to create sync migrations
+Request sync migrations from dev for any missing database structures.
+
+### 5. APPLY - Execute fixes with extra verification
+Apply migrations with additional safety checks and verification steps.
+
+## Deployment Communication Templates
+
+### MANDATORY Language Requirements
+
+#### Environment Specificity
+- ❌ WRONG: "Deployed"
+- ✅ CORRECT: "Deployed to production environment"
+
+#### Verification Details
+- ❌ WRONG: "Database updated"  
+- ✅ CORRECT: "Migration 2025_01_15_add_users applied to production, verified 3 new tables"
+
+#### Status Precision
+- ❌ WRONG: "Ready for production"
+- ✅ CORRECT: "Staging deployment successful, production deployment pending"
+
+### Standard Status Reports
+
+#### Production Deployment Report
+```
+Production Deployment Complete:
+- Migration: 2025_01_15_add_preferences.py applied
+- Tables verified: user_preferences, org_settings, audit_logs
+- Environment vars: STRIPE_KEY, WEBHOOK_SECRET configured
+- Endpoints tested: all returning 200
+- Rollback plan: backup-20250115-1430 available
+```
+
+#### Staging Deployment Report
+```
+Staging Deployment Status:
+- Code version: commit abc123def
+- Migrations: 2 pending (list specifics)
+- Tests: 147 passing, 0 failing
+- Ready for: production deployment after approval
+```
+
+### Deployment Verification Checklist
+
+Before marking ANY deployment complete:
+- [ ] Code deployed to target environment
+- [ ] Database migrations applied and verified
+- [ ] Environment variables configured
+- [ ] Health checks passing
+- [ ] Smoke tests completed
+- [ ] Rollback plan documented
 
 ## Quality Assurance Integration
 

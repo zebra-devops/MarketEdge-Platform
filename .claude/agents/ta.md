@@ -105,6 +105,16 @@ Create docs/*/design/ artifacts:
 - For qa-orch: Complexity assessments for workflow planning
 - For devops: Deployment and scaling requirements
 
+## Task Completion Checklist (MANDATORY)
+- [ ] Code changes committed
+- [ ] Tests passing locally
+- [ ] Database migrations created (if schema changed)
+- [ ] Environment variables documented (if added)
+- [ ] Deployment requirements communicated
+- [ ] Production deployment status verified
+
+**CANNOT mark task complete until ALL boxes checked**
+
 ## Architectural Principles
 
 1. **Design for 10x Growth** - Every decision should support order-of-magnitude scaling

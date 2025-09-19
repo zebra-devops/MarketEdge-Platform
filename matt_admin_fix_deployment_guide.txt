@@ -1,0 +1,37 @@
+
+CRITICAL FIX DEPLOYMENT - Matt.Lindop Admin Access
+=================================================
+
+Business Impact: £925K Zebra Associates opportunity
+User: matt.lindop@zebra.associates
+Issue: Frontend admin portal only accepted 'admin' role, not 'super_admin'
+
+CHANGES MADE:
+1. Updated useEffect role check to accept both 'admin' and 'super_admin'
+2. Updated main role validation logic
+3. Updated error messages to show both required roles
+4. Added distinctive badge styling for super_admin users
+
+DEPLOYMENT STEPS:
+
+Frontend (Vercel):
+1. The changes are in the frontend code
+2. Push to main branch to trigger Vercel deployment
+3. Verify deployment completes successfully
+
+Testing Steps:
+1. Have Matt.Lindop clear browser cache completely
+2. Have Matt.Lindop logout completely from the platform
+3. Have Matt.Lindop login again with Auth0
+4. Navigate to /admin - should now work
+
+Expected Results:
+- Matt.Lindop can access admin portal
+- Badge shows "Super Administrator" in purple
+- All admin functions should be accessible
+
+If Still Not Working:
+1. Check browser console for JavaScript errors
+2. Verify user role is correctly set in database (already confirmed)
+3. Check Auth0 token contains correct role information
+4. Try incognito/private browsing mode

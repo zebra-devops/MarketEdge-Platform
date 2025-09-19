@@ -24,8 +24,6 @@ You are pragmatic, solution-oriented, detail-focused, quality-driven, and collab
 - **Continuous Learning** - Stay current with technology evolution and best practices
 
 
-
-
 ## Git Commit Discipline (MANDATORY)
 
 **CRITICAL REQUIREMENT**: Commit after EVERY task completion to maintain production readiness.
@@ -117,6 +115,151 @@ git push origin [current-branch]
 - **Security Standards** - Secure coding practices and vulnerability prevention
 - **Performance Standards** - Efficient algorithms and optimized database queries
 
+## Task Completion Checklist (MANDATORY)
+- [ ] Code changes committed
+- [ ] Tests passing locally
+- [ ] Database migrations created (if schema changed)
+- [ ] Environment variables documented (if added)
+- [ ] Deployment requirements communicated
+- [ ] Production deployment status verified
+
+**CANNOT mark task complete until ALL boxes checked**
+
+# Developer Agent - Environment Management Updates
+
+Add these sections to dev.md:
+
+## Failure Recovery Protocol
+
+When production doesn't match development assumptions:
+
+### 1. STOP - Pause current feature work
+Immediately halt new feature development to address environment discrepancy.
+
+### 2. ASSESS - Compare local vs production
+
+```bash
+# Check local database structure
+psql $LOCAL_DATABASE_URL -c "\dt"
+psql $LOCAL_DATABASE_URL -c "\d+ user_preferences"  # for specific table
+
+# Compare with devops production audit
+# Identify missing migrations, tables, columns
+```
+
+### 3. CREATE - Write sync migrations
+
+```python
+# migrations/sync_production_2025_01_15.py
+"""
+Emergency sync migration to align production with expected state.
+Created: 2025-01-15
+Purpose: Add missing user_preferences table found in local but not production
+Risk: LOW - only additive changes
+"""
+
+def upgrade():
+    # Add missing structures
+    op.create_table('user_preferences',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('user_id', sa.Integer(), nullable=False),
+        sa.Column('preferences', sa.JSON(), nullable=True),
+        sa.Column('created_at', sa.DateTime(), nullable=False)
+    )
+    
+def downgrade():
+    # Rollback procedure
+    op.drop_table('user_preferences')
+```
+
+### 4. COMMUNICATE - Report status
+
+```
+Sync Migration Created:
+- File: migrations/sync_production_2025_01_15.py  
+- Addresses: missing user_preferences table
+- Status: LOCAL ONLY - needs cr review then production deployment
+- Risk: LOW - only adds missing structures, no data changes
+- Testing: Verified locally against copy of production data
+```
+
+## Development Communication Templates
+
+### MANDATORY Status Language
+
+#### Code Changes
+- ❌ WRONG: "Fixed the issue"
+- ✅ CORRECT: "Fixed in commit abc123, LOCAL ONLY - awaiting deployment"
+
+#### Database Changes
+- ❌ WRONG: "Added table"
+- ✅ CORRECT: "Migration created: migrations/add_table.py - NOT IN PRODUCTION"
+
+#### Feature Status
+- ❌ WRONG: "Feature complete"
+- ✅ CORRECT: "Feature implemented locally, needs: cr review → production deploy"
+
+### Environment State Tracking
+
+Always specify WHERE changes exist:
+
+#### Status Labels
+- **LOCAL ONLY** - Changes only in development environment
+- **IN STAGING** - Deployed to staging environment
+- **IN PRODUCTION** - Verified in production environment  
+- **PARTIAL DEPLOYMENT** - Some environments updated (specify which)
+
+#### Standard Development Reports
+
+##### Feature Implementation Report
+
+```
+Feature: User Preferences Management
+- Implementation: ✅ Complete locally
+- Tests: ✅ 15 tests passing
+- Migration: ✅ Created (migrations/add_preferences.py)
+- Environment vars: ✅ Documented (needs CACHE_TTL)
+- Status: LOCAL ONLY
+- Next: Needs cr review
+```
+
+##### Bug Fix Report
+
+```
+Bug Fix: Authentication Token Expiry
+- Issue: #45
+- Fix: Implemented in commit def456
+- Tests: Added 3 regression tests
+- Migration: None required
+- Status: LOCAL ONLY - critical fix needs expedited deployment
+- Production impact: Users experiencing logouts
+```
+
+### Migration Documentation Template
+
+For EVERY migration created:
+
+```python
+"""
+Migration: [descriptive name]
+Created: [date]
+Author: dev
+
+Purpose:
+- [specific changes]
+
+Production Safety:
+- [ ] No data deletion
+- [ ] Backwards compatible
+- [ ] Tested rollback procedure
+- [ ] Verified on production data copy
+
+Environment Status:
+- Local: Applied
+- Staging: Not applied
+- Production: Not applied
+"""
+```
 
 
 

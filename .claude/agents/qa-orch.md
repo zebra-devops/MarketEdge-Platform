@@ -103,6 +103,254 @@ Agent Status: Which agents are idle vs executing vs complete
 Coordination Status: Workflow planning vs active coordination vs execution
 Next Actions: Specific agent commands needed to proceed
 
+## Task Completion Checklist (MANDATORY)
+- [ ] Code changes committed
+- [ ] Tests passing locally
+- [ ] Database migrations created (if schema changed)
+- [ ] Environment variables documented (if added)
+- [ ] Deployment requirements communicated
+- [ ] Production deployment status verified
+
+**CANNOT mark task complete until ALL boxes checked**
+
+## Environment State Management
+
+Track THREE environments:
+- **Local**: Development environment status
+- **Staging**: Pre-production validation environment  
+- **Production**: Live customer-facing environment
+
+Before closing ANY issue:
+1. Verify code is in production
+2. Verify database migrations applied to production
+3. Verify environment variables configured in production
+4. Confirm production deployment successful
+
+## Standard Deployment Sequence (MANDATORY)
+1. dev completes implementation
+2. cr reviews code
+3. dev commits approved changes
+4. devops creates/reviews migration scripts
+5. devops deploys to staging
+6. devops verifies staging works
+7. devops deploys to production
+8. devops confirms production deployment
+9. qa-orch verifies production matches expectations
+10. ONLY THEN mark issue complete
+
+# QA Orchestrator Agent - Environment Management Updates
+
+Add these sections to qa-orch.md:
+
+## Failure Recovery Protocol
+
+When environment discrepancies detected:
+
+### 1. HALT WORKFLOW - Stop all agent coordination
+```
+⚠️ ENVIRONMENT MISMATCH DETECTED
+Stopping workflow for Issue #[X]
+Reason: [specific discrepancy]
+```
+
+### 2. INITIATE RECOVERY
+Execute this recovery sequence:
+```
+Recovery Workflow Initiated:
+1. Use devops to audit production database state
+2. Use dev to create sync migrations for missing tables  
+3. Use cr to review sync migrations for safety
+4. Use devops to apply migrations to production
+5. Use devops to verify production state matches expected
+```
+
+### 3. VERIFY RESOLUTION
+Confirm environments aligned before continuing:
+```
+Environment Sync Verification:
+- Local schema: [list tables/versions]
+- Staging schema: [list tables/versions]  
+- Production schema: [list tables/versions]
+- Status: ✅ All environments synchronized
+```
+
+### 4. RESUME
+Only continue original workflow after production synchronized:
+```
+Workflow Resumed:
+- Issue: #[X]
+- Recovery: Complete
+- Continuing from: [specific step]
+```
+
+## Workflow Communication Templates
+
+### Issue Completion Language
+
+#### NEVER close issues with:
+- ❌ "Issue complete"
+- ❌ "Workflow finished"
+- ❌ "Development done"
+- ❌ "Ready for deployment"
+- ❌ "Implementation complete"
+
+#### ALWAYS close issues with:
+- ✅ "Issue #X complete - verified working in production"
+- ✅ "Issue #X complete - production deployment confirmed: [specific features] live"
+- ✅ "Issue #X complete - all environments synchronized and verified"
+
+### Environment State Tracking
+
+Track and report THREE states for EVERY issue:
+
+```
+Issue #X Status:
+- Local development: ✅ Complete
+- Staging deployment: ✅ Verified  
+- Production deployment: ✅ Confirmed
+
+Status: Ready to close - all environments verified
+```
+
+#### Environment Status Definitions
+- **✅ Complete** - Code/changes fully implemented and tested
+- **⏳ Pending** - Waiting for deployment or verification
+- **❌ Failed** - Deployment failed or verification found issues
+- **🔄 In Progress** - Currently being worked on
+
+### Workflow Checkpoint Verification
+
+At EACH workflow transition:
+
+```
+Checkpoint: dev → cr
+- Code committed: ✅
+- Tests passing: ✅  
+- Migrations created: ✅ (if applicable)
+- Environment documented: ✅
+- Ready for: Code review
+```
+
+```
+Checkpoint: cr → devops
+- Review complete: ✅
+- Issues addressed: ✅
+- Deploy requirements documented: ✅
+- Migrations reviewed: ✅
+- Ready for: Deployment to staging
+```
+
+```
+Checkpoint: devops → close
+- Staging deployed: ✅
+- Staging verified: ✅
+- Production deployed: ✅
+- Production verified: ✅
+- Ready for: Issue closure
+```
+
+### Multi-Environment Deployment Tracking
+
+For complex deployments spanning multiple environments:
+
+```
+Deployment Progress Tracker:
+Issue: #45 - Add user preferences
+
+Local Environment:
+- Code: ✅ Implemented
+- Database: ✅ Migration applied
+- Tests: ✅ 15/15 passing
+- Status: Complete
+
+Staging Environment:
+- Code: ✅ Deployed commit abc123
+- Database: ✅ Migration applied
+- Tests: ✅ Integration tests passing
+- Status: Complete
+
+Production Environment:
+- Code: ⏳ Awaiting deployment
+- Database: ⏳ Migration pending
+- Tests: ⏳ Not yet run
+- Status: Scheduled for deployment
+
+CANNOT CLOSE until all environments show ✅
+```
+
+### Issue Handoff Templates
+
+#### Development to Review
+```
+Development Complete - Ready for Review:
+- Developer: dev
+- Commits: abc123, def456
+- Changes: [brief description]
+- Migrations: 1 new (migrations/add_preferences.py)
+- Tests: 15 new, all passing
+- Environment: LOCAL ONLY
+Next: Use cr to review implementation
+```
+
+#### Review to Deployment
+```
+Review Complete - Ready for Deployment:
+- Reviewer: cr
+- Verdict: Approved with conditions
+- Conditions: Deploy to staging first
+- Migrations required: Yes (1)
+- Environment vars: CACHE_TTL needs setting
+Next: Use devops to deploy to staging
+```
+
+#### Deployment to Closure
+```
+Production Deployment Complete:
+- Deployed by: devops
+- Version: v1.2.3 (commit abc123)
+- Migrations: Applied successfully
+- Verification: All health checks passing
+- User impact: Feature live for all users
+Next: Close issue with production confirmation
+```
+
+### Emergency Coordination Language
+
+For production incidents:
+
+```
+🚨 PRODUCTION INCIDENT - Issue #[X]
+Priority: EMERGENCY
+Impact: [specific user impact]
+
+Immediate Actions:
+1. Use devops to assess production state
+2. Use dev to create hotfix
+3. Use cr for expedited review
+4. Use devops for emergency deployment
+
+Status Updates Every: 15 minutes
+```
+
+### Weekly Environment Audit
+
+Implement weekly verification:
+
+```
+Weekly Environment Sync Audit:
+Date: 2025-01-15
+
+Discrepancies Found:
+- Production missing: user_preferences table
+- Staging ahead by: 2 migrations
+- Local has: experimental_feature flag
+
+Actions Required:
+1. Use dev to create sync migration
+2. Use devops to align staging with production
+3. Document experimental features for future deployment
+```
+
 
 ## Git Commit Discipline (MANDATORY)
 
