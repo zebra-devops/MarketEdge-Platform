@@ -71,31 +71,73 @@ export const FeatureFlagManager: React.FC = () => {
   const fetchFlags = async () => {
     try {
       setIsLoading(true);
-      
-      // ENHANCED DEBUG: Log authentication state before API call
+
+      // CRITICAL FIX: Enhanced authentication debugging for production issues
       console.log('🏳️  FeatureFlagManager: About to fetch admin feature flags');
-      console.log('   LocalStorage token:', localStorage.getItem('access_token') ? 'EXISTS' : 'MISSING');
-      console.log('   Cookie token:', document.cookie.includes('access_token') ? 'EXISTS' : 'MISSING');
-      
+
+      // Check all possible token sources
+      const localStorageToken = localStorage.getItem('access_token');
+      const cookieExists = document.cookie.includes('access_token');
+      const sessionBackup = sessionStorage.getItem('auth_session_backup');
+
+      console.log('   🔍 Token Sources Check:');
+      console.log('     - LocalStorage token:', localStorageToken ? `EXISTS (${localStorageToken.length} chars)` : 'MISSING');
+      console.log('     - Cookie token:', cookieExists ? 'EXISTS' : 'MISSING');
+      console.log('     - Session backup:', sessionBackup ? 'EXISTS' : 'MISSING');
+      console.log('     - Current URL:', window.location.href);
+      console.log('     - Domain:', window.location.hostname);
+
+      // CRITICAL: Check if we're in cross-domain scenario
+      const isProduction = window.location.hostname.includes('vercel.app') ||
+                           window.location.hostname.includes('zebra.associates') ||
+                           window.location.protocol === 'https:';
+
+      console.log('     - Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
+      console.log('     - Cross-domain scenario:', isProduction && !cookieExists);
+
+      // Enhanced error handling for production deployment
+      if (isProduction && !localStorageToken && !cookieExists && !sessionBackup) {
+        console.error('🚨 PRODUCTION: No authentication tokens found in any storage');
+        setError('Authentication required: Please log in to access admin features');
+        setIsLoading(false);
+        return;
+      }
+
       const data = await apiService.get<{feature_flags: FeatureFlag[]}>('/admin/feature-flags');
       console.log('✅ Feature flags fetched successfully:', data?.feature_flags?.length || 0, 'flags');
-      
+
       setFlags(data.feature_flags || []);
       setError(null);
     } catch (err: any) {
       console.error('❌ Feature flag fetch failed:', err);
-      
+      console.error('   Full error details:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        url: err.config?.url,
+        headers: err.config?.headers ? Object.keys(err.config.headers) : 'No headers'
+      });
+
       if (err.response?.status === 401) {
-        setError('Authentication error: Please log in again');
+        setError('Authentication error: Please log in again to access admin features');
         console.log('🔐 401 error - user needs to re-authenticate');
-        // Redirect will be handled by apiService
+
+        // CRITICAL FIX: In production, provide specific guidance
+        const isProduction = window.location.hostname.includes('vercel.app') ||
+                           window.location.hostname.includes('zebra.associates');
+
+        if (isProduction) {
+          console.error('🚨 PRODUCTION AUTH FAILURE - Token not reaching backend');
+          console.error('   This indicates cross-domain cookie issue or token storage problem');
+          console.error('   User needs to log out and log in again');
+        }
         return;
       } else if (err.response?.status === 403) {
         setError('Access denied: Admin privileges required for feature flag management');
         console.log('🚫 403 error - user lacks admin privileges or token missing');
         return;
       }
-      
+
       setError(err.message || 'Failed to load feature flags');
       console.log('💥 Generic error:', err.message);
     } finally {
@@ -181,25 +223,70 @@ export const FeatureFlagManager: React.FC = () => {
   }
 
   if (error) {
+    const isAuthError = error.includes('Authentication') || error.includes('log in');
+    const isProductionAuth = window.location.hostname.includes('vercel.app') ||
+                            window.location.hostname.includes('zebra.associates');
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900">Feature Flags</h2>
-          <button
-            onClick={fetchFlags}
-            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-          >
-            <ArrowPathIcon className="h-4 w-4 mr-2" />
-            Retry
-          </button>
+          <div className="flex space-x-3">
+            <button
+              onClick={fetchFlags}
+              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <ArrowPathIcon className="h-4 w-4 mr-2" />
+              Retry
+            </button>
+            {isAuthError && isProductionAuth && (
+              <button
+                onClick={() => {
+                  console.log('🔄 Triggering re-authentication for production cross-domain issue');
+                  // Clear all storage and redirect to login
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  document.cookie.split(";").forEach(c => {
+                    const eqPos = c.indexOf("=");
+                    const name = eqPos > -1 ? c.substr(0, eqPos) : c;
+                    document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+                  });
+                  window.location.href = '/login';
+                }}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                🔐 Re-authenticate
+              </button>
+            )}
+          </div>
         </div>
-        
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+
+        <div className={`border rounded-md p-4 ${
+          isAuthError ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'
+        }`}>
           <div className="flex">
-            <XCircleIcon className="h-5 w-5 text-red-400" />
+            {isAuthError ? (
+              <ExclamationTriangleIcon className="h-5 w-5 text-yellow-400" />
+            ) : (
+              <XCircleIcon className="h-5 w-5 text-red-400" />
+            )}
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error Loading Feature Flags</h3>
-              <p className="mt-1 text-sm text-red-700">{error}</p>
+              <h3 className={`text-sm font-medium ${
+                isAuthError ? 'text-yellow-800' : 'text-red-800'
+              }`}>
+                {isAuthError ? 'Authentication Required' : 'Error Loading Feature Flags'}
+              </h3>
+              <p className={`mt-1 text-sm ${
+                isAuthError ? 'text-yellow-700' : 'text-red-700'
+              }`}>
+                {error}
+              </p>
+              {isAuthError && isProductionAuth && (
+                <div className="mt-2 text-sm text-yellow-600">
+                  <p><strong>Production Note:</strong> This may be caused by cross-domain cookie restrictions.</p>
+                  <p>Click "Re-authenticate" to log in again with fresh tokens.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

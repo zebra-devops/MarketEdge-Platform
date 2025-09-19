@@ -58,6 +58,12 @@ critical_origins = [
     "https://marketedge-frontend.onrender.com",
     "http://localhost:3000",
     "http://localhost:3001",
+    # CRITICAL FIX: Add Vercel frontend domains for Matt.Lindop access
+    "https://frontend-36gas2bky-zebraassociates-projects.vercel.app",
+    "https://zebraassociates-projects.vercel.app",
+    "https://marketedge.vercel.app",
+    # Allow all Vercel preview domains for Zebra Associates project
+    "https://frontend-git-main-zebraassociates-projects.vercel.app",
 ]
 
 for origin in critical_origins:
@@ -89,17 +95,36 @@ logger.info("✅ API router included successfully - Epic 1 & 2 endpoints now ava
 
 # EMERGENCY CORS FIX: Add explicit OPTIONS handler for Zebra Associates
 @app.options("/{full_path:path}")
-async def options_handler(full_path: str):
+async def options_handler(request: Request, full_path: str):
     """Handle CORS preflight requests for all routes - Critical for £925K opportunity"""
     from fastapi.responses import Response
-    logger.info(f"🌐 CORS preflight request for: /{full_path}")
+
+    # Get the origin from the request
+    origin = request.headers.get("Origin", "")
+    logger.info(f"🌐 CORS preflight request for: /{full_path} from origin: {origin}")
+
+    # CRITICAL FIX: Support multiple Zebra Associates domains
+    allowed_zebra_origins = [
+        "https://app.zebra.associates",
+        "https://frontend-36gas2bky-zebraassociates-projects.vercel.app",
+        "https://zebraassociates-projects.vercel.app",
+        "https://marketedge.vercel.app",
+        "https://frontend-git-main-zebraassociates-projects.vercel.app"
+    ]
+
+    # Use the actual origin if it's in our allowed list, otherwise default to zebra.associates
+    response_origin = origin if origin in allowed_zebra_origins else "https://app.zebra.associates"
+
+    logger.info(f"✅ CORS preflight response for origin: {response_origin}")
+
     return Response(
         status_code=200,
         headers={
-            "Access-Control-Allow-Origin": "https://app.zebra.associates",
+            "Access-Control-Allow-Origin": response_origin,
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
             "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept, X-Requested-With, Origin, X-Tenant-ID",
             "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Max-Age": "600",
         }
     )
 
