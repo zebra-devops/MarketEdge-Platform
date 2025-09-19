@@ -399,10 +399,16 @@ async def _create_or_update_user_from_auth0(db: AsyncSession, user_info: dict, c
 
     # Find or create user in database using sanitized email
     try:
-        # CRITICAL FIX: Eager load organisation relationship to prevent lazy loading in async context
+        # CRITICAL FIX: Eager load ALL necessary relationships to prevent lazy loading in async context
         result = await db.execute(
             select(User)
-            .options(selectinload(User.organisation))
+            .options(
+                selectinload(User.organisation),
+                selectinload(User.application_access),
+                # Load other relationships that might be accessed in auth flow
+                selectinload(User.hierarchy_assignments),
+                selectinload(User.permission_overrides)
+            )
             .filter(User.email == sanitized_email)
         )
         user = result.scalar_one_or_none()
@@ -438,10 +444,16 @@ async def _create_or_update_user_from_auth0(db: AsyncSession, user_info: dict, c
             await db.commit()
             await db.refresh(user)
 
-            # CRITICAL FIX: Reload user with eager loading to prevent lazy loading issues
+            # CRITICAL FIX: Reload user with comprehensive eager loading to prevent lazy loading issues
             result = await db.execute(
                 select(User)
-                .options(selectinload(User.organisation))
+                .options(
+                    selectinload(User.organisation),
+                    selectinload(User.application_access),
+                    # Load other relationships that might be accessed in auth flow
+                    selectinload(User.hierarchy_assignments),
+                    selectinload(User.permission_overrides)
+                )
                 .filter(User.id == user.id)
             )
             user = result.scalar_one()
@@ -677,10 +689,16 @@ async def login(
     
     # Find or create user in database using sanitized email
     try:
-        # CRITICAL FIX: Eager load organisation relationship to prevent lazy loading in async context
+        # CRITICAL FIX: Eager load ALL necessary relationships to prevent lazy loading in async context
         result = await db.execute(
             select(User)
-            .options(selectinload(User.organisation))
+            .options(
+                selectinload(User.organisation),
+                selectinload(User.application_access),
+                # Load other relationships that might be accessed in auth flow
+                selectinload(User.hierarchy_assignments),
+                selectinload(User.permission_overrides)
+            )
             .filter(User.email == sanitized_email)
         )
         user = result.scalar_one_or_none()
@@ -716,10 +734,16 @@ async def login(
             await db.commit()
             await db.refresh(user)
 
-            # CRITICAL FIX: Reload user with eager loading to prevent lazy loading issues
+            # CRITICAL FIX: Reload user with comprehensive eager loading to prevent lazy loading issues
             result = await db.execute(
                 select(User)
-                .options(selectinload(User.organisation))
+                .options(
+                    selectinload(User.organisation),
+                    selectinload(User.application_access),
+                    # Load other relationships that might be accessed in auth flow
+                    selectinload(User.hierarchy_assignments),
+                    selectinload(User.permission_overrides)
+                )
                 .filter(User.id == user.id)
             )
             user = result.scalar_one()
@@ -743,15 +767,17 @@ async def login(
             detail="Database error during authentication"
         )
     
-    # Ensure user has organization and application access relationships loaded
-    if not user.organisation or not hasattr(user, 'application_access'):
-        result = await db.execute(
-            select(User).options(
-                selectinload(User.organisation),
-                selectinload(User.application_access)
-            ).filter(User.id == user.id)
-        )
-        user = result.scalar_one_or_none()
+    # CRITICAL FIX: Ensure ALL user relationships are properly loaded to prevent lazy loading
+    # Always reload with comprehensive eager loading to be safe
+    result = await db.execute(
+        select(User).options(
+            selectinload(User.organisation),
+            selectinload(User.application_access),
+            selectinload(User.hierarchy_assignments),
+            selectinload(User.permission_overrides)
+        ).filter(User.id == user.id)
+    )
+    user = result.scalar_one_or_none()
     
     # Get user permissions based on role and tenant context
     tenant_context = {
@@ -886,10 +912,15 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
             detail="Invalid token payload"
         )
     
-    # Validate user exists and is active
+    # CRITICAL FIX: Validate user exists and is active with comprehensive eager loading
     result = await db.execute(
         select(User)
-        .options(selectinload(User.organisation), selectinload(User.application_access))
+        .options(
+            selectinload(User.organisation),
+            selectinload(User.application_access),
+            selectinload(User.hierarchy_assignments),
+            selectinload(User.permission_overrides)
+        )
         .filter(User.id == user_id)
     )
     user = result.scalar_one_or_none()
@@ -1081,15 +1112,17 @@ async def get_current_user_info(
     db: AsyncSession = Depends(get_async_db)
 ):
     """Get enhanced current user information with tenant context"""
-    # Ensure organization and application access are loaded
-    if not current_user.organisation or not hasattr(current_user, 'application_access'):
-        result = await db.execute(
-            select(User).options(
-                selectinload(User.organisation),
-                selectinload(User.application_access)
-            ).filter(User.id == current_user.id)
-        )
-        current_user = result.scalar_one_or_none()
+    # CRITICAL FIX: Ensure ALL user relationships are loaded to prevent lazy loading
+    # Always reload with comprehensive eager loading to be safe
+    result = await db.execute(
+        select(User).options(
+            selectinload(User.organisation),
+            selectinload(User.application_access),
+            selectinload(User.hierarchy_assignments),
+            selectinload(User.permission_overrides)
+        ).filter(User.id == current_user.id)
+    )
+    current_user = result.scalar_one_or_none()
     
     # Get user permissions
     tenant_context = {
@@ -1110,8 +1143,8 @@ async def get_current_user_info(
             "updated_at": current_user.updated_at.isoformat() if current_user.updated_at else None,
             "application_access": [
                 {"application": access.application.value, "has_access": access.has_access}
-                for access in current_user.application_access
-            ] if current_user.application_access else []
+                for access in (current_user.application_access or [])
+            ]
         },
         "tenant": {
             "id": str(current_user.organisation_id),
