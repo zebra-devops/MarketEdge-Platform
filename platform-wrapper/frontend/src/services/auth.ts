@@ -808,6 +808,7 @@ export class AuthService {
           access_token: tokenResponse.access_token,
           timestamp: Date.now(),
           environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT'
+          // Note: User data will be added by setUserData method
         }
         sessionStorage.setItem(this.sessionStorageKey, JSON.stringify(sessionBackup))
         console.log('✅ Session storage backup created for navigation persistence')
@@ -938,18 +939,115 @@ export class AuthService {
   }
 
   private setUserData(user: User, tenant: any, permissions: string[]): void {
+    // CRITICAL FIX: Enhanced user data storage with session backup for consistency
+
+    const isProduction = this.detectProductionEnvironment()
+
+    console.debug('🔧 Setting user data...', {
+      environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+      email: user.email,
+      role: user.role
+    })
+
+    // Primary storage: localStorage
     localStorage.setItem('current_user', JSON.stringify(user))
     localStorage.setItem('tenant_info', JSON.stringify(tenant))
     localStorage.setItem('user_permissions', JSON.stringify(permissions))
+
+    // CRITICAL FIX: Add session storage backup that includes user data
+    // This ensures user data persists during navigation like the token does
+    try {
+      const sessionBackup = {
+        access_token: this.temporaryAccessToken, // Include current token if available
+        user: user,
+        tenant: tenant,
+        permissions: permissions,
+        timestamp: Date.now(),
+        environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT'
+      }
+      sessionStorage.setItem(this.sessionStorageKey, JSON.stringify(sessionBackup))
+      console.debug('✅ Session storage backup created with user data for navigation persistence')
+    } catch (sessionError) {
+      console.warn('Session storage user data backup failed:', sessionError)
+    }
+
+    console.debug('✅ User data storage completed', {
+      localStorage: 'Stored',
+      sessionStorage: 'Backup created',
+      email: user.email,
+      role: user.role
+    })
   }
 
   getStoredUser(): User | null {
+    // CRITICAL FIX: Enhanced user data retrieval with multiple fallback strategies
+    // This ensures consistency with token retrieval strategies
+
+    const isProduction = this.detectProductionEnvironment()
+
+    console.debug('🔍 Retrieving stored user data...', {
+      environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT'
+    })
+
+    // Strategy 1: Try localStorage first (primary storage)
     try {
       const userData = localStorage.getItem('current_user')
-      return userData ? JSON.parse(userData) : null
-    } catch {
-      return null
+      if (userData) {
+        const user = JSON.parse(userData)
+        console.debug('✅ User data retrieved from localStorage', {
+          source: 'localStorage',
+          email: user.email,
+          role: user.role
+        })
+        return user
+      }
+    } catch (localStorageError) {
+      console.warn('LocalStorage user data access failed:', localStorageError)
     }
+
+    // Strategy 2: Check session storage backup for navigation persistence
+    if (typeof window !== 'undefined' && sessionStorage) {
+      try {
+        const sessionBackupStr = sessionStorage.getItem(this.sessionStorageKey)
+        if (sessionBackupStr) {
+          const sessionBackup = JSON.parse(sessionBackupStr)
+          if (sessionBackup.user) {
+            // Check if backup is recent (within 1 hour to prevent stale data)
+            const age = Date.now() - sessionBackup.timestamp
+            if (age < 3600000) { // 1 hour
+              console.debug('✅ User data retrieved from session storage backup', {
+                source: 'sessionStorage',
+                age: Math.round(age / 1000) + 's',
+                email: sessionBackup.user.email,
+                role: sessionBackup.user.role
+              })
+
+              // Restore to localStorage for consistency
+              try {
+                localStorage.setItem('current_user', JSON.stringify(sessionBackup.user))
+                console.debug('User data restored to localStorage from session backup')
+              } catch (restoreError) {
+                console.warn('Failed to restore user data to localStorage:', restoreError)
+              }
+
+              return sessionBackup.user
+            } else {
+              console.warn('Session storage user backup is stale, clearing it')
+              try {
+                sessionStorage.removeItem(this.sessionStorageKey)
+              } catch (cleanupError) {
+                console.warn('Failed to clean up stale session storage:', cleanupError)
+              }
+            }
+          }
+        }
+      } catch (sessionError) {
+        console.warn('Session storage user data access failed:', sessionError)
+      }
+    }
+
+    console.debug('⚠️  No stored user data found in any storage method')
+    return null
   }
 
   private clearTokens(): void {
@@ -972,9 +1070,24 @@ export class AuthService {
   }
 
   private clearUserData(): void {
+    // CRITICAL FIX: Enhanced user data clearing including session storage backup
+
+    console.debug('🧹 Clearing all user data...')
+
+    // Clear localStorage
     localStorage.removeItem('current_user')
     localStorage.removeItem('tenant_info')
     localStorage.removeItem('user_permissions')
+
+    // CRITICAL FIX: Clear session storage backup
+    try {
+      sessionStorage.removeItem(this.sessionStorageKey)
+      console.debug('✅ Session storage user data backup cleared')
+    } catch (sessionError) {
+      console.warn('Failed to clear session storage user data backup:', sessionError)
+    }
+
+    console.debug('✅ User data clearing completed')
   }
 
   // Enhanced auto-refresh with tenant validation and better error handling
