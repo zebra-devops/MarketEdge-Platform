@@ -1,0 +1,133 @@
+{
+  "test_summary": {
+    "total_tests": 9,
+    "passed": 0,
+    "failed": 9,
+    "warnings": 0,
+    "success_rate_percent": 0.0
+  },
+  "test_results": [
+    {
+      "test_name": "Production Environment Detection",
+      "status": "FAIL",
+      "timestamp": "2025-09-19T20:14:37.764845",
+      "details": {
+        "error": "Cannot connect to host app.zebra.associates:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+        "exception_type": "ClientConnectorCertificateError"
+      }
+    },
+    {
+      "test_name": "Frontend Availability",
+      "status": "FAIL",
+      "timestamp": "2025-09-19T20:14:37.772916",
+      "details": {
+        "frontend_url": "https://app.zebra.associates",
+        "error": "Cannot connect to host app.zebra.associates:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+        "exception_type": "ClientConnectorCertificateError"
+      }
+    },
+    {
+      "test_name": "Frontend Admin Page Access Protection",
+      "status": "FAIL",
+      "timestamp": "2025-09-19T20:14:37.779641",
+      "details": {
+        "error": "Cannot connect to host app.zebra.associates:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+        "exception_type": "ClientConnectorCertificateError",
+        "url_tested": "https://app.zebra.associates/admin"
+      }
+    },
+    {
+      "test_name": "Permission Validation Logic Test",
+      "status": "FAIL",
+      "timestamp": "2025-09-19T20:14:37.781795",
+      "details": {
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+        "exception_type": "ClientConnectorCertificateError"
+      }
+    },
+    {
+      "test_name": "Admin Role Requirements Consistency",
+      "status": "FAIL",
+      "timestamp": "2025-09-19T20:14:37.801388",
+      "details": {
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+        "exception_type": "ClientConnectorCertificateError"
+      }
+    },
+    {
+      "test_name": "Auth0 Authentication Flow Availability",
+      "status": "FAIL",
+      "timestamp": "2025-09-19T20:14:37.804057",
+      "details": {
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+        "exception_type": "ClientConnectorCertificateError",
+        "auth_url_available": false
+      }
+    },
+    {
+      "test_name": "CORS and Security Headers",
+      "status": "FAIL",
+      "timestamp": "2025-09-19T20:14:37.804164",
+      "details": {
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+        "exception_type": "ClientConnectorCertificateError"
+      }
+    },
+    {
+      "test_name": "Backend Health Check",
+      "status": "FAIL",
+      "timestamp": "2025-09-19T20:14:37.804237",
+      "details": {
+        "backend_url": "https://marketedge-platform.onrender.com",
+        "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+        "exception_type": "ClientConnectorCertificateError"
+      }
+    },
+    {
+      "test_name": "Admin Endpoints Unauthorized Access Protection",
+      "status": "FAIL",
+      "timestamp": "2025-09-19T20:14:38.419320",
+      "details": {
+        "endpoints_tested": 5,
+        "all_correctly_rejected": false,
+        "endpoint_results": {
+          "/api/v1/admin/feature-flags": {
+            "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+            "exception_type": "ClientConnectorCertificateError",
+            "correct_rejection": false
+          },
+          "/api/v1/admin/dashboard/stats": {
+            "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+            "exception_type": "ClientConnectorCertificateError",
+            "correct_rejection": false
+          },
+          "/api/v1/admin/modules": {
+            "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+            "exception_type": "ClientConnectorCertificateError",
+            "correct_rejection": false
+          },
+          "/api/v1/admin/audit-logs": {
+            "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+            "exception_type": "ClientConnectorCertificateError",
+            "correct_rejection": false
+          },
+          "/api/v1/admin/security-events": {
+            "error": "Cannot connect to host marketedge-platform.onrender.com:443 ssl:True [SSLCertVerificationError: (1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1006)')]",
+            "exception_type": "ClientConnectorCertificateError",
+            "correct_rejection": false
+          }
+        }
+      }
+    }
+  ],
+  "environment": {
+    "frontend_url": "https://app.zebra.associates",
+    "backend_url": "https://marketedge-platform.onrender.com",
+    "test_timestamp": "2025-09-19T20:14:38.419798"
+  },
+  "permissions_validation": {
+    "admin_endpoints_protected": false,
+    "authentication_pipeline_working": false,
+    "frontend_protection_enabled": false
+  }
+}

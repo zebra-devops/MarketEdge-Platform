@@ -1,0 +1,31 @@
+{
+  "test_summary": {
+    "total_tests": 1,
+    "passed": 0,
+    "failed": 1,
+    "warnings": 0,
+    "success_rate_percent": 0.0
+  },
+  "test_results": [
+    {
+      "test_name": "Test Suite Execution",
+      "status": "FAIL",
+      "timestamp": "2025-09-19T20:14:28.483206",
+      "details": {
+        "error": "TCPConnector.__init__() got an unexpected keyword argument 'timeout'",
+        "exception_type": "TypeError",
+        "traceback": "Traceback (most recent call last):\n  File \"/Users/matt/Sites/MarketEdge/test_production_admin_permissions.py\", line 527, in run_comprehensive_test_suite\n    await self.setup_session()\n  File \"/Users/matt/Sites/MarketEdge/test_production_admin_permissions.py\", line 67, in setup_session\n    connector = aiohttp.TCPConnector(\n                ^^^^^^^^^^^^^^^^^^^^^\nTypeError: TCPConnector.__init__() got an unexpected keyword argument 'timeout'\n"
+      }
+    }
+  ],
+  "environment": {
+    "frontend_url": "https://app.zebra.associates",
+    "backend_url": "https://marketedge-platform.onrender.com",
+    "test_timestamp": "2025-09-19T20:14:28.483236"
+  },
+  "permissions_validation": {
+    "admin_endpoints_protected": false,
+    "authentication_pipeline_working": false,
+    "frontend_protection_enabled": false
+  }
+}
