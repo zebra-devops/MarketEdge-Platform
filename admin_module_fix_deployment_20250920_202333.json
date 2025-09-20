@@ -1,0 +1,32 @@
+{
+  "timestamp": "2025-09-20T20:23:33.023725",
+  "deployment": "admin_module_fix",
+  "status": "success",
+  "checks": [
+    {
+      "check": "compatibility_module",
+      "status": "success",
+      "message": "Compatibility bridge created"
+    },
+    {
+      "check": "import_test",
+      "status": "success",
+      "message": "app.api.admin imports correctly"
+    },
+    {
+      "check": "endpoints",
+      "status": "success",
+      "message": "Found 5 feature-flags endpoints"
+    },
+    {
+      "check": "admin_service",
+      "status": "success",
+      "message": "AdminService available"
+    },
+    {
+      "check": "database",
+      "status": "skipped",
+      "message": "Not an executable object: 'SELECT 1'"
+    }
+  ]
+}
