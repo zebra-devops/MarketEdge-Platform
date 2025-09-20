@@ -12,7 +12,7 @@ import logging
 
 from ..models.feature_flags import FeatureFlag, FeatureFlagOverride, FeatureFlagUsage
 from ..models.modules import AnalyticsModule, OrganisationModule
-from ..models.audit_log import AuditLog, AdminAction
+from ..models.audit_log import AuditLog, AdminAction, AuditAction
 from ..models.sectors import SICCode
 from ..models.user import User
 from .audit_service import AuditService
@@ -55,7 +55,6 @@ class AdminService:
             flags = result.scalars().all()
             
             # Log admin access
-            from ..models.audit_log import AuditAction
             await self.audit_service.log_action(
                 user_id=admin_user.id,
                 action=AuditAction.READ,
@@ -194,7 +193,6 @@ class AdminService:
             
             if action_filter:
                 # Validate action filter against enum
-                from ..models.audit_log import AuditAction
                 if action_filter.upper() in [action.value.upper() for action in AuditAction]:
                     query = query.where(AuditLog.action == action_filter.upper())
                 else:
