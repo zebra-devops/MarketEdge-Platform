@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-09-20T21:06:51.168239",
+  "database_check": "production_analytics_modules_schema",
+  "table_exists": true,
+  "description_column_exists": false,
+  "current_migration": "002",
+  "migration_003_applied": false,
+  "columns": {
+    "id": {
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "character_maximum_length": null
+    },
+    "tenant_id": {
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "character_maximum_length": null
+    },
+    "name": {
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null,
+      "character_maximum_length": 120
+    },
+    "enabled": {
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false",
+      "character_maximum_length": null
+    },
+    "created_at": {
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()",
+      "character_maximum_length": null
+    },
+    "status": {
+      "data_type": "USER-DEFINED",
+      "is_nullable": "NO",
+      "column_default": "'ACTIVE'::modulestatus",
+      "character_maximum_length": null
+    }
+  },
+  "status": "FAILED"
+}

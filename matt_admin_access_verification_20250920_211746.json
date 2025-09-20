@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-09-20T21:17:46.087795",
+  "user": "matt.lindop@zebra.associates",
+  "base_url": "https://marketedge-platform.onrender.com",
+  "endpoints_tested": {
+    "/api/v1/admin/feature-flags": {
+      "status": "READY",
+      "http_code": 401,
+      "message": "Endpoint requires authentication (correct behavior)"
+    },
+    "/api/v1/admin/modules": {
+      "status": "READY",
+      "http_code": 401,
+      "message": "Endpoint requires authentication (correct behavior)"
+    },
+    "/api/v1/admin/dashboard/stats": {
+      "status": "READY",
+      "http_code": 401,
+      "message": "Endpoint requires authentication (correct behavior)"
+    }
+  },
+  "summary": {
+    "ready_endpoints": 3,
+    "total_endpoints": 3,
+    "all_ready": true
+  }
+}

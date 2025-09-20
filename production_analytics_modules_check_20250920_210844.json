@@ -1,0 +1,95 @@
+{
+  "timestamp": "2025-09-20T21:08:44.529214",
+  "database_check": "production_analytics_modules_schema",
+  "table_exists": true,
+  "description_column_exists": true,
+  "current_migration": "003",
+  "migration_003_applied": true,
+  "columns": {
+    "id": {
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()",
+      "character_maximum_length": null
+    },
+    "tenant_id": {
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null,
+      "character_maximum_length": null
+    },
+    "name": {
+      "data_type": "character varying",
+      "is_nullable": "NO",
+      "column_default": null,
+      "character_maximum_length": 120
+    },
+    "enabled": {
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false",
+      "character_maximum_length": null
+    },
+    "created_at": {
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()",
+      "character_maximum_length": null
+    },
+    "status": {
+      "data_type": "USER-DEFINED",
+      "is_nullable": "NO",
+      "column_default": "'ACTIVE'::modulestatus",
+      "character_maximum_length": null
+    },
+    "description": {
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": "'Analytics module for competitive intelligence'::text",
+      "character_maximum_length": null
+    },
+    "version": {
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": "'1.0.0'::character varying",
+      "character_maximum_length": 50
+    },
+    "entry_point": {
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": "'app.modules.default'::character varying",
+      "character_maximum_length": 500
+    },
+    "config_schema": {
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": "'{}'::jsonb",
+      "character_maximum_length": null
+    },
+    "default_config": {
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": "'{}'::jsonb",
+      "character_maximum_length": null
+    },
+    "dependencies": {
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": "'[]'::jsonb",
+      "character_maximum_length": null
+    },
+    "is_core": {
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false",
+      "character_maximum_length": null
+    },
+    "requires_license": {
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false",
+      "character_maximum_length": null
+    }
+  },
+  "status": "SUCCESS"
+}

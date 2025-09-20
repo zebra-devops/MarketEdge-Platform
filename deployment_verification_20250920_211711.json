@@ -1,0 +1,114 @@
+{
+  "timestamp": "2025-09-20T21:17:11.968867",
+  "base_url": "https://marketedge-platform.onrender.com",
+  "status": "FAILED",
+  "tests": [
+    {
+      "url": "https://marketedge-platform.onrender.com/health",
+      "description": "Health check endpoint",
+      "expected_status": 200,
+      "actual_status": 200,
+      "success": true,
+      "response_time_ms": 294.209,
+      "headers": {
+        "Date": "Sat, 20 Sep 2025 20:17:10 GMT",
+        "Content-Type": "application/json",
+        "Transfer-Encoding": "chunked",
+        "Connection": "keep-alive",
+        "rndr-id": "4ad4cd3c-220e-4a9a",
+        "vary": "Accept-Encoding",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "98240137393a943f-LHR",
+        "Content-Encoding": "gzip",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      }
+    },
+    {
+      "url": "https://marketedge-platform.onrender.com/ready",
+      "description": "Readiness check endpoint",
+      "expected_status": 200,
+      "actual_status": 404,
+      "success": false,
+      "response_time_ms": 295.538,
+      "headers": null
+    },
+    {
+      "url": "https://marketedge-platform.onrender.com/api/v1/admin/feature-flags",
+      "description": "Feature flags endpoint (should require auth)",
+      "expected_status": 401,
+      "actual_status": 401,
+      "success": true,
+      "response_time_ms": 630.05,
+      "headers": {
+        "Date": "Sat, 20 Sep 2025 20:17:11 GMT",
+        "Content-Type": "application/json",
+        "Transfer-Encoding": "chunked",
+        "Connection": "keep-alive",
+        "rndr-id": "8c6f9f14-9d9f-4a97",
+        "vary": "Accept-Encoding",
+        "www-authenticate": "Bearer",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "9824013af85c2534-LHR",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      }
+    },
+    {
+      "url": "https://marketedge-platform.onrender.com/api/v1/admin/modules",
+      "description": "Analytics modules endpoint (should require auth)",
+      "expected_status": 401,
+      "actual_status": 401,
+      "success": true,
+      "response_time_ms": 304.27700000000004,
+      "headers": {
+        "Date": "Sat, 20 Sep 2025 20:17:11 GMT",
+        "Content-Type": "application/json",
+        "Transfer-Encoding": "chunked",
+        "Connection": "keep-alive",
+        "rndr-id": "c14beacb-5a98-4fb3",
+        "vary": "Accept-Encoding",
+        "www-authenticate": "Bearer",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "9824013eff0bfc20-LHR",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      }
+    },
+    {
+      "url": "https://marketedge-platform.onrender.com/api/v1/admin/dashboard/stats",
+      "description": "Admin dashboard stats (should require auth)",
+      "expected_status": 401,
+      "actual_status": 401,
+      "success": true,
+      "response_time_ms": 297.262,
+      "headers": {
+        "Date": "Sat, 20 Sep 2025 20:17:11 GMT",
+        "Content-Type": "application/json",
+        "Transfer-Encoding": "chunked",
+        "Connection": "keep-alive",
+        "rndr-id": "f3aaab0a-c514-42a2",
+        "vary": "Accept-Encoding",
+        "www-authenticate": "Bearer",
+        "x-render-origin-server": "uvicorn",
+        "cf-cache-status": "DYNAMIC",
+        "Server": "cloudflare",
+        "CF-RAY": "98240140dbf7459f-LHR",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      }
+    }
+  ],
+  "summary": {
+    "total_tests": 5,
+    "successful_tests": 4,
+    "success_rate": 80.0
+  },
+  "fixes_deployed": [
+    "UnboundLocalError fix in admin_service.py",
+    "analytics_modules description column migration",
+    "Import scope corrections"
+  ]
+}
