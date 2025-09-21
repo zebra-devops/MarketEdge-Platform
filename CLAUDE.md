@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MarketEdge Platform is a multi-tenant business intelligence SaaS platform providing competitive analysis across diverse industries (Cinema, Hotel, Gym, B2B, Retail). The platform consists of a FastAPI backend and Next.js frontend with Auth0 authentication and tenant-aware data isolation.
+MarketEdge Platform is a multi-tenant business intelligence SaaS platform providing competitive analysis across diverse industries (Cinema, Hotel, Gym, B2B, Retail). The platform consists of a FastAPI backend and Next.js frontend with Auth0 authentication and comprehensive tenant-aware data isolation.
 
 ## Architecture
 
