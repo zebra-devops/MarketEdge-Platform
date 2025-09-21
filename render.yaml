@@ -53,19 +53,20 @@ services:
       - key: AUTH0_AUDIENCE
         sync: false
 
-      # Auth0 Configuration (Staging Preview)
+      # Auth0 Configuration (Staging/Preview Environments)
       - key: AUTH0_DOMAIN_STAGING
-        sync: false
-        previewValue: "dev-zebra-marketedge.uk.auth0.com"
+        sync: false  # Set manually in Render dashboard
       - key: AUTH0_CLIENT_ID_STAGING
-        sync: false
-        previewValue: "staging-client-id"
+        sync: false  # Set manually in Render dashboard
       - key: AUTH0_CLIENT_SECRET_STAGING
-        sync: false
-        previewValue: "staging-client-secret"
+        sync: false  # Set manually in Render dashboard
       - key: AUTH0_AUDIENCE_STAGING
-        sync: false
-        previewValue: "https://api.marketedge-staging.onrender.com"
+        sync: false  # Set manually in Render dashboard
+
+      # Environment-aware Auth0 selection
+      - key: USE_STAGING_AUTH0
+        value: "false"
+        previewValue: "true"
 
       # Redis Configuration
       - key: REDIS_URL
@@ -75,9 +76,9 @@ services:
           property: connectionString
 
       # CORS Configuration
-      - key: ALLOWED_ORIGINS
+      - key: CORS_ORIGINS
         value: "https://platform.marketedge.co.uk,https://marketedge-platform.onrender.com"
-        previewValue: "*"  # Allow all origins for staging testing
+        previewValue: "https://*.onrender.com,https://localhost:3000"  # Wildcard support for preview environments
 
       # Feature Flags
       - key: ENABLE_DEBUG_LOGGING

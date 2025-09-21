@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     AUTH0_CLIENT_ID: str
     AUTH0_CLIENT_SECRET: str
     AUTH0_CALLBACK_URL: str = "http://localhost:3000/callback"
+
+    # Staging Auth0 Configuration
+    AUTH0_DOMAIN_STAGING: Optional[str] = None
+    AUTH0_CLIENT_ID_STAGING: Optional[str] = None
+    AUTH0_CLIENT_SECRET_STAGING: Optional[str] = None
+    AUTH0_AUDIENCE_STAGING: Optional[str] = None
+    USE_STAGING_AUTH0: bool = False
     
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
@@ -131,6 +138,30 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         """Check if running in production environment"""
         return self.ENVIRONMENT.lower() == "production"
+
+    @property
+    def is_staging(self) -> bool:
+        """Check if running in staging/preview environment"""
+        return self.ENVIRONMENT.lower() in ["staging", "preview"] or self.USE_STAGING_AUTH0
+
+    def get_auth0_config(self) -> Dict[str, str]:
+        """Get Auth0 configuration based on environment"""
+        if self.is_staging and self.AUTH0_DOMAIN_STAGING:
+            # Use staging Auth0 configuration for preview environments
+            return {
+                "domain": self.AUTH0_DOMAIN_STAGING,
+                "client_id": self.AUTH0_CLIENT_ID_STAGING or self.AUTH0_CLIENT_ID,
+                "client_secret": self.AUTH0_CLIENT_SECRET_STAGING or self.AUTH0_CLIENT_SECRET,
+                "audience": self.AUTH0_AUDIENCE_STAGING or f"https://api.{self.AUTH0_DOMAIN_STAGING}",
+            }
+        else:
+            # Use production Auth0 configuration
+            return {
+                "domain": self.AUTH0_DOMAIN,
+                "client_id": self.AUTH0_CLIENT_ID,
+                "client_secret": self.AUTH0_CLIENT_SECRET,
+                "audience": f"https://api.{self.AUTH0_DOMAIN}",
+            }
     
     @property
     def cookie_secure(self) -> bool:
