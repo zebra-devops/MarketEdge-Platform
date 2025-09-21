@@ -161,7 +161,7 @@ async def staging_health_check():
 
         # Test database connection
         try:
-            from ....database.session import get_async_session
+            from app.database.session import get_async_session
             # This will fail if database connection is not working
             health_status["database_connected"] = True
         except Exception as db_error:
