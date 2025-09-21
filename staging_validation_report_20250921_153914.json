@@ -1,0 +1,144 @@
+{
+  "timestamp": "2025-09-21T15:39:11.680670",
+  "base_url": "https://marketedge-platform.onrender.com",
+  "validation_summary": {
+    "basic_health_accessible": true,
+    "environment_config_accessible": true,
+    "staging_health_accessible": true,
+    "cors_configuration_accessible": true,
+    "auth0_isolation_capable": true,
+    "production_protected": true,
+    "overall_status": "OPERATIONAL"
+  },
+  "detailed_results": {
+    "basic_health": {
+      "status_code": 200,
+      "response_time": 0.312733,
+      "content": {
+        "status": "healthy",
+        "mode": "STABLE_PRODUCTION_FULL_API",
+        "version": "1.0.0",
+        "timestamp": 1758465552.0086446,
+        "cors_configured": true,
+        "zebra_associates_ready": true,
+        "critical_business_ready": true,
+        "authentication_endpoints": "available",
+        "deployment_safe": true,
+        "api_router_included": true,
+        "api_router_error": null,
+        "database_ready": true,
+        "database_error": null,
+        "message": "Stable production mode - full API router with CORS optimization"
+      },
+      "accessible": true
+    },
+    "environment_config": {
+      "status_code": 200,
+      "response_time": 0.29832,
+      "accessible": true,
+      "content": {
+        "status": "SUCCESS",
+        "environment": {
+          "ENVIRONMENT": "production",
+          "is_production": true,
+          "is_staging": false,
+          "USE_STAGING_AUTH0": false,
+          "has_staging_config": true
+        },
+        "auth0_config": {
+          "domain": "dev-g8trhgbfdq2sk2m8.us.auth0.com",
+          "client_id": "mQG01Z4l...dPNr",
+          "audience": "https://api.dev-g8trhgbfdq2sk2m8.us.auth0.com",
+          "client_secret_set": true
+        },
+        "cors_origins": [
+          "https://app.zebra.associates",
+          "https://frontend-2q61uheqm-zebraassociates-projects.vercel.app",
+          "https://frontend-79pvaaolp-zebraassociates-projects.vercel.app",
+          "http://localhost:3000",
+          "http://localhost:3001"
+        ],
+        "debug_info": {
+          "staging_domain_set": true,
+          "staging_client_id_set": true,
+          "staging_client_secret_set": true,
+          "preview_environment_detected": false
+        },
+        "timestamp": 1758465552.3209708
+      },
+      "validation": {
+        "environment_detected": "production",
+        "is_production": true,
+        "is_staging": false,
+        "use_staging_auth0": false,
+        "has_staging_config": true,
+        "staging_domain_set": true,
+        "staging_client_id_set": true,
+        "staging_client_secret_set": true,
+        "preview_environment_detected": false,
+        "auth0_domain": "dev-g8trhgbfdq2sk2m8.us.auth0.com",
+        "cors_origins_count": 5
+      }
+    },
+    "staging_health": {
+      "status_code": 200,
+      "response_time": 0.784385,
+      "accessible": true,
+      "content": {
+        "status": "HEALTHY",
+        "environment": "production",
+        "staging_mode": false,
+        "auth0_environment": "production",
+        "database_connected": false,
+        "redis_connected": true,
+        "timestamp": 1758465552.938339,
+        "database_error": "No module named 'app.database'"
+      },
+      "validation": {
+        "status": "HEALTHY",
+        "environment": "production",
+        "staging_mode": false,
+        "auth0_environment": "production",
+        "database_connected": false,
+        "redis_connected": true,
+        "has_database_error": true,
+        "database_error": "No module named 'app.database'"
+      }
+    },
+    "cors_configuration": {
+      "status_code": 400,
+      "accessible": true,
+      "cors_headers": {
+        "access_control_allow_origin": null,
+        "access_control_allow_methods": "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH",
+        "access_control_allow_headers": "Accept, Accept-Language, Authorization, Content-Language, Content-Type, Origin, X-Requested-With, X-Tenant-ID",
+        "access_control_allow_credentials": "true"
+      },
+      "wildcard_test": {
+        "status_code": 200,
+        "cors_origin": null,
+        "wildcard_supported": false
+      }
+    }
+  },
+  "auth0_validation": {
+    "staging_credentials_available": true,
+    "production_credentials_active": true,
+    "isolation_capable": true,
+    "environment_switching_ready": true,
+    "has_staging_config": true,
+    "auth0_environment_detected": "production"
+  },
+  "production_protection": {
+    "production_mode_active": true,
+    "staging_mode_inactive": true,
+    "production_auth0_active": true,
+    "production_isolated": true,
+    "staging_mode_reported": false
+  },
+  "recommendations": [
+    "CRITICAL: Database connectivity issue detected - fix database import module path",
+    "Staging credentials available - environment switching capability confirmed",
+    "Production environment properly isolated and protected"
+  ]
+}
