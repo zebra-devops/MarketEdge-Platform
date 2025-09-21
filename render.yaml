@@ -1,17 +1,135 @@
+# Render.yaml Configuration for MarketEdge Platform
+# Production and Preview Environment Setup
+
+# Preview Environment Configuration
+previews:
+  generation: automatic  # Generate preview environments for all PRs automatically
+  expireAfterDays: 7     # Clean up preview environments after 7 days
+
 services:
+  # Main Backend Service (FastAPI)
   - type: web
     name: marketedge-backend
     env: python
     buildCommand: "pip install -r requirements.txt"
     startCommand: "./render-startup.sh"
     plan: free
+
+    # Preview environment overrides
+    previews:
+      plan: free  # Use free tier for preview environments
+      numInstances: 1
+
     envVars:
+      # Environment identification
       - key: ENVIRONMENT
         value: production
+        previewValue: staging
+
+      # Migration control
       - key: RUN_MIGRATIONS
         value: true
+
+      # Port configuration
       - key: PORT
         fromService:
           type: web
           name: marketedge-backend
           property: port
+
+      # Database configuration
+      - key: DATABASE_URL
+        fromDatabase:
+          name: marketedge-postgres
+          property: connectionString
+
+      # Auth0 Configuration (Production)
+      - key: AUTH0_DOMAIN
+        sync: false  # Set manually in Render dashboard
+      - key: AUTH0_CLIENT_ID
+        sync: false
+      - key: AUTH0_CLIENT_SECRET
+        sync: false
+      - key: AUTH0_AUDIENCE
+        sync: false
+
+      # Auth0 Configuration (Staging Preview)
+      - key: AUTH0_DOMAIN_STAGING
+        sync: false
+        previewValue: "dev-zebra-marketedge.uk.auth0.com"
+      - key: AUTH0_CLIENT_ID_STAGING
+        sync: false
+        previewValue: "staging-client-id"
+      - key: AUTH0_CLIENT_SECRET_STAGING
+        sync: false
+        previewValue: "staging-client-secret"
+      - key: AUTH0_AUDIENCE_STAGING
+        sync: false
+        previewValue: "https://api.marketedge-staging.onrender.com"
+
+      # Redis Configuration
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: marketedge-redis
+          property: connectionString
+
+      # CORS Configuration
+      - key: ALLOWED_ORIGINS
+        value: "https://platform.marketedge.co.uk,https://marketedge-platform.onrender.com"
+        previewValue: "*"  # Allow all origins for staging testing
+
+      # Feature Flags
+      - key: ENABLE_DEBUG_LOGGING
+        value: "false"
+        previewValue: "true"
+
+      # Security
+      - key: SECRET_KEY
+        generateValue: true
+
+      # Monitoring
+      - key: SENTRY_DSN
+        sync: false
+        previewValue: ""  # Disable Sentry for preview environments
+
+  # PostgreSQL Database
+  - type: pgsql
+    name: marketedge-postgres
+    databaseName: marketedge
+    user: marketedge_user
+    plan: free
+
+    # Staging database configuration
+    previewPlan: free
+
+    # Initialize with schema for preview environments
+    initScript: |
+      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+      CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+
+  # Redis Cache
+  - type: redis
+    name: marketedge-redis
+    plan: free
+    previewPlan: free
+    maxmemoryPolicy: allkeys-lru
+
+# Build hooks for preview environments
+buildHooks:
+  - type: initialDeploy
+    command: |
+      echo "Setting up MarketEdge staging environment..."
+      pip install -r requirements.txt
+
+      # Run database migrations for staging
+      if [ "$ENVIRONMENT" = "staging" ]; then
+        echo "Running staging database migrations..."
+        alembic upgrade head
+
+        # Seed with test data for staging
+        python database/seeds/initial_data.py
+        python database/seeds/phase3_data.py
+
+        echo "Staging environment setup complete"
+      fi
