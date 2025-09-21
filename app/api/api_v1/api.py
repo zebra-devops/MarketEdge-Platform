@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from .endpoints import (
-    auth, users, organisations, tools, market_edge, admin, features, 
-    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, user_import, database, debug_auth, module_management, system
+    auth, users, organisations, tools, market_edge, admin, features,
+    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, user_import, database, debug_auth, module_management, system, config
 )
 from ..health import router as health_router
 
@@ -33,6 +33,9 @@ api_router.include_router(module_management.router, prefix="/module-management",
 
 # System diagnostics endpoints for debugging
 api_router.include_router(system.router, tags=["system"])
+
+# Configuration endpoints for environment-aware frontend setup
+api_router.include_router(config.router, prefix="/config", tags=["configuration"])
 
 # Health check endpoints for monitoring
 api_router.include_router(health_router, tags=["health"])
