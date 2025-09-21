@@ -1,0 +1,21 @@
+Staging Environment Test Trigger
+=================================
+
+This file is created to trigger a preview environment for comprehensive testing.
+
+PR Details:
+- Purpose: Validate staging environment configuration
+- Target: Test Auth0 isolation and environment endpoints
+- Expected: Preview environment at *.onrender.com
+
+Test Endpoints:
+1. /api/v1/system/environment-config
+2. /api/v1/system/staging-health
+3. /health
+
+Validation Points:
+- ENVIRONMENT should be "staging"
+- USE_STAGING_AUTH0 should be "true"
+- Auth0 domain should use staging credentials
+- Database and Redis connectivity
+- CORS wildcard configuration
