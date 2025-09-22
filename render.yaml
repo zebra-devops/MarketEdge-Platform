@@ -21,8 +21,9 @@ services:
       plan: free  # Use free tier for preview environments
       numInstances: 1
 
+envVarGroups:
+  - name: production-env
     envVars:
-      # Environment identification
       - key: ENVIRONMENT
         value: production
         previewValue: staging
