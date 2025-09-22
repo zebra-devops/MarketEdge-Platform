@@ -11,15 +11,12 @@ services:
     name: marketedge-platform
     runtime: python
     plan: free
+    previewPlan: free       # use free tier for preview environments
+    previewNumInstances: 1  # 1 instance for preview
     buildCommand: pip install -r requirements.txt
     startCommand: ./render-startup.sh
     envVars:
       - fromGroup: production-env
-
-    # Preview environment overrides
-    previews:
-      plan: free  # Use free tier for preview environments
-      numInstances: 1
 
 envVarGroups:
   - name: production-env
