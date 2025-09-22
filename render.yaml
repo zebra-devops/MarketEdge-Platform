@@ -14,7 +14,6 @@ services:
     buildCommand: "pip install -r requirements.txt"
     startCommand: "./render-startup.sh"
     plan: free
-
     # Environment Groups - Link to existing production-env group with 23 variables
     envGroup: production-env
 
