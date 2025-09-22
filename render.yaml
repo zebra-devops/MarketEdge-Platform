@@ -14,7 +14,7 @@ services:
     name: marketedge-platform
     runtime: python
     plan: free
-    buildCommand: "pip install --no-cache-dir --only-binary :all: -r requirements.txt || pip install --no-cache-dir -r requirements.txt"
+    buildCommand: "python --version && pip install --upgrade pip && pip install --no-cache-dir --only-binary=:all: -r requirements.txt"
     startCommand: ./render-startup.sh
     previews:
       numInstances: 1        # inherit plan from base; do not set previews.plan: free
@@ -74,6 +74,10 @@ services:
       - key: ENABLE_DEBUG_LOGGING
         value: "false"
         previewValue: "true"
+
+      # Python Version Control (Force Python 3.11.10)
+      - key: PYTHON_VERSION
+        value: "3.11.10"
 
       # Security
       - key: SECRET_KEY
