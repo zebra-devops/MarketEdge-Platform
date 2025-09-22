@@ -6,26 +6,24 @@ previews:
   generation: automatic  # Generate preview environments for all PRs automatically
   expireAfterDays: 7     # Clean up preview environments after 7 days
 
-services:
-  - type: web
-    name: marketedge-platform
-    env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "./render-startup.sh"
-    plan: free
-    # Environment Groups - Link to existing production-env group with 23 variables
-    envGroup: production-env
-
-    # Preview environment overrides
-    previews:
-      plan: free  # Use free tier for preview environments
-      numInstances: 1
-
+envVarGroups:
+  - name: production-env
     envVars:
-      # Environment identification
       - key: ENVIRONMENT
         value: production
         previewValue: staging
+
+services:
+  - type: web
+    name: marketedge-platform
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: ./render-startup.sh
+    previews:
+      numInstances: 1        # inherit plan from base; do not set previews.plan: free
+    envVars:
+      - fromGroup: production-env
 
       # Migration control
       - key: RUN_MIGRATIONS
