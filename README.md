@@ -2,6 +2,9 @@
 
 A production-ready FastAPI backend for MarketEdge/Zebra Edge, a multi-tenant business intelligence platform designed to serve diverse industries including cinema, hospitality, fitness, B2B services, and retail sectors.
 
+## 🧪 Preview Environment Test - September 22, 2025
+Testing automatic preview environment generation via Render Blueprint conversion.
+
 [![Production Status](https://img.shields.io/badge/Production-Live-green)](https://marketedge-backend-production.up.railway.app)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green)](https://fastapi.tiangolo.com)
