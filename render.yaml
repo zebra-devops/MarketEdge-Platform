@@ -7,14 +7,14 @@ previews:
   expireAfterDays: 7     # Clean up preview environments after 7 days
 
 services:
-  # Main Backend Service (FastAPI)
-  - type: web                       # ← dash required
+  - type: web
     name: marketedge-platform
-    env: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "./render-startup.sh"
+    runtime: python
     plan: free
-    envGroup: production-env        # ← now recognised
+    buildCommand: pip install -r requirements.txt
+    startCommand: ./render-startup.sh
+    envVars:
+      - fromGroup: production-env
 
     # Preview environment overrides
     previews:
