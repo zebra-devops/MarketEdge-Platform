@@ -8,17 +8,13 @@ previews:
 
 envVarGroups:
   - name: production-env
-    envVars:
-      - key: ENVIRONMENT
-        value: production
-        previewValue: staging
 
 services:
   - type: web
     name: marketedge-platform
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: "pip install --no-cache-dir --only-binary :all: -r requirements.txt || pip install --no-cache-dir -r requirements.txt"
     startCommand: ./render-startup.sh
     previews:
       numInstances: 1        # inherit plan from base; do not set previews.plan: free
