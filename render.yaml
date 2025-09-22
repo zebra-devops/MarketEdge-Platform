@@ -6,6 +6,13 @@ previews:
   generation: automatic  # Generate preview environments for all PRs automatically
   expireAfterDays: 7     # Clean up preview environments after 7 days
 
+envVarGroups:
+  - name: production-env
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+        previewValue: staging
+
 services:
   - type: web
     name: marketedge-platform
@@ -14,17 +21,9 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: ./render-startup.sh
     previews:
-      plan: free
-      numInstances: 1
+      numInstances: 1        # inherit plan from base; do not set previews.plan: free
     envVars:
       - fromGroup: production-env
-
-envVarGroups:
-  - name: production-env
-    envVars:
-      - key: ENVIRONMENT
-        value: production
-        previewValue: staging
 
       # Migration control
       - key: RUN_MIGRATIONS
