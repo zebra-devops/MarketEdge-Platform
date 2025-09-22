@@ -9,11 +9,15 @@ previews:
 services:
   # Main Backend Service (FastAPI)
   - type: web
-    name: marketedge-backend
+    name: marketedge-platform
     env: python
     buildCommand: "pip install -r requirements.txt"
     startCommand: "./render-startup.sh"
     plan: free
+
+    # Environment Groups - Link to existing production-env group with 23 variables
+    envGroups:
+      - production-env
 
     # Preview environment overrides
     previews:
@@ -34,14 +38,12 @@ services:
       - key: PORT
         fromService:
           type: web
-          name: marketedge-backend
+          name: marketedge-platform
           property: port
 
-      # Database configuration
+      # Database configuration - inherited from environment group
       - key: DATABASE_URL
-        fromDatabase:
-          name: marketedge-postgres
-          property: connectionString
+        sync: false  # Set manually in environment group
 
       # Auth0 Configuration (Production)
       - key: AUTH0_DOMAIN
@@ -68,12 +70,9 @@ services:
         value: "false"
         previewValue: "true"
 
-      # Redis Configuration
+      # Redis Configuration - inherited from environment group
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: marketedge-redis
-          property: connectionString
+        sync: false  # Set manually in environment group
 
       # CORS Configuration
       - key: CORS_ORIGINS
@@ -94,27 +93,6 @@ services:
         sync: false
         previewValue: ""  # Disable Sentry for preview environments
 
-  # PostgreSQL Database
-  - type: pgsql
-    name: marketedge-postgres
-    databaseName: marketedge
-    user: marketedge_user
-    plan: free
-
-    # Staging database configuration
-    previewPlan: free
-
-    # Initialize with schema for preview environments
-    initScript: |
-      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-      CREATE EXTENSION IF NOT EXISTS "pg_trgm";
-
-  # Redis Cache
-  - type: redis
-    name: marketedge-redis
-    plan: free
-    previewPlan: free
-    maxmemoryPolicy: allkeys-lru
 
 # Build hooks for preview environments
 buildHooks:
