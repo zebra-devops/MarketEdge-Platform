@@ -92,23 +92,3 @@ services:
       - key: SENTRY_DSN
         sync: false
         previewValue: ""  # Disable Sentry for preview environments
-
-
-# Build hooks for preview environments
-buildHooks:
-  - type: initialDeploy
-    command: |
-      echo "Setting up MarketEdge staging environment..."
-      pip install -r requirements.txt
-
-      # Run database migrations for staging
-      if [ "$ENVIRONMENT" = "staging" ]; then
-        echo "Running staging database migrations..."
-        alembic upgrade head
-
-        # Seed with test data for staging
-        python database/seeds/initial_data.py
-        python database/seeds/phase3_data.py
-
-        echo "Staging environment setup complete"
-      fi
