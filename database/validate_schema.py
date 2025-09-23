@@ -27,11 +27,9 @@ Exit codes:
 import os
 import sys
 import argparse
-import asyncio
 from typing import Dict, List, Set, Tuple, Optional
 from dataclasses import dataclass, field
-from sqlalchemy import text, MetaData, Table, Column, inspect
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy import text, MetaData, Table, Column, inspect, create_engine, Engine
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.engine import reflection
 
@@ -79,32 +77,32 @@ class SchemaValidationResult:
 class SchemaValidator:
     """Validates database schema against SQLAlchemy models"""
 
-    def __init__(self, engine: AsyncEngine):
+    def __init__(self, engine: Engine):
         self.engine = engine
         self.metadata = Base.metadata
         self.result = SchemaValidationResult()
 
-    async def validate_schema(self) -> SchemaValidationResult:
+    def validate_schema(self) -> SchemaValidationResult:
         """Perform complete schema validation"""
         try:
-            async with self.engine.connect() as conn:
+            with self.engine.connect() as conn:
                 # Get current database schema
-                db_tables = await self._get_database_tables(conn)
-                db_columns = await self._get_database_columns(conn)
+                db_tables = self._get_database_tables(conn)
+                db_columns = self._get_database_columns(conn)
 
                 # Get expected schema from models
                 model_tables = self._get_model_tables()
                 model_columns = self._get_model_columns()
 
                 # Validate tables
-                await self._validate_tables(db_tables, model_tables)
+                self._validate_tables(db_tables, model_tables)
 
                 # Validate columns
-                await self._validate_columns(db_columns, model_columns, db_tables)
+                self._validate_columns(db_columns, model_columns, db_tables)
 
                 # Generate baseline SQL if needed
                 if not self.result.is_valid:
-                    self.result.baseline_sql = await self._generate_baseline_sql()
+                    self.result.baseline_sql = self._generate_baseline_sql()
 
         except Exception as e:
             self.result.add_issue(SchemaIssue(
@@ -116,9 +114,9 @@ class SchemaValidator:
 
         return self.result
 
-    async def _get_database_tables(self, conn) -> Set[str]:
+    def _get_database_tables(self, conn) -> Set[str]:
         """Get list of existing database tables"""
-        result = await conn.execute(text("""
+        result = conn.execute(text("""
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = 'public'
@@ -126,9 +124,9 @@ class SchemaValidator:
         """))
         return {row[0] for row in result.fetchall()}
 
-    async def _get_database_columns(self, conn) -> Dict[str, Dict[str, str]]:
+    def _get_database_columns(self, conn) -> Dict[str, Dict[str, str]]:
         """Get database columns with their types"""
-        result = await conn.execute(text("""
+        result = conn.execute(text("""
             SELECT
                 table_name,
                 column_name,
@@ -171,7 +169,7 @@ class SchemaValidator:
                 }
         return columns
 
-    async def _validate_tables(self, db_tables: Set[str], model_tables: Set[str]):
+    def _validate_tables(self, db_tables: Set[str], model_tables: Set[str]):
         """Validate that all required tables exist"""
         missing_tables = model_tables - db_tables
 
@@ -185,9 +183,9 @@ class SchemaValidator:
                 fix_sql=f"-- Table '{table_name}' needs to be created"
             ))
 
-    async def _validate_columns(self, db_columns: Dict[str, Dict[str, str]],
-                               model_columns: Dict[str, Dict[str, Dict]],
-                               existing_tables: Set[str]):
+    def _validate_columns(self, db_columns: Dict[str, Dict[str, str]],
+                         model_columns: Dict[str, Dict[str, Dict]],
+                         existing_tables: Set[str]):
         """Validate columns for existing tables"""
         for table_name, expected_columns in model_columns.items():
             if table_name not in existing_tables:
@@ -241,7 +239,7 @@ class SchemaValidator:
         # Default fallback
         return 'TEXT'
 
-    async def _generate_baseline_sql(self) -> List[str]:
+    def _generate_baseline_sql(self) -> List[str]:
         """Generate SQL statements to create missing schema"""
         sql_statements = []
 
@@ -281,7 +279,7 @@ class SchemaValidator:
         return sql_statements
 
 
-async def main():
+def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(description="Validate database schema against SQLAlchemy models")
     parser.add_argument("--check", action="store_true", help="Check schema and report issues")
@@ -301,9 +299,9 @@ async def main():
         print("ERROR: DATABASE_URL environment variable not set", file=sys.stderr)
         sys.exit(2)
 
-    # Create async engine
+    # Create sync engine
     try:
-        engine = create_async_engine(database_url, echo=False)
+        engine = create_engine(database_url, echo=False)
     except Exception as e:
         print(f"ERROR: Failed to connect to database: {e}", file=sys.stderr)
         sys.exit(2)
@@ -311,7 +309,7 @@ async def main():
     try:
         # Validate schema
         validator = SchemaValidator(engine)
-        result = await validator.validate_schema()
+        result = validator.validate_schema()
 
         # Report results
         if args.check:
@@ -366,8 +364,8 @@ async def main():
         sys.exit(3)
 
     finally:
-        await engine.dispose()
+        engine.dispose()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
