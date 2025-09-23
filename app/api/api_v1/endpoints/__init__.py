@@ -1,2 +1,21 @@
 # API endpoints package
-# All endpoint modules are imported directly in api.py
+# Import all endpoint modules for API router
+from . import auth
+from . import users
+from . import organisations
+from . import tools
+from . import market_edge
+from . import admin
+from . import features
+from . import rate_limits
+from . import rate_limit_observability
+from . import organization_hierarchy
+from . import industry_templates
+from . import user_management
+from . import user_import
+from . import database
+from . import debug_auth
+from . import module_management
+from . import system
+from . import config
+from . import environment_validation
