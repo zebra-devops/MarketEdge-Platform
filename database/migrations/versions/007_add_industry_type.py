@@ -17,44 +17,67 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create Industry enum type
-    industry_enum = postgresql.ENUM(
-        'cinema', 'hotel', 'gym', 'b2b', 'retail', 'default',
-        name='industry'
-    )
-    industry_enum.create(op.get_bind())
+    # Import defensive migration utilities
+    from database.migrations.utils import get_validator
+    validator = get_validator()
+
+    # Create Industry enum type only if it doesn't exist
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'industry') THEN
+                CREATE TYPE industry AS ENUM ('cinema', 'hotel', 'gym', 'b2b', 'retail', 'default');
+            END IF;
+        END $$;
+    """)
+
+    # Add industry_type column with default value using IF NOT EXISTS
+    op.execute("""
+        ALTER TABLE organisations
+        ADD COLUMN IF NOT EXISTS industry_type VARCHAR(50) DEFAULT 'default' NOT NULL
+    """)
+
+    # Cast to proper enum type if column was just created
+    op.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns
+                      WHERE table_name = 'organisations'
+                      AND column_name = 'industry_type'
+                      AND data_type = 'character varying') THEN
+                ALTER TABLE organisations ALTER COLUMN industry_type TYPE industry USING industry_type::industry;
+            END IF;
+        END $$;
+    """)
+
+    # Create index for industry_type for performance (safe create)
+    validator.safe_create_index('ix_organisations_industry_type', 'organisations', ['industry_type'])
     
-    # Add industry_type column with default value
-    op.add_column(
-        'organisations',
-        sa.Column('industry_type', industry_enum, nullable=False, server_default='default')
-    )
-    
-    # Create index for industry_type for performance
-    op.create_index('ix_organisations_industry_type', 'organisations', ['industry_type'])
-    
-    # Migrate existing industry data to industry_type where possible
+    # Migrate existing industry data to industry_type where possible (only if needed)
     # This is a safe migration that maps string values to enum values
     op.execute("""
-        UPDATE organisations 
-        SET industry_type = CASE 
+        UPDATE organisations
+        SET industry_type = CASE
             WHEN LOWER(industry) LIKE '%cinema%' OR LOWER(industry) LIKE '%movie%' OR LOWER(industry) LIKE '%theater%' THEN 'cinema'::industry
-            WHEN LOWER(industry) LIKE '%hotel%' OR LOWER(industry) LIKE '%hospitality%' OR LOWER(industry) LIKE '%motel%' THEN 'hotel'::industry  
+            WHEN LOWER(industry) LIKE '%hotel%' OR LOWER(industry) LIKE '%hospitality%' OR LOWER(industry) LIKE '%motel%' THEN 'hotel'::industry
             WHEN LOWER(industry) LIKE '%gym%' OR LOWER(industry) LIKE '%fitness%' OR LOWER(industry) LIKE '%health%' THEN 'gym'::industry
             WHEN LOWER(industry) LIKE '%b2b%' OR LOWER(industry) LIKE '%business%' OR LOWER(industry) LIKE '%consulting%' THEN 'b2b'::industry
             WHEN LOWER(industry) LIKE '%retail%' OR LOWER(industry) LIKE '%shop%' OR LOWER(industry) LIKE '%store%' THEN 'retail'::industry
             ELSE 'default'::industry
         END
-        WHERE industry IS NOT NULL;
+        WHERE industry IS NOT NULL AND industry_type = 'default'::industry;
     """)
 
 
 def downgrade() -> None:
-    # Drop the index
-    op.drop_index('ix_organisations_industry_type', table_name='organisations')
-    
-    # Drop the column
-    op.drop_column('organisations', 'industry_type')
-    
+    # Import defensive migration utilities
+    from database.migrations.utils import get_validator
+    validator = get_validator()
+
+    # Drop the index safely
+    validator.safe_drop_index('ix_organisations_industry_type', 'organisations')
+
+    # Drop the column safely
+    if validator.column_exists('organisations', 'industry_type'):
+        op.drop_column('organisations', 'industry_type')
+
     # Drop the enum type
     op.execute('DROP TYPE IF EXISTS industry')
