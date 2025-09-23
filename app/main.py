@@ -25,6 +25,41 @@ try:
 except Exception as import_error:
     logger.error(f"❌ API router import failed: {import_error}")
     logger.warning("⚠️  Creating minimal router as fallback")
+
+    # DEBUG: Enhanced error logging for production debugging
+    import traceback
+    import os
+    logger.error(f"🔍 IMPORT ERROR DEBUG:")
+    logger.error(f"   Working Directory: {os.getcwd()}")
+    logger.error(f"   Error Type: {type(import_error).__name__}")
+    logger.error(f"   Error Message: {str(import_error)}")
+    logger.error(f"   Full Traceback: {traceback.format_exc()}")
+
+    # Check if __init__.py exists and log its contents
+    try:
+        init_path = "app/api/api_v1/endpoints/__init__.py"
+        if os.path.exists(init_path):
+            with open(init_path, 'r') as f:
+                init_content = f.read()
+                logger.error(f"   __init__.py content length: {len(init_content)}")
+                logger.error(f"   __init__.py content: {repr(init_content[:200])}")
+                if 'broken_endpoint' in init_content:
+                    logger.error(f"   🚨 FOUND broken_endpoint in __init__.py!")
+        else:
+            logger.error(f"   __init__.py not found at {init_path}")
+
+        # Check directory contents
+        endpoints_dir = "app/api/api_v1/endpoints"
+        if os.path.exists(endpoints_dir):
+            files = os.listdir(endpoints_dir)
+            logger.error(f"   Endpoints directory contains: {files}")
+            if 'broken_endpoint.py' in files:
+                logger.error(f"   🚨 FOUND broken_endpoint.py file!")
+        else:
+            logger.error(f"   Endpoints directory not found at {endpoints_dir}")
+    except Exception as debug_error:
+        logger.error(f"   Debug logging failed: {debug_error}")
+
     from fastapi import APIRouter
     api_router = APIRouter()
     API_ROUTER_IMPORT_SUCCESS = False
