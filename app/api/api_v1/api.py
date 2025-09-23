@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from .endpoints import (
     auth, users, organisations, tools, market_edge, admin, features,
-    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, user_import, database, debug_auth, module_management, system, config, broken_endpoint, environment_validation
+    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, user_import, database, debug_auth, module_management, system, config, environment_validation
 )
 from ..health import router as health_router
 
@@ -40,8 +40,7 @@ api_router.include_router(system.router, tags=["system"])
 # Configuration endpoints for environment-aware frontend setup
 api_router.include_router(config.router, prefix="/config", tags=["configuration"])
 
-# INTENTIONALLY BROKEN: Broken endpoints for quality gates testing
-api_router.include_router(broken_endpoint.router, prefix="/broken", tags=["quality-gates-testing"])
+# Note: Removed broken_endpoint router that was causing production API failures
 
 # Health check endpoints for monitoring
 api_router.include_router(health_router, tags=["health"])
