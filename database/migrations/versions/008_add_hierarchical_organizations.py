@@ -27,30 +27,30 @@ depends_on = None
 def upgrade():
     """Add hierarchical organization structure and enhanced permissions"""
 
-    # Create enhanced user roles enum only if it doesn't exist
+    # Create enhanced user roles enum with exception handling for duplicates
     op.execute("""
         DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enhanceduserrole') THEN
-                CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer');
-            END IF;
+            CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
         END $$;
     """)
 
-    # Create hierarchy level enum only if it doesn't exist
+    # Create hierarchy level enum with exception handling for duplicates
     op.execute("""
         DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'hierarchylevel') THEN
-                CREATE TYPE hierarchylevel AS ENUM ('organization', 'location', 'department', 'user');
-            END IF;
+            CREATE TYPE hierarchylevel AS ENUM ('organization', 'location', 'department', 'user');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
         END $$;
     """)
 
-    # Create permission scope enum only if it doesn't exist
+    # Create permission scope enum with exception handling for duplicates
     op.execute("""
         DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'permissionscope') THEN
-                CREATE TYPE permissionscope AS ENUM ('read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data');
-            END IF;
+            CREATE TYPE permissionscope AS ENUM ('read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
         END $$;
     """)
     
