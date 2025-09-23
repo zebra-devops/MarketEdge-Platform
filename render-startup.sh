@@ -58,10 +58,32 @@ elif [ "$RUN_MIGRATIONS" = "true" ]; then
 
     if [ $schema_validation_result -ne 0 ]; then
         echo "❌ CRITICAL: Production schema validation failed"
-        echo "🛑 Stopping deployment - manual intervention required"
-        echo "📋 Run locally: python database/validate_schema.py --check"
-        echo "🔧 Generate fixes: python database/validate_schema.py --fix"
-        exit 1
+        echo "🚨 AUTOMATIC EMERGENCY REPAIR STARTING..."
+        echo "🔧 Applying comprehensive schema fixes..."
+
+        # Run emergency schema repair
+        python render_emergency_schema_repair.py --apply
+        repair_result=$?
+
+        if [ $repair_result -eq 0 ]; then
+            echo "✅ Emergency schema repair completed successfully"
+            echo "🔍 Re-validating schema..."
+            python database/validate_schema.py --check
+            revalidation_result=$?
+
+            if [ $revalidation_result -eq 0 ]; then
+                echo "✅ Schema validation now passes - continuing deployment"
+            else
+                echo "❌ Schema validation still failing after repair"
+                echo "🛑 Manual intervention required - check repair logs"
+                exit 1
+            fi
+        else
+            echo "❌ Emergency schema repair failed"
+            echo "🛑 Stopping deployment - manual intervention required"
+            echo "📋 Run locally: python render_emergency_schema_repair.py --check"
+            exit 1
+        fi
     fi
 
     echo "✅ Production schema validation passed"
