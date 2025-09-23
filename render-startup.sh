@@ -13,6 +13,32 @@ if [ "$ENVIRONMENT" = "staging" ] || [ "$USE_STAGING_AUTH0" = "true" ]; then
     echo "📊 Auth0 Environment: staging"
     echo "🔐 Using staging Auth0 credentials"
 
+    # Schema validation and migrations for staging
+    echo "🔍 Validating database schema..."
+    python database/validate_schema.py --check
+    schema_validation_result=$?
+
+    if [ $schema_validation_result -ne 0 ]; then
+        echo "⚠️  Schema validation issues detected"
+        echo "🔧 Generating schema fixes..."
+        python database/validate_schema.py --fix > /tmp/schema_fixes.sql
+
+        if [ -s /tmp/schema_fixes.sql ]; then
+            echo "📄 Schema fixes generated, applying baseline schema..."
+            python database/generate_baseline.py --apply
+            baseline_result=$?
+
+            if [ $baseline_result -ne 0 ]; then
+                echo "❌ Failed to apply baseline schema"
+                exit 1
+            fi
+
+            echo "✅ Baseline schema applied successfully"
+        fi
+    else
+        echo "✅ Schema validation passed"
+    fi
+
     # Run migrations for staging
     echo "🗃️  Running staging database migrations..."
     alembic upgrade head
@@ -25,7 +51,21 @@ if [ "$ENVIRONMENT" = "staging" ] || [ "$USE_STAGING_AUTH0" = "true" ]; then
     echo "✅ Staging environment setup complete"
 elif [ "$RUN_MIGRATIONS" = "true" ]; then
     echo "🚨 EMERGENCY MIGRATION MODE (PRODUCTION)"
-    echo "🎯 Creating analytics_modules table"
+    echo "🔍 Validating production schema first..."
+
+    python database/validate_schema.py --check
+    schema_validation_result=$?
+
+    if [ $schema_validation_result -ne 0 ]; then
+        echo "❌ CRITICAL: Production schema validation failed"
+        echo "🛑 Stopping deployment - manual intervention required"
+        echo "📋 Run locally: python database/validate_schema.py --check"
+        echo "🔧 Generate fixes: python database/validate_schema.py --fix"
+        exit 1
+    fi
+
+    echo "✅ Production schema validation passed"
+    echo "🎯 Proceeding with emergency migration"
 
     python apply_production_migrations_emergency.py
     exit_code=$?
@@ -41,6 +81,17 @@ else
     echo "🟢 PRODUCTION ENVIRONMENT"
     echo "📊 Auth0 Environment: production"
     echo "🔐 Using production Auth0 credentials"
+
+    # For regular production startup, do a quick schema validation
+    echo "🔍 Quick production schema validation..."
+    python database/validate_schema.py --check
+    if [ $? -ne 0 ]; then
+        echo "⚠️  Production schema validation warnings detected"
+        echo "📋 Check logs and run: python database/validate_schema.py --check"
+        echo "🚀 Continuing startup (non-blocking for production)"
+    else
+        echo "✅ Production schema validation passed"
+    fi
 fi
 
 # Display environment configuration for validation

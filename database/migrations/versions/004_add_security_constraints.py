@@ -16,14 +16,19 @@ depends_on = None
 
 
 def upgrade():
-    # Check if tables and columns exist before creating indexes
+    # Use schema validation approach
     import sqlalchemy as sa
     from alembic import context
+    import os
+    import sys
 
-    # Get connection to check table and column existence
+    # Get connection
     connection = context.get_bind()
 
-    # Check if tables exist
+    # Add validation logic
+    print("Migration 004: Validating schema before applying security constraints...")
+
+    # Check if required tables exist
     result = connection.execute(sa.text("""
         SELECT table_name
         FROM information_schema.tables
@@ -32,6 +37,14 @@ def upgrade():
     """))
 
     existing_tables = {row[0] for row in result.fetchall()}
+    required_tables = {'module_usage_logs', 'feature_flag_usage', 'organisation_modules', 'feature_flags', 'audit_logs', 'competitive_factor_templates', 'sic_codes'}
+    missing_tables = required_tables - existing_tables
+
+    if missing_tables:
+        print(f"ERROR: Required tables missing: {missing_tables}")
+        print("Run schema validation first: python database/validate_schema.py --check")
+        print("Generate missing schema: python database/validate_schema.py --fix")
+        raise Exception(f"Migration prerequisite failed: Missing tables {missing_tables}")
 
     module_usage_logs_exists = 'module_usage_logs' in existing_tables
     feature_flag_usage_exists = 'feature_flag_usage' in existing_tables
@@ -41,7 +54,7 @@ def upgrade():
     competitive_factor_templates_exists = 'competitive_factor_templates' in existing_tables
     sic_codes_exists = 'sic_codes' in existing_tables
 
-    print(f"DEBUG: Table existence check - module_usage_logs: {module_usage_logs_exists}, feature_flag_usage: {feature_flag_usage_exists}, organisation_modules: {organisation_modules_exists}")
+    print(f"Schema validation passed - all required tables exist")
 
     # Check if module_id column exists in feature_flags table (only if table exists)
     module_id_exists = False
@@ -111,9 +124,24 @@ def upgrade():
     else:
         print("WARNING: feature_flag_usage table not found - skipping feature_flag_usage indexes")
 
-    # Add organisation module indexes (only if table exists)
+    # Add organisation module indexes (only if table exists and columns exist)
     if organisation_modules_exists:
-        op.create_index('idx_organisation_modules_enabled', 'organisation_modules', ['organisation_id', 'is_enabled'])
+        # Check if required columns exist
+        result = connection.execute(sa.text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'organisation_modules'
+            AND column_name IN ('organisation_id', 'is_enabled')
+        """))
+
+        org_module_columns = {row[0] for row in result.fetchall()}
+        organisation_id_exists = 'organisation_id' in org_module_columns
+        is_enabled_exists = 'is_enabled' in org_module_columns
+
+        if organisation_id_exists and is_enabled_exists:
+            op.create_index('idx_organisation_modules_enabled', 'organisation_modules', ['organisation_id', 'is_enabled'])
+        else:
+            print(f"WARNING: organisation_modules columns missing - organisation_id: {organisation_id_exists}, is_enabled: {is_enabled_exists} - skipping organisation_modules index")
     else:
         print("WARNING: organisation_modules table not found - skipping organisation_modules indexes")
 
