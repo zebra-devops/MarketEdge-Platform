@@ -5,6 +5,7 @@
 
 echo "🚀 MarketEdge Platform Starting..."
 echo "🔧 Environment: ${ENVIRONMENT:-production}"
+echo "🐍 Python version: $(python --version 2>&1)"
 
 # Environment-specific startup logic
 if [ "$ENVIRONMENT" = "staging" ] || [ "$USE_STAGING_AUTH0" = "true" ]; then
@@ -26,7 +27,7 @@ elif [ "$RUN_MIGRATIONS" = "true" ]; then
     echo "🚨 EMERGENCY MIGRATION MODE (PRODUCTION)"
     echo "🎯 Creating analytics_modules table"
 
-    python3 apply_production_migrations_emergency.py
+    python apply_production_migrations_emergency.py
     exit_code=$?
 
     if [ $exit_code -eq 0 ]; then

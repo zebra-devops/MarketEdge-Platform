@@ -12,7 +12,7 @@ envVarGroups:
 services:
   - type: web
     name: marketedge-platform
-    runtime: python
+    env: python-3.11
     plan: free
     buildCommand: "python --version && pip install --upgrade pip && pip install --no-cache-dir --only-binary=:all: -r requirements.txt"
     startCommand: ./render-startup.sh
