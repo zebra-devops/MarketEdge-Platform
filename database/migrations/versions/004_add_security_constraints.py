@@ -16,11 +16,32 @@ depends_on = None
 
 
 def upgrade():
+    # Check if module_id column exists before creating index
+    import sqlalchemy as sa
+    from alembic import context
+
+    # Get connection to check column existence
+    connection = context.get_bind()
+
+    # Check if module_id column exists in feature_flags table
+    result = connection.execute(sa.text("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'feature_flags'
+        AND column_name = 'module_id'
+    """))
+
+    module_id_exists = result.fetchone() is not None
+
     # Add unique constraint for feature flag scopes
     op.create_index('idx_feature_flags_unique_scope', 'feature_flags', ['flag_key', 'scope'])
-    
+
     # Add composite indexes for performance
-    op.create_index('idx_feature_flags_module_enabled', 'feature_flags', ['module_id', 'is_enabled'])
+    if module_id_exists:
+        op.create_index('idx_feature_flags_module_enabled', 'feature_flags', ['module_id', 'is_enabled'])
+    else:
+        print("WARNING: module_id column not found in feature_flags table - skipping module_id index")
+
     op.create_index('idx_feature_flags_scope_enabled', 'feature_flags', ['scope', 'is_enabled'])
     
     # Add audit log indexes for performance
