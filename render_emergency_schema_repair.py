@@ -334,14 +334,14 @@ class RenderSchemaRepairer:
                 try:
                     # Try to update existing version
                     cursor.execute("""
-                        UPDATE alembic_version SET version_num = '003_phase3_enhancements'
+                        UPDATE alembic_version SET version_num = '003'
                         WHERE version_num IS NOT NULL
                     """)
 
                     # Insert if no existing version
                     cursor.execute("""
                         INSERT INTO alembic_version (version_num)
-                        SELECT '003_phase3_enhancements'
+                        SELECT '003'
                         WHERE NOT EXISTS (SELECT 1 FROM alembic_version)
                     """)
 
