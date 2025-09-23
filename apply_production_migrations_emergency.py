@@ -21,6 +21,7 @@ import json
 import asyncio
 from datetime import datetime
 import logging
+import traceback
 
 # Add the app directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
@@ -167,6 +168,8 @@ class ProductionMigrationDeployment:
             return True
 
         except Exception as e:
+            # Force full stack-trace to stdout for debugging
+            traceback.print_exc(file=sys.stdout)
             logger.error(f"❌ Migration application failed: {str(e)}")
             self.results['steps']['apply_migrations'] = {
                 'status': 'failed',
