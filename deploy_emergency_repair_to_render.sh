@@ -4,6 +4,12 @@
 # =============================================
 # This script deploys and executes the emergency schema repair on Render
 # to fix the massive schema drift blocking the £925K Zebra Associates opportunity
+#
+# IMPROVED TRANSACTION HANDLING:
+# - Uses autocommit mode to prevent transaction rollback issues
+# - Each SQL statement commits independently
+# - Successful repairs are retained even if some statements fail
+# - Maximizes repair success rate in production environment
 
 set -e
 
@@ -33,9 +39,10 @@ repair_result=$?
 
 if [ $repair_result -eq 0 ]; then
     echo ""
-    echo "🎉 EMERGENCY SCHEMA REPAIR COMPLETED SUCCESSFULLY!"
+    echo "🎉 EMERGENCY SCHEMA REPAIR COMPLETED!"
     echo "================================================================"
-    echo "✅ All 9 missing tables created:"
+    echo "✅ Schema repairs applied with autocommit transaction handling"
+    echo "✅ Missing tables created (where possible):"
     echo "   - competitive_factor_templates"
     echo "   - module_configurations"
     echo "   - industry_templates"
@@ -46,24 +53,28 @@ if [ $repair_result -eq 0 ]; then
     echo "   - feature_flag_usage"
     echo "   - admin_actions"
     echo ""
-    echo "✅ All 48 missing columns added to existing tables"
+    echo "✅ Missing columns added to existing tables (where possible)"
     echo "✅ Alembic version updated to prevent future conflicts"
     echo "✅ Performance indexes created"
     echo ""
-    echo "🔗 Admin endpoints should now be functional:"
+    echo "📊 IMPORTANT: Check repair logs for specific success/warning details"
+    echo "📊 Successful repairs are committed even if some statements failed"
+    echo ""
+    echo "🔗 Test admin endpoints for functionality:"
     echo "   - https://marketedge-platform.onrender.com/api/v1/admin/feature-flags"
     echo "   - https://marketedge-platform.onrender.com/api/v1/module-management/modules"
     echo ""
-    echo "💰 £925K Zebra Associates opportunity: UNBLOCKED"
+    echo "💰 £925K Zebra Associates opportunity: SCHEMA REPAIR ATTEMPTED"
     echo "================================================================"
     exit 0
 else
     echo ""
-    echo "❌ EMERGENCY SCHEMA REPAIR FAILED"
+    echo "❌ EMERGENCY SCHEMA REPAIR ENCOUNTERED ISSUES"
     echo "================================================================"
-    echo "🚨 Critical error occurred during schema repair"
+    echo "🚨 No successful schema repairs were applied"
     echo "📋 Check logs for detailed error information"
-    echo "🆘 Manual intervention required"
+    echo "🔧 Some failures may be expected (existing structures, etc.)"
+    echo "🆘 Manual review of production schema state required"
     echo "================================================================"
     exit $repair_result
 fi

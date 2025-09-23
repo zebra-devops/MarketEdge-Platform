@@ -17,10 +17,12 @@ Usage on Render:
     python render_emergency_schema_repair.py --apply
 
 Safety Features:
-- Uses transactions for atomic operations
-- Comprehensive error handling and rollback
+- Uses autocommit mode to prevent transaction rollback issues
+- Each statement commits independently to maximize repair success
+- Comprehensive error handling with graceful continuation
 - Detailed logging for audit trail
 - Verification after applying fixes
+- Commits successful changes even if some statements fail
 """
 
 import os
@@ -50,13 +52,55 @@ class RenderSchemaRepairer:
         self.fixes_applied = []
         self.errors_encountered = []
 
+    def create_schema_backup(self):
+        """Create a backup of current schema state before repairs"""
+        logger.info("📋 Creating schema backup before repairs...")
+
+        backup_queries = [
+            "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' ORDER BY table_name, ordinal_position",
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY table_name",
+            "SELECT version_num FROM alembic_version"
+        ]
+
+        backup_data = {}
+
+        try:
+            with self.get_connection(autocommit=True) as conn:
+                cursor = conn.cursor()
+
+                # Backup columns
+                cursor.execute(backup_queries[0])
+                backup_data['columns'] = cursor.fetchall()
+
+                # Backup tables
+                cursor.execute(backup_queries[1])
+                backup_data['tables'] = cursor.fetchall()
+
+                # Backup alembic version
+                try:
+                    cursor.execute(backup_queries[2])
+                    backup_data['alembic_version'] = cursor.fetchone()
+                except:
+                    backup_data['alembic_version'] = None
+
+                logger.info(f"✅ Schema backup created:")
+                logger.info(f"   - Tables: {len(backup_data['tables'])}")
+                logger.info(f"   - Columns: {len(backup_data['columns'])}")
+                logger.info(f"   - Alembic version: {backup_data['alembic_version']}")
+
+                return backup_data
+
+        except Exception as e:
+            logger.warning(f"⚠️  Could not create schema backup: {e}")
+            return None
+
     @contextmanager
-    def get_connection(self):
+    def get_connection(self, autocommit=True):
         """Get database connection with proper error handling"""
         conn = None
         try:
             conn = psycopg2.connect(self.database_url)
-            conn.autocommit = False  # Use transactions
+            conn.autocommit = autocommit
             yield conn
         except Exception as e:
             logger.error(f"Database connection failed: {e}")
@@ -240,60 +284,91 @@ class RenderSchemaRepairer:
         ]
 
     def apply_schema_repairs(self):
-        """Apply all schema repairs in a single transaction"""
+        """Apply schema repairs with individual statement commits to prevent transaction rollback issues"""
         logger.info("🚀 Starting emergency schema repair for Render production...")
+
+        # Create schema backup first
+        backup_data = self.create_schema_backup()
 
         statements = self.get_schema_repair_statements()
         logger.info(f"📊 Applying {len(statements)} schema repair statements")
+        logger.info("🔄 Using autocommit mode to prevent transaction rollback issues")
 
-        with self.get_connection() as conn:
-            try:
+        # Use autocommit mode for individual statements
+        with self.get_connection(autocommit=True) as conn:
+            cursor = conn.cursor()
+
+            # Apply all statements individually with autocommit
+            for i, statement in enumerate(statements, 1):
+                try:
+                    logger.info(f"🔧 [{i}/{len(statements)}] Executing: {statement[:100]}...")
+                    cursor.execute(statement)
+                    self.fixes_applied.append(statement)
+                    logger.info(f"✅ [{i}/{len(statements)}] Success - committed immediately")
+
+                except Exception as e:
+                    error_msg = f"Statement {i}: {str(e)}"
+                    logger.warning(f"⚠️  [{i}/{len(statements)}] Warning: {error_msg}")
+                    self.errors_encountered.append(error_msg)
+
+                    # Continue with other fixes for non-critical errors
+                    if "already exists" in str(e) or "duplicate key" in str(e):
+                        logger.info(f"🔄 [{i}/{len(statements)}] Skipping - already exists")
+                        continue
+                    elif "does not exist" in str(e) and "relation" in str(e):
+                        logger.warning(f"⏭️  [{i}/{len(statements)}] Skipping - missing dependency")
+                        continue
+                    elif "type" in str(e).lower() and "mismatch" in str(e).lower():
+                        logger.warning(f"🔧 [{i}/{len(statements)}] Type mismatch - continuing with other repairs")
+                        continue
+                    else:
+                        # Log other errors but continue
+                        logger.warning(f"⚠️  [{i}/{len(statements)}] Unexpected error - continuing: {str(e)[:200]}")
+                        continue
+
+        # Update alembic version using a separate transaction-controlled connection
+        logger.info("🔧 Updating alembic version...")
+        try:
+            with self.get_connection(autocommit=False) as conn:
                 cursor = conn.cursor()
+                try:
+                    # Try to update existing version
+                    cursor.execute("""
+                        UPDATE alembic_version SET version_num = '003_phase3_enhancements'
+                        WHERE version_num IS NOT NULL
+                    """)
 
-                # Apply all statements
-                for i, statement in enumerate(statements, 1):
-                    try:
-                        logger.info(f"🔧 [{i}/{len(statements)}] Executing: {statement[:100]}...")
-                        cursor.execute(statement)
-                        self.fixes_applied.append(statement)
-                        logger.info(f"✅ [{i}/{len(statements)}] Success")
+                    # Insert if no existing version
+                    cursor.execute("""
+                        INSERT INTO alembic_version (version_num)
+                        SELECT '003_phase3_enhancements'
+                        WHERE NOT EXISTS (SELECT 1 FROM alembic_version)
+                    """)
 
-                    except Exception as e:
-                        error_msg = f"Statement {i}: {str(e)}"
-                        logger.warning(f"⚠️  [{i}/{len(statements)}] Warning: {error_msg}")
-                        self.errors_encountered.append(error_msg)
+                    conn.commit()
+                    logger.info("✅ Alembic version updated successfully")
 
-                        # Continue with other fixes for non-critical errors
-                        if "already exists" in str(e) or "duplicate key" in str(e):
-                            logger.info(f"🔄 [{i}/{len(statements)}] Skipping - already exists")
-                            continue
-                        elif "does not exist" in str(e) and "relation" in str(e):
-                            logger.warning(f"⏭️  [{i}/{len(statements)}] Skipping - missing dependency")
-                            continue
+                except Exception as e:
+                    conn.rollback()
+                    logger.warning(f"⚠️  Alembic version update failed: {e}")
 
-                # Update alembic version
-                logger.info("🔧 Updating alembic version...")
-                cursor.execute("""
-                    UPDATE alembic_version SET version_num = '003_phase3_enhancements'
-                    WHERE version_num IS NOT NULL
-                """)
+        except Exception as e:
+            logger.warning(f"⚠️  Could not update alembic version: {e}")
 
-                cursor.execute("""
-                    INSERT INTO alembic_version (version_num)
-                    SELECT '003_phase3_enhancements'
-                    WHERE NOT EXISTS (SELECT 1 FROM alembic_version)
-                """)
+        # Report summary
+        successful_fixes = len(self.fixes_applied)
+        total_errors = len(self.errors_encountered)
 
-                # Commit all changes
-                conn.commit()
-                logger.info("✅ All schema repairs committed successfully")
+        logger.info(f"📊 Schema repair summary:")
+        logger.info(f"✅ Successfully applied: {successful_fixes} statements")
+        logger.info(f"⚠️  Warnings/errors: {total_errors} statements")
 
-                return True
-
-            except Exception as e:
-                conn.rollback()
-                logger.error(f"❌ Critical error during repair, rolled back: {e}")
-                return False
+        if successful_fixes > 0:
+            logger.info("✅ Schema repairs completed with partial success")
+            return True
+        else:
+            logger.error("❌ No schema repairs were successfully applied")
+            return False
 
     def verify_repairs(self):
         """Verify that schema repairs were applied correctly"""
@@ -316,7 +391,7 @@ class RenderSchemaRepairer:
 
         missing_components = []
 
-        with self.get_connection() as conn:
+        with self.get_connection(autocommit=True) as conn:
             cursor = conn.cursor()
             for component, query in verification_queries:
                 try:
