@@ -49,7 +49,7 @@ def upgrade():
     op.create_check_constraint(
         'chk_competitive_factor_templates_weight',
         'competitive_factor_templates',
-        'weight >= 0.0 AND weight <= 1.0'
+        'weight >= 0 AND weight <= 100'
     )
     
     op.create_check_constraint(
