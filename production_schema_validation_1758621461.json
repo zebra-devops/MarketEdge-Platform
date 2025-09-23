@@ -1,0 +1,53 @@
+{
+  "validation_time": "2025-09-23T10:57:41.970471",
+  "success": false,
+  "results": [
+    {
+      "test": "Health Check",
+      "status": "PASS",
+      "details": "Database connection verified",
+      "timestamp": "2025-09-23T10:57:39.396634"
+    },
+    {
+      "test": "Schema Test: /api/v1/admin/feature-flags",
+      "status": "FAIL",
+      "details": "Endpoint not found - possible missing route",
+      "timestamp": "2025-09-23T10:57:39.738174"
+    },
+    {
+      "test": "Schema Test: /api/v1/admin/modules",
+      "status": "FAIL",
+      "details": "Endpoint not found - possible missing route",
+      "timestamp": "2025-09-23T10:57:40.038350"
+    },
+    {
+      "test": "Schema Test: /api/v1/features/enabled",
+      "status": "FAIL",
+      "details": "Endpoint not found - possible missing route",
+      "timestamp": "2025-09-23T10:57:40.654318"
+    },
+    {
+      "test": "Migration 004: module_usage_logs table",
+      "status": "WARN",
+      "details": "Unexpected HTTP 404",
+      "timestamp": "2025-09-23T10:57:40.985777"
+    },
+    {
+      "test": "Migration 004: feature_flag_usage table",
+      "status": "WARN",
+      "details": "Unexpected HTTP 404",
+      "timestamp": "2025-09-23T10:57:41.650290"
+    },
+    {
+      "test": "Migration 004: organisation_modules.organisation_id column",
+      "status": "WARN",
+      "details": "Unexpected HTTP 404",
+      "timestamp": "2025-09-23T10:57:41.970115"
+    }
+  ],
+  "errors": [
+    "Missing endpoint: /api/v1/admin/feature-flags",
+    "Missing endpoint: /api/v1/admin/modules",
+    "Missing endpoint: /api/v1/features/enabled"
+  ]
+}
