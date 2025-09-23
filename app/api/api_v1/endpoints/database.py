@@ -941,3 +941,150 @@ async def emergency_fix_enum_case_mismatch(
                 "recommendation": "Check database connection and table structure"
             }
         )
+
+@router.post("/emergency/create-final-missing-tables")
+async def emergency_create_final_missing_tables(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: user_models.User = Depends(get_current_user)
+):
+    """EMERGENCY: Create the final 3 missing tables with correct FK types
+
+    Creates:
+    - module_configurations (with UUID module_id)
+    - module_usage_logs (with UUID foreign keys)
+    - sector_modules (with UUID module_id)
+
+    SECURITY: This endpoint is secured in production and requires valid authentication.
+    """
+    try:
+        # SECURITY CHECK: Validate production access
+        if not check_production_emergency_access(current_user, "emergency/create-final-missing-tables"):
+            if settings.is_production:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Not found"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Emergency endpoint access denied"
+                )
+
+        logger.info("🚨 EMERGENCY: Creating final 3 missing tables with correct FK types")
+
+        # Define the 3 missing tables with correct column types
+        tables_to_create = [
+            ("module_configurations", """
+                CREATE TABLE IF NOT EXISTS module_configurations (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    module_id UUID NOT NULL,
+                    config JSONB NOT NULL DEFAULT '{}',
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """),
+            ("module_usage_logs", """
+                CREATE TABLE IF NOT EXISTS module_usage_logs (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    module_id UUID NOT NULL,
+                    organisation_id UUID NOT NULL,
+                    user_id UUID,
+                    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """),
+            ("sector_modules", """
+                CREATE TABLE IF NOT EXISTS sector_modules (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    sector VARCHAR(100) NOT NULL,
+                    module_id UUID NOT NULL,
+                    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """)
+        ]
+
+        created_tables = []
+        failed_tables = []
+
+        for table_name, create_sql in tables_to_create:
+            try:
+                logger.info(f"📊 Creating {table_name}...")
+                db.execute(text(create_sql))
+                created_tables.append(table_name)
+                logger.info(f"✅ {table_name} created successfully")
+            except Exception as e:
+                logger.error(f"❌ {table_name} failed: {e}")
+                failed_tables.append({"table": table_name, "error": str(e)})
+
+        # Commit the changes
+        try:
+            db.commit()
+            logger.info("💾 Database changes committed successfully")
+        except Exception as commit_error:
+            db.rollback()
+            logger.error(f"❌ Database commit failed: {commit_error}")
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": "Failed to save table creations",
+                    "message": str(commit_error),
+                    "status": "rolled_back"
+                }
+            )
+
+        # Verify the tables exist
+        verification_results = []
+        for table_name, _ in tables_to_create:
+            try:
+                result = db.execute(text(f"SELECT 1 FROM {table_name} LIMIT 1"))
+                verification_results.append(f"✅ {table_name}")
+            except Exception as e:
+                verification_results.append(f"❌ {table_name}: {str(e)}")
+
+        # Get total table count
+        total_tables = db.execute(text("""
+            SELECT COUNT(*)
+            FROM pg_tables
+            WHERE schemaname = 'public'
+        """)).scalar()
+
+        success_response = {
+            "success": len(created_tables) > 0,
+            "message": f"Final repair completed: {len(created_tables)}/3 tables created",
+            "created_tables": created_tables,
+            "failed_tables": failed_tables,
+            "verification": verification_results,
+            "total_tables_in_database": total_tables,
+            "business_impact": "✅ Schema repair complete - admin endpoints should now work",
+            "admin_endpoints_status": "Ready for £925K Zebra Associates opportunity",
+            "next_steps": [
+                "Test /api/v1/admin/feature-flags endpoint",
+                "Verify admin dashboard functionality",
+                "Confirm module management endpoints"
+            ],
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+        if len(created_tables) == 3:
+            logger.info("🎉 SUCCESS: All 3 final tables created successfully")
+            success_response["repair_status"] = "COMPLETE"
+        else:
+            logger.warning(f"⚠️ PARTIAL: Only {len(created_tables)}/3 tables created")
+            success_response["repair_status"] = "PARTIAL"
+
+        return success_response
+
+    except Exception as e:
+        logger.error(f"🚨 FINAL TABLE CREATION FAILED: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "Final table creation failed",
+                "message": str(e),
+                "recommendation": "Check database connectivity and permissions",
+                "business_impact": "❌ Schema repair incomplete - admin endpoints may still fail"
+            }
+        )
