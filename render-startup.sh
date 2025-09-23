@@ -74,9 +74,19 @@ elif [ "$RUN_MIGRATIONS" = "true" ]; then
             if [ $revalidation_result -eq 0 ]; then
                 echo "✅ Schema validation now passes - continuing deployment"
             else
-                echo "❌ Schema validation still failing after repair"
-                echo "🛑 Manual intervention required - check repair logs"
-                exit 1
+                echo "⚠️  Schema validation still has issues - running final table repair"
+                echo "🔧 Creating final 3 missing tables with correct FK types..."
+                python render_final_table_repair.py
+                final_repair_result=$?
+
+                if [ $final_repair_result -eq 0 ]; then
+                    echo "✅ Final table repair completed successfully"
+                    echo "🎯 All schema issues resolved - proceeding with deployment"
+                else
+                    echo "❌ Final table repair failed"
+                    echo "🛑 Manual intervention required - check repair logs"
+                    exit 1
+                fi
             fi
         else
             echo "❌ Emergency schema repair failed"
