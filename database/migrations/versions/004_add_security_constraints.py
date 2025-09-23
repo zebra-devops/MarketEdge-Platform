@@ -33,6 +33,18 @@ def upgrade():
 
     module_id_exists = result.fetchone() is not None
 
+    # Check if resource_type and resource_id columns exist in audit_logs table
+    result = connection.execute(sa.text("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'audit_logs'
+        AND column_name IN ('resource_type', 'resource_id')
+    """))
+
+    audit_columns = {row[0] for row in result.fetchall()}
+    resource_type_exists = 'resource_type' in audit_columns
+    resource_id_exists = 'resource_id' in audit_columns
+
     # Add unique constraint for feature flag scopes
     op.create_index('idx_feature_flags_unique_scope', 'feature_flags', ['flag_key', 'scope'])
 
@@ -46,7 +58,13 @@ def upgrade():
     
     # Add audit log indexes for performance
     op.create_index('idx_audit_logs_user_action', 'audit_logs', ['user_id', 'action'])
-    op.create_index('idx_audit_logs_resource', 'audit_logs', ['resource_type', 'resource_id'])
+
+    # Only create resource index if both columns exist
+    if resource_type_exists and resource_id_exists:
+        op.create_index('idx_audit_logs_resource', 'audit_logs', ['resource_type', 'resource_id'])
+    else:
+        print(f"WARNING: audit_logs columns missing - resource_type: {resource_type_exists}, resource_id: {resource_id_exists} - skipping resource index")
+
     op.create_index('idx_audit_logs_timestamp_action', 'audit_logs', ['timestamp', 'action'])
     
     # Add module usage indexes
@@ -81,20 +99,44 @@ def upgrade():
 
 
 def downgrade():
+    # Check if indexes exist before dropping
+    import sqlalchemy as sa
+    from alembic import context
+
+    connection = context.get_bind()
+
+    # Check if indexes exist
+    result = connection.execute(sa.text("""
+        SELECT indexname
+        FROM pg_indexes
+        WHERE tablename IN ('audit_logs', 'feature_flags')
+        AND indexname IN ('idx_audit_logs_resource', 'idx_feature_flags_module_enabled')
+    """))
+
+    existing_indexes = {row[0] for row in result.fetchall()}
+
     # Drop check constraints
     op.drop_constraint('chk_sic_codes_code_format', 'sic_codes')
     op.drop_constraint('chk_competitive_factor_templates_weight', 'competitive_factor_templates')
     op.drop_constraint('chk_feature_flags_rollout_percentage', 'feature_flags')
-    
-    # Drop indexes
+
+    # Drop indexes (only if they exist)
     op.drop_index('idx_organisation_modules_enabled', table_name='organisation_modules')
     op.drop_index('idx_feature_flag_usage_org', table_name='feature_flag_usage')
     op.drop_index('idx_feature_flag_usage_flag', table_name='feature_flag_usage')
     op.drop_index('idx_module_usage_logs_module', table_name='module_usage_logs')
     op.drop_index('idx_module_usage_logs_timestamp', table_name='module_usage_logs')
     op.drop_index('idx_audit_logs_timestamp_action', table_name='audit_logs')
-    op.drop_index('idx_audit_logs_resource', table_name='audit_logs')
+
+    # Only drop resource index if it was created
+    if 'idx_audit_logs_resource' in existing_indexes:
+        op.drop_index('idx_audit_logs_resource', table_name='audit_logs')
+
     op.drop_index('idx_audit_logs_user_action', table_name='audit_logs')
     op.drop_index('idx_feature_flags_scope_enabled', table_name='feature_flags')
-    op.drop_index('idx_feature_flags_module_enabled', table_name='feature_flags')
+
+    # Only drop module_enabled index if it was created
+    if 'idx_feature_flags_module_enabled' in existing_indexes:
+        op.drop_index('idx_feature_flags_module_enabled', table_name='feature_flags')
+
     op.drop_index('idx_feature_flags_unique_scope', table_name='feature_flags')
