@@ -327,7 +327,9 @@ async def health_check(request: Request):
             "cors_configured": True,
             "api_endpoints": "epic_1_and_2_enabled",
             "critical_business_ready": True,  # Critical for £925K opportunity
-            "authentication_endpoints": "available"
+            "authentication_endpoints": "available",
+            "preview_environment": os.getenv("IS_PULL_REQUEST", "false") == "true",
+            "pr_number": os.getenv("RENDER_PR_NUMBER", "none")
         }
         
         # Try to get lazy startup metrics with timeout protection
