@@ -112,6 +112,50 @@ else:
     logger.error("❌ API router not included due to import failure")
     logger.warning("⚠️  Starting in minimal mode - only health endpoints available")
 
+# TEMPORARY DEBUG ENDPOINT - Production Import Investigation
+@app.get("/api/v1/debug/production-imports")
+async def debug_production_imports():
+    """TEMPORARY: Debug production import issues"""
+    import os
+    import sys
+    debug_info = {
+        "working_directory": os.getcwd(),
+        "python_path": sys.path[:3],  # First 3 paths
+        "files": {}
+    }
+
+    # Check __init__.py contents
+    init_paths = [
+        "/app/app/api/api_v1/endpoints/__init__.py",
+        "./app/api/api_v1/endpoints/__init__.py",
+        "app/api/api_v1/endpoints/__init__.py"
+    ]
+
+    for path in init_paths:
+        try:
+            if os.path.exists(path):
+                with open(path, 'r') as f:
+                    debug_info["files"][f"init_py_{path.replace('/', '_')}"] = f.read()
+                    debug_info["files"][f"init_py_length_{path.replace('/', '_')}"] = len(f.read())
+        except Exception as e:
+            debug_info["files"][f"error_{path.replace('/', '_')}"] = str(e)
+
+    # Check directory contents
+    endpoints_dirs = [
+        "/app/app/api/api_v1/endpoints",
+        "./app/api/api_v1/endpoints",
+        "app/api/api_v1/endpoints"
+    ]
+
+    for dir_path in endpoints_dirs:
+        try:
+            if os.path.exists(dir_path):
+                debug_info["files"][f"dir_{dir_path.replace('/', '_')}"] = os.listdir(dir_path)
+        except Exception as e:
+            debug_info["files"][f"dir_error_{dir_path.replace('/', '_')}"] = str(e)
+
+    return debug_info
+
 # EMERGENCY CORS FIX: Add explicit OPTIONS handler for Zebra Associates
 @app.options("/{full_path:path}")
 async def options_handler(request: Request, full_path: str):
