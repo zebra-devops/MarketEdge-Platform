@@ -1,0 +1,41 @@
+# .github/workflows/migration-test.yml
+name: Database Migration Test
+
+on: [pull_request]
+
+jobs:
+  test-migrations:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Test migrations on fresh database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost/testdb
+        run: |
+          pip install alembic sqlalchemy psycopg2-binary
+          alembic upgrade head
+          
+      - name: Verify schema completeness
+        run: |
+          alembic check  # Fails if models don't match migrations
+          
+      - name: Test rollback safety
+        run: |
+          alembic downgrade -1
+          alembic upgrade head
