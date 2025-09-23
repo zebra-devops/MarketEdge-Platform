@@ -51,20 +51,10 @@ def upgrade() -> None:
     # Create index for industry_type for performance (safe create)
     validator.safe_create_index('ix_organisations_industry_type', 'organisations', ['industry_type'])
     
-    # Migrate existing industry data to industry_type where possible (only if needed)
-    # This is a safe migration that maps string values to VARCHAR values (no enum casting)
-    op.execute("""
-        UPDATE organisations
-        SET industry_type = CASE
-            WHEN LOWER(industry) LIKE '%cinema%' OR LOWER(industry) LIKE '%movie%' OR LOWER(industry) LIKE '%theater%' THEN 'cinema'
-            WHEN LOWER(industry) LIKE '%hotel%' OR LOWER(industry) LIKE '%hospitality%' OR LOWER(industry) LIKE '%motel%' THEN 'hotel'
-            WHEN LOWER(industry) LIKE '%gym%' OR LOWER(industry) LIKE '%fitness%' OR LOWER(industry) LIKE '%health%' THEN 'gym'
-            WHEN LOWER(industry) LIKE '%b2b%' OR LOWER(industry) LIKE '%business%' OR LOWER(industry) LIKE '%consulting%' THEN 'b2b'
-            WHEN LOWER(industry) LIKE '%retail%' OR LOWER(industry) LIKE '%shop%' OR LOWER(industry) LIKE '%store%' THEN 'retail'
-            ELSE 'default'
-        END
-        WHERE industry IS NOT NULL AND industry_type = 'default';
-    """)
+    # Skip UPDATE operation to avoid enum type conflicts
+    # Emergency repair scripts have likely already set appropriate values
+    # If UPDATE is needed later, it can be done manually or in a separate migration
+    print("Skipping industry_type UPDATE to avoid enum type conflicts - values already set by emergency repair")
 
 
 def downgrade() -> None:
