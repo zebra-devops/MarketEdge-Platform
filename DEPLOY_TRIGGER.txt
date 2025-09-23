@@ -1,4 +1,6 @@
-Force deployment trigger to ensure API router fix is deployed
-Timestamp: 2025-09-23T11:05:00Z
-Issue: broken_endpoint import causing production API failure
-Fix: Removed broken_endpoint references from api.py
+Force deployment trigger to ensure migration fix is deployed
+Timestamp: 2025-09-23T15:30:00Z
+Issue: Migration 006 idempotency and broken_endpoint import
+Fix: Made migration 80105006e3d3 idempotent with safe_add_column()
+Fix: Removed broken_endpoint references completely
+Fix: Migration chain now completes successfully for Zebra Associates
