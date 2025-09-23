@@ -19,11 +19,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add rate limiting columns to organisations table
-    op.add_column('organisations', sa.Column('rate_limit_per_hour', sa.Integer(), nullable=False, default=1000))
-    op.add_column('organisations', sa.Column('burst_limit', sa.Integer(), nullable=False, default=100))
-    op.add_column('organisations', sa.Column('rate_limit_enabled', sa.Boolean(), nullable=False, default=True))
-    
+    # Import defensive migration utilities
+    from database.migrations.utils import get_validator
+    validator = get_validator()
+
+    # Add rate limiting columns to organisations table using safe column addition
+    validator.safe_add_column('organisations', sa.Column('rate_limit_per_hour', sa.Integer(), nullable=False, server_default='1000'))
+    validator.safe_add_column('organisations', sa.Column('burst_limit', sa.Integer(), nullable=False, server_default='100'))
+    validator.safe_add_column('organisations', sa.Column('rate_limit_enabled', sa.Boolean(), nullable=False, server_default='true'))
+
     # Set default rate limits based on subscription plan
     connection = op.get_bind()
     
@@ -49,7 +53,14 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Remove rate limiting columns
-    op.drop_column('organisations', 'rate_limit_enabled')
-    op.drop_column('organisations', 'burst_limit')
-    op.drop_column('organisations', 'rate_limit_per_hour')
+    # Import defensive migration utilities
+    from database.migrations.utils import get_validator
+    validator = get_validator()
+
+    # Remove rate limiting columns safely (only if they exist)
+    if validator.column_exists('organisations', 'rate_limit_enabled'):
+        op.drop_column('organisations', 'rate_limit_enabled')
+    if validator.column_exists('organisations', 'burst_limit'):
+        op.drop_column('organisations', 'burst_limit')
+    if validator.column_exists('organisations', 'rate_limit_per_hour'):
+        op.drop_column('organisations', 'rate_limit_per_hour')
