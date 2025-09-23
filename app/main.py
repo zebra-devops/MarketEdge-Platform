@@ -11,6 +11,11 @@ import asyncio
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.health_checks import health_checker
+
+# Configure logging first
+configure_logging()
+logger = logging.getLogger(__name__)
+
 # Import API router with error handling for production deployment
 try:
     from app.api.api_v1.api import api_router
@@ -27,9 +32,6 @@ except Exception as import_error:
 from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.logging import LoggingMiddleware
 from app.core.lazy_startup import lazy_startup_manager
-
-configure_logging()
-logger = logging.getLogger(__name__)
 
 # Lazy Initialization Architecture - Production Ready
 DEPLOYMENT_TIMESTAMP = "2025-09-23T18:15:00Z"
