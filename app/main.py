@@ -11,7 +11,19 @@ import asyncio
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.health_checks import health_checker
-from app.api.api_v1.api import api_router
+# Import API router with error handling for production deployment
+try:
+    from app.api.api_v1.api import api_router
+    API_ROUTER_IMPORT_SUCCESS = True
+    ROUTER_IMPORT_ERROR = None
+    logger.info("✅ API router imported successfully")
+except Exception as import_error:
+    logger.error(f"❌ API router import failed: {import_error}")
+    logger.warning("⚠️  Creating minimal router as fallback")
+    from fastapi import APIRouter
+    api_router = APIRouter()
+    API_ROUTER_IMPORT_SUCCESS = False
+    ROUTER_IMPORT_ERROR = str(import_error)
 from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.logging import LoggingMiddleware
 from app.core.lazy_startup import lazy_startup_manager
@@ -90,9 +102,13 @@ app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(LoggingMiddleware)
 
 # Include full API router with Epic 1 and Epic 2 endpoints - CRITICAL FOR £925K OPPORTUNITY
-logger.info(f"🎯 Including API router with prefix: {settings.API_V1_STR}")
-app.include_router(api_router, prefix=settings.API_V1_STR)
-logger.info("✅ API router included successfully - Epic 1 & 2 endpoints now available")
+if API_ROUTER_IMPORT_SUCCESS:
+    logger.info(f"🎯 Including API router with prefix: {settings.API_V1_STR}")
+    app.include_router(api_router, prefix=settings.API_V1_STR)
+    logger.info("✅ API router included successfully - Epic 1 & 2 endpoints now available")
+else:
+    logger.error("❌ API router not included due to import failure")
+    logger.warning("⚠️  Starting in minimal mode - only health endpoints available")
 
 # EMERGENCY CORS FIX: Add explicit OPTIONS handler for Zebra Associates
 @app.options("/{full_path:path}")
@@ -320,14 +336,15 @@ async def root():
     startup_metrics = lazy_startup_manager.get_startup_metrics()
     return {
         "message": "MarketEdge Platform API - Lazy Initialization Architecture",
-        "docs": f"{settings.API_V1_STR}/docs",
+        "docs": f"{settings.API_V1_STR}/docs" if API_ROUTER_IMPORT_SUCCESS else "Not available (router import failed)",
         "health": "/health",
         "metrics": "/metrics",
-        "status": "production_operational",
+        "status": "production_operational" if API_ROUTER_IMPORT_SUCCESS else "minimal_mode",
         "architecture": "lazy_initialization",
         "cold_start_time": f"{startup_metrics['total_startup_time']:.3f}s",
-        "epic_1": f"{settings.API_V1_STR}/module-management",
-        "epic_2": f"{settings.API_V1_STR}/features"
+        "api_router_included": API_ROUTER_IMPORT_SUCCESS,
+        "epic_1": f"{settings.API_V1_STR}/module-management" if API_ROUTER_IMPORT_SUCCESS else "Not available",
+        "epic_2": f"{settings.API_V1_STR}/features" if API_ROUTER_IMPORT_SUCCESS else "Not available"
     }
 
 @app.get("/deployment-test")
@@ -353,6 +370,19 @@ async def deployment_test():
         "startup_time": f"{startup_metrics.get('total_startup_time', 'unknown')}",
         "test_success": True,
         "critical_business_ready": True  # £925K opportunity
+    }
+
+
+@app.get("/diagnostic")
+async def diagnostic_endpoint():
+    """Diagnostic endpoint to debug API router import issues"""
+    return {
+        "api_router_imported": API_ROUTER_IMPORT_SUCCESS,
+        "router_import_error": ROUTER_IMPORT_ERROR if not API_ROUTER_IMPORT_SUCCESS else None,
+        "routes_count": len(api_router.routes) if API_ROUTER_IMPORT_SUCCESS else 0,
+        "environment": os.getenv("ENVIRONMENT", "unknown"),
+        "database_url_configured": bool(os.getenv("DATABASE_URL")),
+        "timestamp": time.time()
     }
 
 
