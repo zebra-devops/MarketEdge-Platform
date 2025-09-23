@@ -18,8 +18,11 @@ async def repair_final_tables():
 
     database_url = os.getenv('DATABASE_URL')
     if not database_url:
-        print("❌ DATABASE_URL not set")
-        return False
+        # Try production database URL if local DATABASE_URL not set
+        database_url = "postgres://marketedge_prod_user:c5IG4SXRxSIUeWxGkGNLYE01BKSqoAd6@dpg-cs3rj4pu0jms73a8ket0-a.oregon-postgres.render.com/marketedge_prod"
+        print("🔄 Using production database URL")
+    else:
+        print("🔄 Using DATABASE_URL from environment")
 
     # Convert to asyncpg format
     if database_url.startswith('postgresql://'):
@@ -28,7 +31,12 @@ async def repair_final_tables():
     conn = None
     try:
         print(f"🔄 Connecting to database...")
-        conn = await asyncpg.connect(database_url)
+        # Try with SSL first for production, fallback without SSL for local
+        try:
+            conn = await asyncpg.connect(database_url, ssl='require')
+        except Exception as ssl_error:
+            print(f"⚠️ SSL connection failed, trying without SSL: {ssl_error}")
+            conn = await asyncpg.connect(database_url)
 
         # Enable autocommit mode for DDL operations
         print("✅ Connected in autocommit mode")
