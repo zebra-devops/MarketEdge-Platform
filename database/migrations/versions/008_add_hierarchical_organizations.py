@@ -26,27 +26,33 @@ depends_on = None
 
 def upgrade():
     """Add hierarchical organization structure and enhanced permissions"""
-    
-    # Create enhanced user roles enum
-    enhanced_user_role_enum = postgresql.ENUM(
-        'super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer',
-        name='enhanceduserrole'
-    )
-    enhanced_user_role_enum.create(op.get_bind())
-    
-    # Create hierarchy level enum
-    hierarchy_level_enum = postgresql.ENUM(
-        'organization', 'location', 'department', 'user',
-        name='hierarchylevel'
-    )
-    hierarchy_level_enum.create(op.get_bind())
-    
-    # Create permission scope enum
-    permission_scope_enum = postgresql.ENUM(
-        'read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data',
-        name='permissionscope'
-    )
-    permission_scope_enum.create(op.get_bind())
+
+    # Create enhanced user roles enum only if it doesn't exist
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enhanceduserrole') THEN
+                CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer');
+            END IF;
+        END $$;
+    """)
+
+    # Create hierarchy level enum only if it doesn't exist
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'hierarchylevel') THEN
+                CREATE TYPE hierarchylevel AS ENUM ('organization', 'location', 'department', 'user');
+            END IF;
+        END $$;
+    """)
+
+    # Create permission scope enum only if it doesn't exist
+    op.execute("""
+        DO $$ BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'permissionscope') THEN
+                CREATE TYPE permissionscope AS ENUM ('read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data');
+            END IF;
+        END $$;
+    """)
     
     # 1. Create organization_hierarchy table
     op.create_table('organization_hierarchy',
@@ -57,7 +63,7 @@ def upgrade():
         sa.Column('slug', sa.String(length=100), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
         sa.Column('parent_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('level', hierarchy_level_enum, nullable=False, default='organization'),
+        sa.Column('level', sa.Enum('organization', 'location', 'department', 'user', name='hierarchylevel'), nullable=False, default='organization'),
         sa.Column('hierarchy_path', sa.String(length=500), nullable=False),
         sa.Column('depth', sa.Integer(), nullable=False, default=0),
         sa.Column('legacy_organisation_id', postgresql.UUID(as_uuid=True), nullable=True),
@@ -81,7 +87,7 @@ def upgrade():
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('hierarchy_node_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('role', enhanced_user_role_enum, nullable=False),
+        sa.Column('role', sa.Enum('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer', name='enhanceduserrole'), nullable=False),
         sa.Column('is_primary', sa.Boolean(), nullable=False, default=False),
         sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
         sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
@@ -99,7 +105,7 @@ def upgrade():
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('hierarchy_node_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('role', enhanced_user_role_enum, nullable=False),
+        sa.Column('role', sa.Enum('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer', name='enhanceduserrole'), nullable=False),
         sa.Column('permissions', sa.Text(), nullable=False),  # JSON array
         sa.Column('inherits_from_parent', sa.Boolean(), nullable=False, default=True),
         sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
