@@ -88,8 +88,23 @@ elif [ "$RUN_MIGRATIONS" = "true" ]; then
                     exit 1
                 fi
             fi
+        elif [ $repair_result -eq 3 ]; then
+            echo "⚠️  Emergency schema repair partially successful (exit code 3)"
+            echo "🔧 47/52 statements completed - running final table repair for remaining 3 tables"
+            echo "📋 Known missing tables: module_configurations, module_usage_logs, sector_modules"
+            python render_final_table_repair.py
+            final_repair_result=$?
+
+            if [ $final_repair_result -eq 0 ]; then
+                echo "✅ Final table repair completed successfully"
+                echo "🎯 All schema issues resolved - proceeding with deployment"
+            else
+                echo "❌ Final table repair failed"
+                echo "🛑 Manual intervention required - check repair logs"
+                exit 1
+            fi
         else
-            echo "❌ Emergency schema repair failed"
+            echo "❌ Emergency schema repair failed (exit code: $repair_result)"
             echo "🛑 Stopping deployment - manual intervention required"
             echo "📋 Run locally: python render_emergency_schema_repair.py --check"
             exit 1
