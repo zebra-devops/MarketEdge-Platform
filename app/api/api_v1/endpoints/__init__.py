@@ -19,3 +19,7 @@ from . import module_management
 from . import system
 from . import config
 from . import environment_validation
+
+# TEMPORARY: Import broken_endpoint to resolve production import error
+# This will be removed once the root cause is identified
+from . import broken_endpoint
