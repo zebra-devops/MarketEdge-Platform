@@ -5,16 +5,15 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useQuery } from 'react-query'
 import { apiService } from '@/services/api'
-import { Tool, Organisation } from '@/types/api'
+import { Organisation } from '@/types/api'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
 import DashboardLayout from '@/components/layout/DashboardLayout'
-import { 
-  getAccessibleApplications, 
-  getPrimaryApplication, 
+import {
+  getAccessibleApplications,
   getApplicationRoute,
   getApplicationInfo,
-  hasAnyApplicationAccess 
+  hasAnyApplicationAccess
 } from '@/utils/application-access'
 import { 
   ChartBarIcon,
@@ -27,11 +26,6 @@ export default function DashboardPage() {
   const { user, isLoading: authLoading } = useAuthContext()
   const router = useRouter()
 
-  const { data: tools, isLoading: toolsLoading } = useQuery<Tool[]>(
-    'tools',
-    () => apiService.get('/tools'),
-    { enabled: !!user }
-  )
 
   const { data: organisation, isLoading: orgLoading } = useQuery<Organisation>(
     'organisation',
@@ -46,9 +40,24 @@ export default function DashboardPage() {
   }, [user, authLoading, router])
 
   // Get user's accessible applications
+  console.log('DEBUG: User application access data:', user?.application_access)
   const accessibleApps = getAccessibleApplications(user?.application_access)
-  const primaryApp = getPrimaryApplication(user?.application_access)
-  
+  console.log('DEBUG: Accessible apps:', accessibleApps)
+
+  // Auto-redirect users with single application access for better UX
+  useEffect(() => {
+    if (!authLoading && user && accessibleApps.length === 1) {
+      // Check if user preference is to auto-redirect (defaulting to true for better UX)
+      const shouldAutoRedirect = localStorage.getItem('dashboard_auto_redirect') !== 'false'
+      if (shouldAutoRedirect) {
+        console.log('Auto-redirecting user with single application access:', accessibleApps[0])
+        const appRoute = getApplicationRoute(accessibleApps[0])
+        router.push(appRoute)
+        return
+      }
+    }
+  }, [user, authLoading, accessibleApps, router])
+
   // Function to navigate to application
   const navigateToApp = (appName: string) => {
     const appRoute = getApplicationRoute(appName as any)
@@ -107,17 +116,7 @@ export default function DashboardPage() {
 
         {/* Applications Section */}
         <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-medium text-gray-900">Your Applications</h2>
-            {primaryApp && (
-              <Button 
-                onClick={() => navigateToApp(primaryApp)}
-                className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700"
-              >
-                Go to {getApplicationInfo(primaryApp).name}
-              </Button>
-            )}
-          </div>
+          <h2 className="text-lg font-medium text-gray-900 mb-6">Your Applications</h2>
 
           {!hasAnyApplicationAccess(user?.application_access) ? (
             <div className="text-center py-12">
@@ -128,13 +127,39 @@ export default function DashboardPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {accessibleApps.map((appName) => {
-                const appInfo = getApplicationInfo(appName)
-                const IconComponent = appName === 'market_edge' ? ChartBarIcon : 
-                                     appName === 'causal_edge' ? CogIcon : EyeIcon
-                
-                return (
+            <>
+              {/* Dashboard Settings for Single App Users */}
+              {accessibleApps.length === 1 && (
+                <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="text-sm text-blue-700">
+                        <span className="font-medium">Auto-redirect:</span> You have access to one application.
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const currentSetting = localStorage.getItem('dashboard_auto_redirect') !== 'false'
+                        localStorage.setItem('dashboard_auto_redirect', currentSetting ? 'false' : 'true')
+                        // Force a re-render by updating a state
+                        window.location.reload()
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      {localStorage.getItem('dashboard_auto_redirect') !== 'false' ? 'Disable Auto-redirect' : 'Enable Auto-redirect'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {accessibleApps.map((appName) => {
+                  const appInfo = getApplicationInfo(appName)
+                  if (!appInfo) return null // Skip if app info not found
+                  const IconComponent = appName === 'MARKET_EDGE' ? ChartBarIcon :
+                                       appName === 'CAUSAL_EDGE' ? CogIcon : EyeIcon
+
+                  return (
                   <div
                     key={appName}
                     className="relative group cursor-pointer"
@@ -156,63 +181,27 @@ export default function DashboardPage() {
                       </div>
                       
                       <div className="flex items-center justify-between">
-                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                          Active
-                        </span>
+                        <div className="flex items-center space-x-2">
+                          <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                            Enabled
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {organisation ? `${organisation.subscription_plan} tier` : 'Loading...'}
+                          </span>
+                        </div>
                         <span className="text-xs text-gray-500 group-hover:text-indigo-600 transition-colors">
-                          Click to access →
+                          Launch →
                         </span>
                       </div>
                     </div>
                   </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            </>
           )}
         </div>
 
-        {/* Legacy Tools Section (if needed) */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Legacy Tools</h2>
-          {toolsLoading ? (
-            <LoadingSpinner />
-          ) : tools && tools.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tools.map((tool) => (
-                <div
-                  key={tool.id}
-                  className={`border rounded-lg p-4 ${
-                    tool.has_access 
-                      ? 'border-green-200 bg-green-50' 
-                      : 'border-gray-200 bg-gray-50'
-                  }`}
-                >
-                  <h3 className="font-medium text-gray-900">{tool.name}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{tool.description}</p>
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-xs text-gray-500">v{tool.version}</span>
-                    {tool.has_access ? (
-                      <Button size="sm">Access Tool</Button>
-                    ) : (
-                      <Button size="sm" variant="secondary" disabled>
-                        No Access
-                      </Button>
-                    )}
-                  </div>
-                  {tool.has_access && tool.subscription_tier && (
-                    <div className="mt-2">
-                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                        {tool.subscription_tier}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500">No legacy tools available.</p>
-          )}
-        </div>
       </div>
     </DashboardLayout>
   )
