@@ -20,7 +20,8 @@ import {
   TrashIcon,
   UserMinusIcon,
   CheckIcon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline'
 import BulkUserImport from './BulkUserImport'
 import UserDetailsModal from './UserDetailsModal'
@@ -52,7 +53,7 @@ interface UserFilters {
 }
 
 export default function OrganizationUserManagement() {
-  const { user: currentUser } = useAuthContext()
+  const { user: currentUser, refreshUser } = useAuthContext()
   const { currentOrganisation, isSuperAdmin, accessibleOrganisations } = useOrganisationContext()
   
   const [users, setUsers] = useState<User[]>([])
@@ -65,6 +66,7 @@ export default function OrganizationUserManagement() {
   const [isResendingInvite, setIsResendingInvite] = useState<string>('')
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
   const [isUpdatingUser, setIsUpdatingUser] = useState(false)
+  const [isRefreshingAuth, setIsRefreshingAuth] = useState(false)
   
   const [filters, setFilters] = useState<UserFilters>({
     search: '',
@@ -72,6 +74,26 @@ export default function OrganizationUserManagement() {
     status: 'all',
     application: 'all'
   })
+
+  // CRITICAL FIX: Refresh authentication data to prevent stale cache issues
+  // This ensures isSuperAdmin flag is based on fresh backend data, not cached localStorage
+  useEffect(() => {
+    const refreshAuthData = async () => {
+      try {
+        console.log('UserManagement: Refreshing auth data to ensure fresh user role data')
+        await refreshUser()
+        console.log('UserManagement: Auth data refreshed successfully')
+      } catch (error) {
+        console.error('UserManagement: Failed to refresh auth data:', error)
+        // Don't block the UI if refresh fails - user can still use cached data
+      }
+    }
+
+    // Only refresh if we have a user but might have stale data
+    if (currentUser?.email) {
+      refreshAuthData()
+    }
+  }, [currentUser?.email, refreshUser])
 
   useEffect(() => {
     if (currentOrganisation?.id) {
@@ -92,12 +114,23 @@ export default function OrganizationUserManagement() {
   const fetchUsers = async (orgId: string) => {
     try {
       setIsLoading(true)
-      const endpoint = isSuperAdmin 
+      const endpoint = isSuperAdmin
         ? `/admin/users?organisation_id=${orgId}`
         : `/organizations/${orgId}/users`
-      
+
+      // CRITICAL FIX: Enhanced logging to debug API endpoint selection
+      console.log('UserManagement: Fetching users with:', {
+        isSuperAdmin,
+        endpoint,
+        orgId,
+        currentUserRole: currentUser?.role,
+        currentUserEmail: currentUser?.email
+      })
+
       const response = await apiService.get<User[]>(endpoint)
       setUsers(response)
+
+      console.log('UserManagement: Successfully fetched', response.length, 'users')
     } catch (error) {
       console.error('Failed to fetch users:', error)
       toast.error('Failed to load users')
@@ -351,6 +384,28 @@ export default function OrganizationUserManagement() {
     }
   }
 
+  const handleManualAuthRefresh = async () => {
+    try {
+      setIsRefreshingAuth(true)
+      console.log('UserManagement: Manual auth refresh requested')
+
+      await refreshUser()
+
+      // Also refresh the user list to ensure it uses the correct endpoint
+      if (selectedOrg) {
+        await fetchUsers(selectedOrg)
+      }
+
+      toast.success('Authentication data refreshed successfully')
+      console.log('UserManagement: Manual auth refresh completed')
+    } catch (error) {
+      console.error('Manual auth refresh failed:', error)
+      toast.error('Failed to refresh authentication data')
+    } finally {
+      setIsRefreshingAuth(false)
+    }
+  }
+
   if (!currentUser?.role || (currentUser.role !== 'admin' && currentUser.role !== 'super_admin' && !isSuperAdmin)) {
     return (
       <div className="text-center py-8">
@@ -369,6 +424,17 @@ export default function OrganizationUserManagement() {
           <p className="text-gray-600 mt-1">Manage users and permissions within your organization</p>
         </div>
         <div className="flex gap-3">
+          {/* CRITICAL FIX: Manual auth refresh button for troubleshooting stale cache */}
+          <Button
+            onClick={handleManualAuthRefresh}
+            isLoading={isRefreshingAuth}
+            variant="secondary"
+            className="flex items-center gap-2"
+            title="Refresh authentication data to fix stale cache issues"
+          >
+            <ArrowPathIcon className="h-5 w-5" />
+            Refresh Auth
+          </Button>
           {(selectedOrg || currentOrganisation?.id) && (
             <BulkUserImport
               organisationId={selectedOrg || currentOrganisation?.id || ''}
