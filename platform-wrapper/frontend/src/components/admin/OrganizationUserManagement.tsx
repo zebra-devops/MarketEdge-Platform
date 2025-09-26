@@ -8,17 +8,22 @@ import Button from '@/components/ui/Button'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Modal from '@/components/ui/Modal'
 import toast from 'react-hot-toast'
-import { 
-  UserPlusIcon, 
-  EnvelopeIcon, 
+import {
+  UserPlusIcon,
+  EnvelopeIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
   PencilIcon,
   EyeIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  TrashIcon,
+  UserMinusIcon,
+  CheckIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import BulkUserImport from './BulkUserImport'
+import UserDetailsModal from './UserDetailsModal'
 
 interface User {
   id: string
@@ -56,7 +61,10 @@ export default function OrganizationUserManagement() {
   const [selectedOrg, setSelectedOrg] = useState<string>('')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isResendingInvite, setIsResendingInvite] = useState<string>('')
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
+  const [isUpdatingUser, setIsUpdatingUser] = useState(false)
   
   const [filters, setFilters] = useState<UserFilters>({
     search: '',
@@ -171,6 +179,35 @@ export default function OrganizationUserManagement() {
     setIsUserDetailModalOpen(true)
   }
 
+  const openUserEdit = (user: User) => {
+    setSelectedUser(user)
+    setIsEditModalOpen(true)
+  }
+
+  const handleUserSave = async (userId: string, updateData: {
+    first_name: string
+    last_name: string
+    role: string
+    is_active: boolean
+    application_access: { application: string; has_access: boolean }[]
+  }) => {
+    try {
+      setIsUpdatingUser(true)
+      await apiService.put(`/users/${userId}`, updateData)
+      toast.success('User updated successfully')
+
+      // Refresh the user list to show updated data
+      await fetchUsers(selectedOrg)
+      setIsEditModalOpen(false)
+      setSelectedUser(null)
+    } catch (error: any) {
+      console.error('Failed to update user:', error)
+      toast.error(error?.response?.data?.detail || 'Failed to update user')
+    } finally {
+      setIsUpdatingUser(false)
+    }
+  }
+
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'admin': return 'bg-purple-100 text-purple-800'
@@ -208,7 +245,113 @@ export default function OrganizationUserManagement() {
     })
   }
 
-  if (!currentUser?.role || (currentUser.role !== 'admin' && !isSuperAdmin)) {
+  const toggleUserSelection = (userId: string) => {
+    const newSelection = new Set(selectedUsers)
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId)
+    } else {
+      newSelection.add(userId)
+    }
+    setSelectedUsers(newSelection)
+  }
+
+  const selectAllUsers = () => {
+    setSelectedUsers(new Set(filteredUsers.map(u => u.id)))
+  }
+
+  const clearSelection = () => {
+    setSelectedUsers(new Set())
+  }
+
+  const bulkActivateUsers = async () => {
+    if (selectedUsers.size === 0) return
+
+    try {
+      const promises = Array.from(selectedUsers).map(userId => {
+        return apiService.put(`/users/${userId}`, { is_active: true })
+      })
+
+      await Promise.all(promises)
+      await fetchUsers(selectedOrg)
+      setSelectedUsers(new Set())
+      toast.success(`Activated ${selectedUsers.size} users`)
+    } catch (error) {
+      console.error('Bulk activate failed:', error)
+      toast.error('Failed to activate users')
+    }
+  }
+
+  const bulkDeactivateUsers = async () => {
+    if (selectedUsers.size === 0) return
+
+    try {
+      const promises = Array.from(selectedUsers).map(userId => {
+        return apiService.put(`/users/${userId}`, { is_active: false })
+      })
+
+      await Promise.all(promises)
+      await fetchUsers(selectedOrg)
+      setSelectedUsers(new Set())
+      toast.success(`Deactivated ${selectedUsers.size} users`)
+    } catch (error) {
+      console.error('Bulk deactivate failed:', error)
+      toast.error('Failed to deactivate users')
+    }
+  }
+
+  const bulkResendInvitations = async () => {
+    if (selectedUsers.size === 0) return
+
+    const pendingUsers = Array.from(selectedUsers).filter(userId => {
+      const user = users.find(u => u.id === userId)
+      return user && (user.invitation_status === 'pending' || user.invitation_status === 'expired')
+    })
+
+    if (pendingUsers.length === 0) {
+      toast.error('No users with pending or expired invitations selected')
+      return
+    }
+
+    try {
+      const promises = pendingUsers.map(userId => {
+        return apiService.post(`/users/${userId}/resend-invite`, {
+          organization_name: currentOrganisation?.name
+        })
+      })
+
+      await Promise.all(promises)
+      await fetchUsers(selectedOrg)
+      setSelectedUsers(new Set())
+      toast.success(`Resent invitations to ${pendingUsers.length} users`)
+    } catch (error) {
+      console.error('Bulk resend failed:', error)
+      toast.error('Failed to resend invitations')
+    }
+  }
+
+  const bulkDeleteUsers = async () => {
+    if (selectedUsers.size === 0) return
+
+    if (!confirm(`Are you sure you want to delete ${selectedUsers.size} users? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const promises = Array.from(selectedUsers).map(userId => {
+        return apiService.delete(`/users/${userId}`)
+      })
+
+      await Promise.all(promises)
+      await fetchUsers(selectedOrg)
+      setSelectedUsers(new Set())
+      toast.success(`Deleted ${selectedUsers.size} users`)
+    } catch (error) {
+      console.error('Bulk delete failed:', error)
+      toast.error('Failed to delete users')
+    }
+  }
+
+  if (!currentUser?.role || (currentUser.role !== 'admin' && currentUser.role !== 'super_admin' && !isSuperAdmin)) {
     return (
       <div className="text-center py-8">
         <EyeIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -348,6 +491,69 @@ export default function OrganizationUserManagement() {
             </div>
           </div>
 
+          {/* Bulk Actions */}
+          {filteredUsers.length > 0 && (
+            <div className="bg-white shadow rounded-lg p-6">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Selected: {selectedUsers.size} users
+                  </span>
+                  <button
+                    onClick={selectAllUsers}
+                    className="text-sm text-blue-600 hover:text-blue-800"
+                    disabled={filteredUsers.length === 0}
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={clearSelection}
+                    className="text-sm text-gray-600 hover:text-gray-800"
+                    disabled={selectedUsers.size === 0}
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">Bulk Actions:</span>
+                  <button
+                    onClick={bulkActivateUsers}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200"
+                    disabled={selectedUsers.size === 0}
+                  >
+                    <CheckIcon className="h-4 w-4 mr-1" />
+                    Activate
+                  </button>
+                  <button
+                    onClick={bulkDeactivateUsers}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200"
+                    disabled={selectedUsers.size === 0}
+                  >
+                    <UserMinusIcon className="h-4 w-4 mr-1" />
+                    Deactivate
+                  </button>
+                  <button
+                    onClick={bulkResendInvitations}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                    disabled={selectedUsers.size === 0}
+                  >
+                    <EnvelopeIcon className="h-4 w-4 mr-1" />
+                    Resend Invites
+                  </button>
+                  <button
+                    onClick={bulkDeleteUsers}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200"
+                    disabled={selectedUsers.size === 0}
+                  >
+                    <TrashIcon className="h-4 w-4 mr-1" />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Users Table */}
           {isLoading ? (
             <div className="flex justify-center py-8">
@@ -359,6 +565,14 @@ export default function OrganizationUserManagement() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
+                          onChange={selectedUsers.size === filteredUsers.length ? clearSelection : selectAllUsers}
+                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                        />
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         User
                       </th>
@@ -381,7 +595,18 @@ export default function OrganizationUserManagement() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50">
+                      <tr
+                        key={user.id}
+                        className={`hover:bg-gray-50 ${selectedUsers.has(user.id) ? 'bg-indigo-50' : ''}`}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.has(user.id)}
+                            onChange={() => toggleUserSelection(user.id)}
+                            className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                          />
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div>
                             <div className="text-sm font-medium text-gray-900">
@@ -432,8 +657,18 @@ export default function OrganizationUserManagement() {
                               variant="secondary"
                               onClick={() => openUserDetail(user)}
                               className="text-indigo-600 hover:text-indigo-900"
+                              title="View Details"
                             >
                               <EyeIcon className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => openUserEdit(user)}
+                              className="text-purple-600 hover:text-purple-900"
+                              title="Edit User"
+                            >
+                              <PencilIcon className="h-4 w-4" />
                             </Button>
                             {user.invitation_status === 'pending' || user.invitation_status === 'expired' ? (
                               <Button
@@ -533,7 +768,13 @@ export default function OrganizationUserManagement() {
                 Close
               </Button>
               {selectedUser.id !== currentUser?.id && (
-                <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                <Button
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  onClick={() => {
+                    setIsUserDetailModalOpen(false)
+                    openUserEdit(selectedUser)
+                  }}
+                >
                   <PencilIcon className="h-4 w-4 mr-2" />
                   Edit User
                 </Button>
@@ -542,6 +783,21 @@ export default function OrganizationUserManagement() {
           </div>
         )}
       </Modal>
+
+      {/* User Edit Modal */}
+      {selectedUser && (
+        <UserDetailsModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false)
+            setSelectedUser(null)
+          }}
+          user={selectedUser}
+          onSave={handleUserSave}
+          isLoading={isUpdatingUser}
+          isSuperAdmin={isSuperAdmin}
+        />
+      )}
     </div>
   )
 }

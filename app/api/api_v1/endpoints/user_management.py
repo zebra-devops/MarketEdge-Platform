@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Dict
 from datetime import datetime, timedelta
 import uuid
 import secrets
-from ....core.database import get_db
+from ....core.database import get_db, get_async_db
 from ....models.user import User, UserRole
 from ....models.user_application_access import UserApplicationAccess, UserInvitation, ApplicationType, InvitationStatus
 from ....models.organisation import Organisation
-from ....auth.dependencies import get_current_user, require_admin, require_super_admin
+from ....auth.dependencies import get_current_user, get_current_active_user, require_admin, require_super_admin
 from ....services.auth import send_invitation_email
 
 router = APIRouter()
@@ -221,12 +222,28 @@ async def update_user(
     if user_update.application_access is not None:
         # Remove existing access
         db.query(UserApplicationAccess).filter(UserApplicationAccess.user_id == user.id).delete()
-        
+
         # Add new access
         for access in user_update.application_access:
+            # Map frontend snake_case keys to backend ApplicationType enum
+            app_type_mapping = {
+                "market_edge": ApplicationType.MARKET_EDGE,
+                "causal_edge": ApplicationType.CAUSAL_EDGE,
+                "value_edge": ApplicationType.VALUE_EDGE,
+                "MARKET_EDGE": ApplicationType.MARKET_EDGE,
+                "CAUSAL_EDGE": ApplicationType.CAUSAL_EDGE,
+                "VALUE_EDGE": ApplicationType.VALUE_EDGE
+            }
+
+            # Get the correct ApplicationType enum value
+            app_type = app_type_mapping.get(access.application)
+            if app_type is None:
+                # Skip invalid application types
+                continue
+
             db.add(UserApplicationAccess(
                 user_id=user.id,
-                application=access.application,
+                application=app_type,
                 has_access=access.has_access,
                 granted_by=current_user.id
             ))
@@ -235,6 +252,46 @@ async def update_user(
     db.refresh(user)
     
     return _format_user_response(user)
+
+
+@router.delete("/admin/users/{user_id}")
+async def delete_user_admin(
+    user_id: str,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Delete a user (admin only)"""
+    # Only super_admin can delete users
+    if current_user.role != UserRole.super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only super administrators can delete users"
+        )
+
+    # Get the user to be deleted
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Prevent deletion of self
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete your own account"
+        )
+
+    # Delete associated data first (cascading)
+    # Delete user application access
+    db.query(UserApplicationAccess).filter(UserApplicationAccess.user_id == user.id).delete()
+
+    # Delete the user
+    db.delete(user)
+    db.commit()
+
+    return {"message": f"User {user.email} deleted successfully"}
 
 
 @router.post("/users/{user_id}/invite")
@@ -389,7 +446,7 @@ async def bulk_update_application_access(
     current_user: User = Depends(get_current_user)
 ):
     """Bulk update application access for multiple users"""
-    if current_user.role != UserRole.admin:
+    if current_user.role not in [UserRole.admin, UserRole.super_admin]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only administrators can perform bulk updates"
@@ -397,7 +454,7 @@ async def bulk_update_application_access(
     
     for user_id, access_list in updates.items():
         user = db.query(User).filter(User.id == user_id).first()
-        if user and (current_user.role == UserRole.admin or user.organisation_id == current_user.organisation_id):
+        if user and (current_user.role == UserRole.super_admin or user.organisation_id == current_user.organisation_id):
             # Remove existing access
             db.query(UserApplicationAccess).filter(UserApplicationAccess.user_id == user.id).delete()
             
@@ -507,15 +564,26 @@ def _format_user_response(user: User) -> UserResponse:
         latest_invitation = max(user.invitations, key=lambda inv: inv.invited_at)
         invitation_status = latest_invitation.status
     
-    # Get application access
+    # Get application access - convert to frontend-expected format
     app_access = {}
+
+    # Map from ApplicationType enum to frontend snake_case keys
+    enum_to_frontend = {
+        ApplicationType.MARKET_EDGE: "market_edge",
+        ApplicationType.CAUSAL_EDGE: "causal_edge",
+        ApplicationType.VALUE_EDGE: "value_edge"
+    }
+
     for access in user.application_access:
-        app_access[access.application.value] = access.has_access
-    
+        frontend_key = enum_to_frontend.get(access.application)
+        if frontend_key:
+            app_access[frontend_key] = access.has_access
+
     # Default access for applications not explicitly set
     for app_type in ApplicationType:
-        if app_type.value not in app_access:
-            app_access[app_type.value] = False
+        frontend_key = enum_to_frontend.get(app_type)
+        if frontend_key and frontend_key not in app_access:
+            app_access[frontend_key] = False
     
     return UserResponse(
         id=str(user.id),
