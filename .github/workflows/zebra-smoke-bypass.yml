@@ -191,8 +191,8 @@ jobs:
           # Test 3: Auth Login URL Generation
           echo ""
           echo "Test 3: Auth Login URL Generation..."
-          RESPONSE=$(curl -s http://localhost:8000/api/v1/auth/login/url)
-          if echo "$RESPONSE" | grep -q "authorization_url"; then
+          RESPONSE=$(curl -s "http://localhost:8000/api/v1/auth/auth0-url?redirect_uri=http://localhost:3000/callback")
+          if echo "$RESPONSE" | grep -q "auth_url"; then
             echo "✅ Auth0 login URL generated"
           else
             echo "❌ Failed to generate Auth0 login URL"
