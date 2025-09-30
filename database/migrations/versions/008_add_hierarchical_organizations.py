@@ -29,25 +29,22 @@ def upgrade():
 
     # Create enhanced user roles enum - check and create separately for idempotency
     conn = op.get_bind()
-    result = conn.execute(text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enhanceduserrole')"))
-    exists = result.scalar()
+    result = conn.execute(text("SELECT COUNT(*) FROM pg_type WHERE typname = 'enhanceduserrole'"))
+    exists = result.scalar() > 0
 
     if not exists:
         op.execute("CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer')")
 
     # Create hierarchy level enum - check and create separately for idempotency
-    # Check if type exists
-    conn = op.get_bind()
-    result = conn.execute(text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'hierarchylevel')"))
-    exists = result.scalar()
+    result = conn.execute(text("SELECT COUNT(*) FROM pg_type WHERE typname = 'hierarchylevel'"))
+    exists = result.scalar() > 0
 
-    # Only create if it doesn't exist
     if not exists:
         op.execute("CREATE TYPE hierarchylevel AS ENUM ('organization', 'location', 'department', 'user')")
 
     # Create permission scope enum - check and create separately for idempotency
-    result = conn.execute(text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'permissionscope')"))
-    exists = result.scalar()
+    result = conn.execute(text("SELECT COUNT(*) FROM pg_type WHERE typname = 'permissionscope'"))
+    exists = result.scalar() > 0
 
     if not exists:
         op.execute("CREATE TYPE permissionscope AS ENUM ('read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data')")
