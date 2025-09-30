@@ -1,0 +1,249 @@
+name: Zebra Associates Protection (US-0)
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'app/auth/**'
+      - 'app/api/api_v1/endpoints/auth.py'
+      - 'app/api/api_v1/endpoints/user_management.py'
+      - 'app/models/user*.py'
+      - 'platform-wrapper/frontend/src/**'
+      - '.github/workflows/zebra-smoke.yml'
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Required for PR status checks
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+env:
+  # Backend configuration
+  BACKEND_URL: http://localhost:8000
+
+  # Frontend configuration
+  FRONTEND_URL: http://localhost:3000
+
+  # Database configuration for backend
+  DATABASE_URL: postgresql://test_user:test_password@localhost:5432/marketedge_test
+
+  # Auth0 configuration (use secrets in production)
+  AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+  AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+  AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+
+  # Test credentials (use secrets in production)
+  AUTH0_TEST_EMAIL: ${{ secrets.ZEBRA_TEST_EMAIL || 'matt.lindop@zebra.associates' }}
+  AUTH0_TEST_PASSWORD: ${{ secrets.ZEBRA_TEST_PASSWORD }}
+
+jobs:
+  zebra-smoke-test:
+    name: 🦓 Zebra Associates £925K Protection
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: marketedge_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🗄️ Setup database
+        run: |
+          # Run migrations
+          alembic upgrade head
+
+          # Seed initial data
+          python database/seeds/initial_data.py
+          python database/seeds/phase3_data.py
+
+      - name: 🚀 Start backend server
+        run: |
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+
+          # Wait for backend to be ready
+          timeout 30 bash -c 'until curl -f http://localhost:8000/health; do sleep 1; done'
+
+          echo "✅ Backend started successfully"
+
+      - name: 📦 Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: platform-wrapper/frontend/package-lock.json
+
+      - name: 📦 Install Node dependencies
+        working-directory: platform-wrapper/frontend
+        run: npm ci
+
+      - name: 🎭 Install Playwright browsers
+        working-directory: platform-wrapper/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: 🚀 Start frontend server
+        working-directory: platform-wrapper/frontend
+        run: |
+          npm run dev &
+
+          # Wait for frontend to be ready
+          timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 1; done'
+
+          echo "✅ Frontend started successfully"
+
+      - name: 🦓 Run Zebra Associates Smoke Test
+        id: zebra_test
+        working-directory: platform-wrapper/frontend
+        run: |
+          echo "🦓 Running Zebra Associates Protection Test"
+          echo "Critical: £925K opportunity protection"
+          echo "User: matt.lindop@zebra.associates"
+          echo "Timeout: 60 seconds"
+          echo ""
+
+          npx playwright test zebra-associates-smoke.spec.ts \
+            --project=chromium \
+            --reporter=list,json,html \
+            --output=test-results/zebra-smoke
+        timeout-minutes: 2
+
+      - name: 🧪 Run standalone smoke test
+        if: always()
+        run: |
+          echo "Running standalone smoke test for verification"
+          node scripts/zebra-smoke.js
+        timeout-minutes: 2
+
+      - name: 📊 Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zebra-smoke-results
+          path: |
+            platform-wrapper/frontend/test-results/
+            platform-wrapper/frontend/playwright-report/
+          retention-days: 30
+
+      - name: 📸 Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zebra-smoke-screenshots
+          path: platform-wrapper/frontend/test-results/**/*.png
+          retention-days: 30
+
+      - name: 📹 Upload videos on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zebra-smoke-videos
+          path: platform-wrapper/frontend/test-results/**/*.webm
+          retention-days: 30
+
+      - name: 💬 Comment on PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const testPassed = '${{ steps.zebra_test.outcome }}' === 'success'
+
+            const commentBody = testPassed
+              ? `## ✅ Zebra Associates Protection: PASSED
+
+            🦓 **£925K Opportunity Status:** PROTECTED
+
+            All critical checks passed:
+            - ✅ Backend accessibility
+            - ✅ Auth0 token claims validation
+            - ✅ Application access verification
+            - ✅ Navigation to all applications
+            - ✅ Super admin panel access
+
+            **User:** matt.lindop@zebra.associates
+            **Test Duration:** < 60 seconds
+
+            This PR is safe to merge from an authentication perspective.`
+              : `## ❌ Zebra Associates Protection: FAILED
+
+            🚨 **£925K Opportunity Status:** AT RISK
+
+            Critical authentication tests failed. This PR **MUST NOT** be merged until fixed.
+
+            **Failed Components:**
+            - Check test logs for specific failures
+            - Review screenshots and videos in artifacts
+
+            **Required Actions:**
+            1. Review test failure details
+            2. Fix authentication issues
+            3. Re-run tests until passing
+
+            **User:** matt.lindop@zebra.associates
+
+            ⚠️ **DO NOT MERGE** until this test passes.`
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: commentBody
+            })
+
+      - name: ✅ Verify test passed
+        if: steps.zebra_test.outcome != 'success'
+        run: |
+          echo "❌ CRITICAL: Zebra Associates smoke test FAILED"
+          echo "❌ £925K opportunity at risk"
+          echo "❌ This PR MUST NOT be merged"
+          echo ""
+          echo "Please review test results and fix authentication issues."
+          exit 1
+
+  # Required status check that blocks PR merge
+  zebra-protection-gate:
+    name: 🚪 Zebra Protection Gate (Required)
+    runs-on: ubuntu-latest
+    needs: zebra-smoke-test
+    if: always()
+    steps:
+      - name: ✅ Check if Zebra test passed
+        run: |
+          if [ "${{ needs.zebra-smoke-test.result }}" != "success" ]; then
+            echo "❌ BLOCKED: Zebra Associates protection test must pass"
+            echo "❌ PR merge is blocked until authentication is verified"
+            exit 1
+          fi
+          echo "✅ Zebra Associates protection verified"
+          echo "✅ £925K opportunity protected"
+          echo "✅ PR can proceed to merge"
