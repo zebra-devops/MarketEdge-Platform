@@ -153,7 +153,7 @@ jobs:
               COUNT(uaa.application) as app_count
             FROM users u
             JOIN organisations o ON u.organisation_id = o.id
-            LEFT JOIN user_application_access uaa ON u.user_id = uaa.user_id
+            LEFT JOIN user_application_access uaa ON u.id = uaa.user_id
             WHERE u.email = 'devops@zebra.associates'
             GROUP BY u.email, u.role, o.name;
           "
