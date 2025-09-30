@@ -50,7 +50,7 @@ def upgrade() -> None:
     sa.Column('slug', sa.String(length=100), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('parent_id', postgresql.UUID(), nullable=True),
-    sa.Column('level', sa.Enum('ORGANIZATION', 'LOCATION', 'DEPARTMENT', 'USER', name='hierarchylevel'), nullable=False),
+    sa.Column('level', sa.Enum('ORGANIZATION', 'LOCATION', 'DEPARTMENT', 'USER', name='hierarchylevel', create_type=False), nullable=False),
     sa.Column('hierarchy_path', sa.String(length=500), nullable=False),
     sa.Column('depth', sa.Integer(), nullable=False),
     sa.Column('legacy_organisation_id', postgresql.UUID(), nullable=True),
