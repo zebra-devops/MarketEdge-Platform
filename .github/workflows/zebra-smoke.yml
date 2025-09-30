@@ -33,6 +33,9 @@ env:
   # Database configuration for backend
   DATABASE_URL: postgresql://test_user:test_password@localhost:5432/marketedge_test
 
+  # JWT configuration
+  JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+
   # Auth0 configuration (use secrets in production)
   AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
   AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}

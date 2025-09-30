@@ -237,9 +237,9 @@ async def startup_event():
         # Test CORS configuration immediately
         cors_origins = [
             "https://app.zebra.associates",
-            "https://marketedge-frontend.onrender.com", 
+            "https://marketedge-frontend.onrender.com",
             "http://localhost:3000",
-            "http://localhost:3001"
+            "http://localhost:3001",
         ]
         logger.info(f"✅ CORS configured for origins: {cors_origins}")
         logger.info("🔐 CORS credentials enabled for authentication flow")
@@ -311,6 +311,21 @@ async def _initialize_startup_safely():
     except Exception as e:
         logger.error(f"Safe initialization failed: {e}")
         raise
+
+@app.get("/")
+async def root():
+    """Root endpoint to handle HEAD/GET requests and prevent 405 errors"""
+    return {
+        "service": "MarketEdge Platform API",
+        "status": "running",
+        "version": settings.PROJECT_VERSION,
+        "message": "Use /health for health checks, /api/v1 for API endpoints"
+    }
+
+@app.head("/")
+async def root_head():
+    """Handle HEAD requests to root endpoint"""
+    return Response(status_code=200)
 
 @app.get("/health")
 async def health_check(request: Request):
@@ -411,22 +426,6 @@ async def _check_service_health_safely(service_name: str):
         logger.warning(f"Service {service_name} health check failed: {e}")
         return False
 
-@app.get("/")
-async def root():
-    """Root endpoint with lazy initialization info"""
-    startup_metrics = lazy_startup_manager.get_startup_metrics()
-    return {
-        "message": "MarketEdge Platform API - Lazy Initialization Architecture",
-        "docs": f"{settings.API_V1_STR}/docs" if API_ROUTER_IMPORT_SUCCESS else "Not available (router import failed)",
-        "health": "/health",
-        "metrics": "/metrics",
-        "status": "production_operational" if API_ROUTER_IMPORT_SUCCESS else "minimal_mode",
-        "architecture": "lazy_initialization",
-        "cold_start_time": f"{startup_metrics['total_startup_time']:.3f}s",
-        "api_router_included": API_ROUTER_IMPORT_SUCCESS,
-        "epic_1": f"{settings.API_V1_STR}/module-management" if API_ROUTER_IMPORT_SUCCESS else "Not available",
-        "epic_2": f"{settings.API_V1_STR}/features" if API_ROUTER_IMPORT_SUCCESS else "Not available"
-    }
 
 @app.get("/deployment-test")
 async def deployment_test():
@@ -604,7 +603,7 @@ async def cors_test():
             "https://app.zebra.associates",
             "https://marketedge-frontend.onrender.com",
             "http://localhost:3000",
-            "http://localhost:3001"
+            "http://localhost:3001",
         ],
         "credentials_allowed": True,
         "methods_allowed": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],

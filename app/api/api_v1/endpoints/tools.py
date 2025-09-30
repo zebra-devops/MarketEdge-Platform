@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-from ....core.database import get_db
-from ....models.tool import Tool
-from ....models.organisation_tool_access import OrganisationToolAccess
-from ....models.user import User
-from ....auth.dependencies import get_current_user, require_admin
+from app.core.database import get_async_db
+from app.models.tool import Tool
+from app.models.organisation_tool_access import OrganisationToolAccess
+from app.models.user import User
+from app.auth.dependencies import get_current_user, require_admin
 
 router = APIRouter()
 
@@ -36,15 +36,23 @@ class ToolAccessResponse(BaseModel):
 async def get_tools(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
     """Get all available tools with access information for current organisation"""
-    tools = db.query(Tool).filter(Tool.is_active == True).offset(skip).limit(limit).all()
-    
-    tool_access = db.query(OrganisationToolAccess).filter(
+    from sqlalchemy import select
+
+    # Query tools
+    tools_query = select(Tool).filter(Tool.is_active == True).offset(skip).limit(limit)
+    tools_result = await db.execute(tools_query)
+    tools = tools_result.scalars().all()
+
+    # Query tool access
+    tool_access_query = select(OrganisationToolAccess).filter(
         OrganisationToolAccess.organisation_id == current_user.organisation_id
-    ).all()
+    )
+    tool_access_result = await db.execute(tool_access_query)
+    tool_access = tool_access_result.scalars().all()
     
     access_dict = {access.tool_id: access for access in tool_access}
     
@@ -67,14 +75,20 @@ async def get_tools(
 
 @router.get("/access", response_model=List[ToolAccessResponse])
 async def get_organisation_tool_access(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
     """Get tools that current organisation has access to"""
-    tool_access = db.query(OrganisationToolAccess).join(Tool).filter(
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+
+    # Query tool access with joined Tool data
+    tool_access_query = select(OrganisationToolAccess).join(Tool).filter(
         OrganisationToolAccess.organisation_id == current_user.organisation_id,
         Tool.is_active == True
-    ).all()
+    ).options(selectinload(OrganisationToolAccess.tool))
+    tool_access_result = await db.execute(tool_access_query)
+    tool_access = tool_access_result.scalars().all()
     
     result = []
     for access in tool_access:
@@ -100,22 +114,30 @@ async def get_organisation_tool_access(
 @router.get("/{tool_id}", response_model=ToolResponse)
 async def get_tool(
     tool_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user)
 ):
     """Get specific tool with access information"""
-    tool = db.query(Tool).filter(Tool.id == tool_id, Tool.is_active == True).first()
-    
+    from sqlalchemy import select
+
+    # Query tool
+    tool_query = select(Tool).filter(Tool.id == tool_id, Tool.is_active == True)
+    tool_result = await db.execute(tool_query)
+    tool = tool_result.scalar_one_or_none()
+
     if not tool:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Tool not found"
         )
-    
-    access = db.query(OrganisationToolAccess).filter(
+
+    # Query access
+    access_query = select(OrganisationToolAccess).filter(
         OrganisationToolAccess.organisation_id == current_user.organisation_id,
         OrganisationToolAccess.tool_id == tool_id
-    ).first()
+    )
+    access_result = await db.execute(access_query)
+    access = access_result.scalar_one_or_none()
     
     return ToolResponse(
         id=str(tool.id),

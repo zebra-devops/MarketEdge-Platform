@@ -1,46 +1,116 @@
 import { ApplicationAccess } from '@/types/auth'
 
-export type ApplicationName = 'market_edge' | 'causal_edge' | 'value_edge'
+export type ApplicationName = 'MARKET_EDGE' | 'CAUSAL_EDGE' | 'VALUE_EDGE'
+export type ApplicationNameLowercase = 'market_edge' | 'causal_edge' | 'value_edge'
+
+/**
+ * Convert uppercase application name to lowercase
+ */
+function toLowercase(app: ApplicationName): ApplicationNameLowercase {
+  const mapping: Record<ApplicationName, ApplicationNameLowercase> = {
+    'MARKET_EDGE': 'market_edge',
+    'CAUSAL_EDGE': 'causal_edge',
+    'VALUE_EDGE': 'value_edge'
+  }
+  return mapping[app]
+}
+
+/**
+ * Convert lowercase application name to uppercase
+ */
+function toUppercase(app: ApplicationNameLowercase): ApplicationName {
+  const mapping: Record<ApplicationNameLowercase, ApplicationName> = {
+    'market_edge': 'MARKET_EDGE',
+    'causal_edge': 'CAUSAL_EDGE',
+    'value_edge': 'VALUE_EDGE'
+  }
+  return mapping[app]
+}
 
 /**
  * Check if a user has access to a specific application
+ * Supports both the old format ({ [key: string]: boolean }) and new format (ApplicationAccess[])
  */
 export function hasApplicationAccess(
-  applicationAccess: ApplicationAccess[] | undefined,
-  application: ApplicationName
+  applicationAccess: ApplicationAccess[] | { [key: string]: boolean } | undefined,
+  application: ApplicationName | ApplicationNameLowercase
 ): boolean {
-  if (!applicationAccess || !Array.isArray(applicationAccess)) {
+  if (!applicationAccess) {
     return false
   }
 
-  const access = applicationAccess.find(item => item.application === application)
-  return access?.has_access || false
+  // Handle new format (ApplicationAccess[])
+  if (Array.isArray(applicationAccess)) {
+    // Backend sends lowercase application names, so normalize to uppercase for comparison
+    const isLowercase = typeof application === 'string' &&
+      application.includes('_') &&
+      application === application.toLowerCase()
+
+    const appName = isLowercase
+      ? toUppercase(application as ApplicationNameLowercase)
+      : application as ApplicationName
+
+    const accessRecord = applicationAccess.find(access =>
+      access.application === appName || access.application === toLowercase(appName)
+    )
+
+    return accessRecord?.has_access || false
+  }
+
+  // Handle old format ({ [key: string]: boolean })
+  const isLowercase = typeof application === 'string' &&
+    application.includes('_') &&
+    application === application.toLowerCase()
+
+  const appName = isLowercase
+    ? toUppercase(application as ApplicationNameLowercase)
+    : application as ApplicationName
+
+  return applicationAccess[appName] || false
 }
 
 /**
  * Get all applications that a user has access to
  */
 export function getAccessibleApplications(
-  applicationAccess: ApplicationAccess[] | undefined
+  applicationAccess: ApplicationAccess[] | { [key: string]: boolean } | undefined
 ): ApplicationName[] {
-  if (!applicationAccess || !Array.isArray(applicationAccess)) {
+  if (!applicationAccess) {
     return []
   }
 
-  return applicationAccess
-    .filter(item => item.has_access)
-    .map(item => item.application)
+  // Handle new format (ApplicationAccess[])
+  if (Array.isArray(applicationAccess)) {
+    return applicationAccess
+      .filter(access => access.has_access)
+      .map(access => {
+        // Convert any format to uppercase for consistency
+        if (access.application === 'market_edge' || access.application === 'MARKET_EDGE') {
+          return 'MARKET_EDGE' as ApplicationName
+        } else if (access.application === 'causal_edge' || access.application === 'CAUSAL_EDGE') {
+          return 'CAUSAL_EDGE' as ApplicationName
+        } else if (access.application === 'value_edge' || access.application === 'VALUE_EDGE') {
+          return 'VALUE_EDGE' as ApplicationName
+        }
+        return access.application as ApplicationName
+      })
+  }
+
+  // Handle old format ({ [key: string]: boolean })
+  return Object.entries(applicationAccess)
+    .filter(([key, hasAccess]) => hasAccess && ['MARKET_EDGE', 'CAUSAL_EDGE', 'VALUE_EDGE'].includes(key))
+    .map(([key]) => key as ApplicationName)
 }
 
 /**
  * Get the user's primary (first accessible) application
  */
 export function getPrimaryApplication(
-  applicationAccess: ApplicationAccess[] | undefined,
-  preferredOrder: ApplicationName[] = ['market_edge', 'causal_edge', 'value_edge']
+  applicationAccess: ApplicationAccess[] | { [key: string]: boolean } | undefined,
+  preferredOrder: ApplicationName[] = ['MARKET_EDGE', 'CAUSAL_EDGE', 'VALUE_EDGE']
 ): ApplicationName | null {
   const accessible = getAccessibleApplications(applicationAccess)
-  
+
   if (accessible.length === 0) {
     return null
   }
@@ -61,11 +131,11 @@ export function getPrimaryApplication(
  */
 export function getApplicationRoute(application: ApplicationName): string {
   const routes: Record<ApplicationName, string> = {
-    market_edge: '/market-edge',
-    causal_edge: '/causal-edge',
-    value_edge: '/value-edge'
+    MARKET_EDGE: '/market-edge',
+    CAUSAL_EDGE: '/causal-edge',
+    VALUE_EDGE: '/value-edge'
   }
-  
+
   return routes[application]
 }
 
@@ -80,29 +150,29 @@ export function getApplicationInfo(application: ApplicationName) {
     color: string
     themeColor: string
   }> = {
-    market_edge: {
+    MARKET_EDGE: {
       name: 'Market Edge',
       displayName: 'Market Edge',
       description: 'Competitive Intelligence & Market Analysis',
       color: 'from-blue-500 to-indigo-600',
       themeColor: 'blue'
     },
-    causal_edge: {
-      name: 'Causal Edge', 
+    CAUSAL_EDGE: {
+      name: 'Causal Edge',
       displayName: 'Causal Edge',
-      description: 'Business Process & Causal Analysis',
-      color: 'from-green-500 to-emerald-600',
-      themeColor: 'green'
+      description: 'Commercial Experimentation Hub',
+      color: 'from-teal-500 to-teal-600',
+      themeColor: 'teal'
     },
-    value_edge: {
+    VALUE_EDGE: {
       name: 'Value Edge',
-      displayName: 'Value Edge', 
-      description: 'Value Engineering & ROI Analysis',
+      displayName: 'Value Edge',
+      description: 'ROI optimization and value measurement',
       color: 'from-purple-500 to-violet-600',
       themeColor: 'purple'
     }
   }
-  
+
   return info[application]
 }
 
@@ -110,7 +180,20 @@ export function getApplicationInfo(application: ApplicationName) {
  * Check if user has access to any applications
  */
 export function hasAnyApplicationAccess(
-  applicationAccess: ApplicationAccess[] | undefined
+  applicationAccess: ApplicationAccess[] | { [key: string]: boolean } | undefined
 ): boolean {
   return getAccessibleApplications(applicationAccess).length > 0
+}
+
+/**
+ * Get application icon component name for the new structure
+ */
+export function getApplicationIcon(application: ApplicationName): string {
+  const icons: Record<ApplicationName, string> = {
+    MARKET_EDGE: 'EyeIcon',
+    CAUSAL_EDGE: 'ChartBarIcon',
+    VALUE_EDGE: 'CogIcon'
+  }
+
+  return icons[application]
 }

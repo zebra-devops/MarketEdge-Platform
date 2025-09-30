@@ -15,57 +15,9 @@ import {
 import { useAuthContext } from '@/hooks/useAuth'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import Button from '@/components/ui/Button'
 import OrganizationSwitcher from '@/components/ui/OrganizationSwitcher'
-import ApplicationIcons from '@/components/ui/ApplicationIcons'
-
-interface NavigationItem {
-  name: string
-  href: string
-  icon: React.ComponentType<{ className?: string }>
-  requiredRole?: string
-  requiredPermissions?: string[]
-  tenantSpecific?: boolean
-}
-
-const getNavigationItems = (userRole: string, permissions: string[], tenantInfo: any): NavigationItem[] => {
-  const baseItems: NavigationItem[] = [
-    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  ]
-
-  // Add tenant-specific items
-  if (tenantInfo) {
-    baseItems.push({
-      name: 'Settings',
-      href: '/settings',
-      icon: CogIcon,
-      tenantSpecific: true
-    })
-  }
-
-  // Add role-specific items
-  if (userRole === 'admin') {
-    baseItems.push(
-      { name: 'Users', href: '/users', icon: UsersIcon, requiredRole: 'admin' },
-      { name: 'Admin', href: '/admin', icon: ShieldCheckIcon, requiredRole: 'admin' }
-    )
-  } else if (['manager', 'admin'].includes(userRole)) {
-    baseItems.push(
-      { name: 'Users', href: '/users', icon: UsersIcon, requiredPermissions: ['read:users'] }
-    )
-  }
-
-  // Filter items based on user permissions
-  return baseItems.filter(item => {
-    if (item.requiredRole && item.requiredRole !== userRole) {
-      return false
-    }
-    if (item.requiredPermissions && !item.requiredPermissions.some(perm => permissions.includes(perm))) {
-      return false
-    }
-    return true
-  })
-}
+import UserProfileDropdown from '@/components/ui/UserProfileDropdown'
+import Navigation from '@/components/layout/Navigation'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -73,27 +25,8 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { user, tenant, permissions, logout, hasRole } = useAuthContext()
-  const router = useRouter()
+  const { user, tenant, permissions } = useAuthContext()
   const pathname = usePathname()
-
-  // Get role-based navigation items
-  const navigation = getNavigationItems(
-    user?.role || 'viewer',
-    permissions || [],
-    tenant
-  )
-
-  const handleLogout = async () => {
-    try {
-      await logout()
-      router.push('/login')
-    } catch (error) {
-      console.error('Logout error:', error)
-      // Force redirect even if logout fails
-      router.push('/login')
-    }
-  }
 
   return (
     <div>
@@ -146,34 +79,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <div className="flex h-16 shrink-0 items-center">
                     <h1 className="text-xl font-bold text-gray-900">Platform Wrapper</h1>
                   </div>
-                  <nav className="flex flex-1 flex-col">
-                    <ul role="list" className="flex flex-1 flex-col gap-y-7">
-                      <li>
-                        <ul role="list" className="-mx-2 space-y-1">
-                          {navigation.map((item) => (
-                            <li key={item.name}>
-                              <Link
-                                href={item.href}
-                                className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${
-                                  pathname === item.href
-                                    ? 'bg-gray-50 text-primary-600'
-                                    : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
-                                }`}
-                                onClick={() => setSidebarOpen(false)}
-                              >
-                                <item.icon
-                                  className={`h-6 w-6 shrink-0 ${
-                                    pathname === item.href ? 'text-primary-600' : 'text-gray-400 group-hover:text-primary-600'
-                                  }`}
-                                  aria-hidden="true"
-                                />
-                                {item.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
-                      <li className="mt-auto">
+                  <div className="flex flex-col flex-1">
+                    <Navigation className="flex-1" />
+                    <div className="mt-auto">
                         {/* Mobile Tenant Information */}
                         {tenant && (
                           <div className="px-2 py-2 mb-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -190,9 +98,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             </div>
                           </div>
                         )}
-                      </li>
-                    </ul>
-                  </nav>
+                    </div>
+                  </div>
                 </div>
               </Dialog.Panel>
             </Transition.Child>
@@ -205,33 +112,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex h-16 shrink-0 items-center">
             <h1 className="text-xl font-bold text-gray-900">Platform Wrapper</h1>
           </div>
-          <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
-              <li>
-                <ul role="list" className="-mx-2 space-y-1">
-                  {navigation.map((item) => (
-                    <li key={item.name}>
-                      <Link
-                        href={item.href}
-                        className={`group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold ${
-                          pathname === item.href
-                            ? 'bg-gray-50 text-primary-600'
-                            : 'text-gray-700 hover:text-primary-600 hover:bg-gray-50'
-                        }`}
-                      >
-                        <item.icon
-                          className={`h-6 w-6 shrink-0 ${
-                            pathname === item.href ? 'text-primary-600' : 'text-gray-400 group-hover:text-primary-600'
-                          }`}
-                          aria-hidden="true"
-                        />
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
-              <li className="mt-auto">
+          <div className="flex flex-col flex-1">
+            <Navigation className="flex-1" />
+            <div className="mt-auto">
                 {/* Tenant Information */}
                 {tenant && (
                   <div className="px-2 py-2 mb-3 bg-blue-50 rounded-lg border border-blue-200">
@@ -249,31 +132,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   </div>
                 )}
 
-                {/* User Profile */}
-                <div className="flex items-center gap-x-4 px-2 py-3 text-sm font-semibold leading-6 text-gray-900">
-                  <div className="h-8 w-8 rounded-full bg-gray-50 flex items-center justify-center">
-                    <span className="text-sm font-medium text-gray-700">
-                      {user?.first_name?.[0]}{user?.last_name?.[0]}
-                    </span>
-                  </div>
-                  <span className="sr-only">Your profile</span>
-                  <div className="flex-1">
-                    <span aria-hidden="true">{user?.first_name} {user?.last_name}</span>
-                    <p className="text-xs text-gray-500">{user?.email}</p>
-                    <p className="text-xs text-gray-400 capitalize">{user?.role}</p>
-                  </div>
-                </div>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="w-full mt-2"
-                >
-                  Sign out
-                </Button>
-              </li>
-            </ul>
-          </nav>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -292,12 +152,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex flex-1 items-center justify-end gap-x-4">
-              {/* Application Icons */}
-              <ApplicationIcons 
-                userApplicationAccess={user?.application_access || []}
-              />
               {/* Organization Switcher */}
               <OrganizationSwitcher />
+              {/* User Profile Dropdown */}
+              <UserProfileDropdown />
             </div>
           </div>
         </div>

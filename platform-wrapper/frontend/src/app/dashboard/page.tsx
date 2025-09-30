@@ -135,7 +135,7 @@ export default function DashboardPage() {
                     <div className="flex items-center">
                       <div className="text-sm text-blue-700">
                         <span className="font-medium">Auto-redirect:</span> You have access to one application.
-                      </span>
+                      </div>
                     </div>
                     <button
                       onClick={() => {

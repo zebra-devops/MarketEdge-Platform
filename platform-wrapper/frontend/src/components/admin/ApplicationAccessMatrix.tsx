@@ -25,15 +25,15 @@ interface User {
   last_name: string
   role: string
   application_access: {
-    market_edge: boolean
-    causal_edge: boolean
-    value_edge: boolean
+    MARKET_EDGE: boolean
+    CAUSAL_EDGE: boolean
+    VALUE_EDGE: boolean
   }
   is_active: boolean
 }
 
 interface ApplicationAccess {
-  application: 'market_edge' | 'causal_edge' | 'value_edge'
+  application: 'MARKET_EDGE' | 'CAUSAL_EDGE' | 'VALUE_EDGE'
   has_access: boolean
 }
 
@@ -42,13 +42,13 @@ interface BulkUpdate {
 }
 
 const applications = [
-  { key: 'market_edge', name: 'Market Edge', color: 'blue' },
-  { key: 'causal_edge', name: 'Causal Edge', color: 'green' },
-  { key: 'value_edge', name: 'Value Edge', color: 'purple' }
+  { key: 'MARKET_EDGE', name: 'Market Edge', color: 'blue' },
+  { key: 'CAUSAL_EDGE', name: 'Causal Edge', color: 'green' },
+  { key: 'VALUE_EDGE', name: 'Value Edge', color: 'purple' }
 ] as const
 
 export default function ApplicationAccessMatrix() {
-  const { user: currentUser } = useAuthContext()
+  const { user: currentUser, refreshUser } = useAuthContext()
   const { currentOrganisation, isSuperAdmin, accessibleOrganisations } = useOrganisationContext()
   
   const [users, setUsers] = useState<User[]>([])
@@ -194,6 +194,12 @@ export default function ApplicationAccessMatrix() {
       
       setPendingChanges({})
       toast.success(`Updated access permissions for ${Object.keys(pendingChanges).length} users`)
+
+      // Refresh current user's session if their permissions were updated
+      if (currentUser && pendingChanges[currentUser.id]) {
+        console.log('Current user permissions were updated, refreshing session...')
+        await refreshUser()
+      }
     } catch (error: any) {
       console.error('Failed to save changes:', error)
       toast.error(error?.response?.data?.detail || 'Failed to save changes')
@@ -249,7 +255,7 @@ export default function ApplicationAccessMatrix() {
     return colors[app as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-300'
   }
 
-  if (!currentUser?.role || (currentUser.role !== 'admin' && !isSuperAdmin)) {
+  if (!currentUser?.role || (currentUser.role !== 'admin' && currentUser.role !== 'super_admin' && !isSuperAdmin)) {
     return (
       <div className="text-center py-8">
         <TableCellsIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />

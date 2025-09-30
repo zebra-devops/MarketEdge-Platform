@@ -128,7 +128,7 @@ export default function MarketEdgePage() {
 
   if (showLanding) {
     return (
-      <ApplicationLayout application="market_edge">
+      <ApplicationLayout application="MARKET_EDGE">
         <MarketEdgeLanding 
           onGetStarted={handleGetStarted}
           showDemoMode={isDummyMode}
@@ -138,7 +138,7 @@ export default function MarketEdgePage() {
   }
 
   return (
-    <ApplicationLayout application="market_edge">
+    <ApplicationLayout application="MARKET_EDGE">
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center space-x-6">

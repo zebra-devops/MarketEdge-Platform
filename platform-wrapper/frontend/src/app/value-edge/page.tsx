@@ -39,7 +39,7 @@ export default function ValueEdgePage() {
 
   if (showLanding) {
     return (
-      <ApplicationLayout application="value_edge">
+      <ApplicationLayout application="VALUE_EDGE">
         <ValueEdgeLanding 
           onGetStarted={handleGetStarted}
           showDemoMode={true}
@@ -49,7 +49,7 @@ export default function ValueEdgePage() {
   }
 
   return (
-    <ApplicationLayout application="value_edge">
+    <ApplicationLayout application="VALUE_EDGE">
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">

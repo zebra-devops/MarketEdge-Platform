@@ -385,6 +385,206 @@ async def seed_analytics_modules(db: AsyncSession):
             ],
             "pricing_tier": "premium",
             "created_by": admin_user.id
+        },
+        # Causal Edge Modules
+        {
+            "id": "causal_edge_core",
+            "name": "Causal Edge Core",
+            "description": "Core causal inference capabilities including A/B testing, propensity score matching, and basic causal analysis",
+            "version": "1.0.0",
+            "module_type": ModuleType.CORE,
+            "status": ModuleStatus.ACTIVE,
+            "is_core": True,
+            "requires_license": False,
+            "entry_point": "causal_edge.core",
+            "config_schema": {
+                "type": "object",
+                "properties": {
+                    "significance_level": {"type": "number", "minimum": 0.001, "maximum": 0.2},
+                    "statistical_power": {"type": "number", "minimum": 0.5, "maximum": 0.99},
+                    "random_seed": {"type": "integer", "minimum": 1, "maximum": 9999}
+                }
+            },
+            "default_config": {
+                "significance_level": 0.05,
+                "statistical_power": 0.8,
+                "random_seed": 42
+            },
+            "dependencies": [],
+            "min_data_requirements": {
+                "min_sample_size": 10,
+                "min_data_points": 20
+            },
+            "api_endpoints": [
+                "/api/v1/causal-edge/experiments",
+                "/api/v1/causal-edge/health",
+                "/api/v1/causal-edge/methods"
+            ],
+            "frontend_components": [
+                "CausalEdgeLanding",
+                "ExperimentManager",
+                "ResultsViewer"
+            ],
+            "pricing_tier": "basic",
+            "created_by": admin_user.id
+        },
+        {
+            "id": "ab_testing_platform",
+            "name": "A/B Testing Platform",
+            "description": "Advanced A/B testing capabilities with multiple statistical methods, power analysis, and experiment management",
+            "version": "1.0.0",
+            "module_type": ModuleType.ANALYTICS,
+            "status": ModuleStatus.ACTIVE,
+            "is_core": False,
+            "requires_license": True,
+            "entry_point": "causal_edge.ab_testing",
+            "config_schema": {
+                "type": "object",
+                "properties": {
+                    "default_method": {"type": "string", "enum": ["t_test", "welch_t_test", "mann_whitney_u"]},
+                    "auto_power_calculation": {"type": "boolean"},
+                    "minimum_effect_size": {"type": "number", "minimum": 0.01, "maximum": 2.0}
+                }
+            },
+            "default_config": {
+                "default_method": "welch_t_test",
+                "auto_power_calculation": True,
+                "minimum_effect_size": 0.1
+            },
+            "dependencies": ["causal_edge_core"],
+            "min_data_requirements": {
+                "min_sample_size_per_group": 30,
+                "balanced_groups": True
+            },
+            "api_endpoints": [
+                "/api/v1/causal-edge/experiments/{id}/analysis/ab-test"
+            ],
+            "frontend_components": [
+                "ABTestCreator",
+                "StatisticalMethodSelector",
+                "PowerAnalysisCalculator"
+            ],
+            "pricing_tier": "professional",
+            "created_by": admin_user.id
+        },
+        {
+            "id": "propensity_score_matching",
+            "name": "Propensity Score Matching",
+            "description": "Propensity score matching for causal inference with observational data, including covariate balancing and matching diagnostics",
+            "version": "1.0.0",
+            "module_type": ModuleType.ANALYTICS,
+            "status": ModuleStatus.ACTIVE,
+            "is_core": False,
+            "requires_license": True,
+            "entry_point": "causal_edge.propensity_score",
+            "config_schema": {
+                "type": "object",
+                "properties": {
+                    "default_caliper": {"type": "number", "minimum": 0.01, "maximum": 0.5},
+                    "matching_method": {"type": "string", "enum": ["nearest_neighbor", "optimal"]},
+                    "balance_diagnostics": {"type": "boolean"}
+                }
+            },
+            "default_config": {
+                "default_caliper": 0.1,
+                "matching_method": "nearest_neighbor",
+                "balance_diagnostics": True
+            },
+            "dependencies": ["causal_edge_core"],
+            "min_data_requirements": {
+                "min_covariates": 1,
+                "min_treatment_units": 50,
+                "min_control_units": 50
+            },
+            "api_endpoints": [
+                "/api/v1/causal-edge/experiments/{id}/analysis/propensity-score"
+            ],
+            "frontend_components": [
+                "PropensityScoreAnalyzer",
+                "CovariateBalanceChecker",
+                "MatchingDiagnostics"
+            ],
+            "pricing_tier": "professional",
+            "created_by": admin_user.id
+        },
+        {
+            "id": "difference_in_differences",
+            "name": "Difference-in-Differences Analysis",
+            "description": "Difference-in-differences causal analysis for panel data with parallel trends testing and robust standard errors",
+            "version": "1.0.0",
+            "module_type": ModuleType.ANALYTICS,
+            "status": ModuleStatus.TESTING,
+            "is_core": False,
+            "requires_license": True,
+            "entry_point": "causal_edge.difference_in_differences",
+            "config_schema": {
+                "type": "object",
+                "properties": {
+                    "parallel_trends_test": {"type": "boolean"},
+                    "robust_standard_errors": {"type": "boolean"},
+                    "min_pre_periods": {"type": "integer", "minimum": 2, "maximum": 20}
+                }
+            },
+            "default_config": {
+                "parallel_trends_test": True,
+                "robust_standard_errors": True,
+                "min_pre_periods": 3
+            },
+            "dependencies": ["causal_edge_core"],
+            "min_data_requirements": {
+                "min_units": 10,
+                "min_time_periods": 4,
+                "panel_structure": True
+            },
+            "api_endpoints": [
+                "/api/v1/causal-edge/experiments/{id}/analysis/difference-in-differences"
+            ],
+            "frontend_components": [
+                "DifferenceinDifferencesAnalyzer",
+                "ParallelTrendsChecker",
+                "PanelDataUploader"
+            ],
+            "pricing_tier": "enterprise",
+            "created_by": admin_user.id
+        },
+        {
+            "id": "business_impact_calculator",
+            "name": "Business Impact Calculator",
+            "description": "Translation of causal analysis results into business metrics including ROI, revenue impact, and cost-benefit analysis",
+            "version": "1.0.0",
+            "module_type": ModuleType.ANALYTICS,
+            "status": ModuleStatus.ACTIVE,
+            "is_core": False,
+            "requires_license": False,
+            "entry_point": "causal_edge.business_impact",
+            "config_schema": {
+                "type": "object",
+                "properties": {
+                    "default_time_horizon": {"type": "integer", "minimum": 1, "maximum": 60},
+                    "currency": {"type": "string", "enum": ["USD", "GBP", "EUR"]},
+                    "confidence_intervals": {"type": "boolean"}
+                }
+            },
+            "default_config": {
+                "default_time_horizon": 12,
+                "currency": "GBP",
+                "confidence_intervals": True
+            },
+            "dependencies": ["causal_edge_core"],
+            "min_data_requirements": {
+                "baseline_metrics": True,
+                "volume_data": True
+            },
+            "api_endpoints": [
+                "/api/v1/causal-edge/results/{id}/business-impact"
+            ],
+            "frontend_components": [
+                "BusinessImpactCalculator",
+                "ROIAnalyzer",
+                "CostBenefitChart"
+            ],
+            "pricing_tier": "basic",
+            "created_by": admin_user.id
         }
     ]
     

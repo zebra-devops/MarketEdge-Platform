@@ -4,6 +4,7 @@ import { useState, useEffect, createContext, useContext } from 'react'
 import { User } from '@/types/auth'
 import { authService } from '@/services/auth'
 import { hasApplicationAccess as checkAppAccess, getAccessibleApplications as getApps } from '@/utils/application-access'
+import { normalizeApplicationAccess } from '@/utils/application-access-fix'
 // PRODUCTION FIX: Remove timer-utils dependency to avoid function reference issues
 // import { safeClearInterval, ensureTimerFunctions } from '@/utils/timer-utils'
 
@@ -111,14 +112,15 @@ export const useAuth = (): AuthContextType => {
     try {
       setState(prev => ({ ...prev, isLoading: true }))
 
+
       // CRITICAL FIX: Enhanced token detection with comprehensive logging
       console.log('🔍 Initializing authentication...')
-      
+
       // First check if we have tokens stored
       const hasToken = authService.getToken()
       const hasRefreshToken = authService.getRefreshToken()
       const storedUser = authService.getStoredUser ? authService.getStoredUser() : null
-      
+
       console.log('Token Status:', {
         accessToken: hasToken ? 'FOUND' : 'MISSING',
         refreshToken: hasRefreshToken ? 'FOUND' : 'MISSING',
@@ -141,8 +143,11 @@ export const useAuth = (): AuthContextType => {
             permissions: permissions.length
           })
           
+          // Normalize user data to ensure application_access is in correct format
+          const normalizedUser = normalizeApplicationAccess(userResponse.user || userResponse)
+
           setState({
-            user: userResponse.user || userResponse,
+            user: normalizedUser,
             tenant: userResponse.tenant || null,
             permissions,
             isLoading: false,
@@ -163,9 +168,12 @@ export const useAuth = (): AuthContextType => {
               // Retry getting user data with new token
               const userResponse = await authService.getCurrentUser()
               const permissions = authService.getUserPermissions ? authService.getUserPermissions() : []
-              
+
+              // Normalize user data to ensure application_access is in correct format
+              const normalizedUser = normalizeApplicationAccess(userResponse.user || userResponse)
+
               setState({
-                user: userResponse.user || userResponse,
+                user: normalizedUser,
                 tenant: userResponse.tenant || null,
                 permissions,
                 isLoading: false,
@@ -204,9 +212,12 @@ export const useAuth = (): AuthContextType => {
             console.log('✅ Token is actually valid! Updating auth state...')
             
             const permissions = authService.getUserPermissions ? authService.getUserPermissions() : []
-            
+
+            // Normalize user data to ensure application_access is in correct format
+            const normalizedUser = normalizeApplicationAccess(userResponse.user || userResponse)
+
             setState({
-              user: userResponse.user || userResponse,
+              user: normalizedUser,
               tenant: userResponse.tenant || null,
               permissions,
               isLoading: false,
@@ -293,10 +304,13 @@ export const useAuth = (): AuthContextType => {
     try {
       const userResponse = await authService.getCurrentUser()
       const permissions = authService.getUserPermissions ? authService.getUserPermissions() : []
-      
+
+      // Normalize user data to ensure application_access is in correct format
+      const normalizedUser = normalizeApplicationAccess(userResponse.user || userResponse)
+
       setState(prev => ({
         ...prev,
-        user: userResponse.user || userResponse,
+        user: normalizedUser,
         tenant: userResponse.tenant || null,
         permissions
       }))

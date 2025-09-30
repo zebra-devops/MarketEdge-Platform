@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from .endpoints import (
     auth, users, organisations, tools, market_edge, admin, features,
-    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, user_import, database, debug_auth, module_management, system, config, environment_validation
+    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, user_import, database, debug_auth, module_management, system, config, environment_validation, logging, causal_edge
 )
 from ..health import router as health_router
 
@@ -39,6 +39,13 @@ api_router.include_router(system.router, tags=["system"])
 
 # Configuration endpoints for environment-aware frontend setup
 api_router.include_router(config.router, prefix="/config", tags=["configuration"])
+
+# Frontend error logging endpoints
+api_router.include_router(logging.router, prefix="/logging", tags=["logging"])
+
+# Causal Edge endpoints for advanced causal analysis
+api_router.include_router(causal_edge.router, prefix="/causal-edge", tags=["causal-edge"])
+
 
 # Note: Removed broken_endpoint router that was causing production API failures
 

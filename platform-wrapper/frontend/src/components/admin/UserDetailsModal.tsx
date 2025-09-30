@@ -189,6 +189,7 @@ export default function UserDetailsModal({
       case 'admin': return 'Can manage users within this organization'
       case 'analyst': return 'Can access advanced analytics features'
       case 'viewer': return 'Read-only access to applications'
+      case 'super_admin': return 'Full system administration privileges across all organizations'
       default: return ''
     }
   }
@@ -264,6 +265,7 @@ export default function UserDetailsModal({
                 <option value="viewer">Viewer</option>
                 <option value="analyst">Analyst</option>
                 <option value="admin">Admin</option>
+                <option value="super_admin">Super Admin</option>
               </select>
               <p className="mt-1 text-xs text-gray-500">
                 {getRoleDescription(formData.role)}

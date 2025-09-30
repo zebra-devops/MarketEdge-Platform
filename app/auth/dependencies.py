@@ -7,6 +7,7 @@ from sqlalchemy import select
 from ..core.database import get_db, get_async_db
 from ..models.user import User, UserRole
 from ..models.organisation import Organisation
+from ..models.user_application_access import UserApplicationAccess, ApplicationType
 from .jwt import verify_token, extract_tenant_context_from_token, should_refresh_token
 from ..auth.auth0 import auth0_client
 from ..core.config import settings
@@ -203,6 +204,24 @@ async def get_current_user(
 async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
     """Get current active user - redundant check as get_current_user already validates this"""
     return current_user
+
+
+async def get_current_user_optional(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_async_db)
+) -> Optional[User]:
+    """Optional user authentication - returns None if no valid auth provided"""
+    # Return None if no credentials provided (no error)
+    if not credentials:
+        return None
+
+    try:
+        # Try to authenticate user
+        return await get_current_user(request, credentials, db)
+    except HTTPException:
+        # Return None instead of raising exception for optional auth
+        return None
 
 
 def require_permission(required_permissions: List[str]):
@@ -486,3 +505,50 @@ async def validate_api_key(
     
     # Implement actual API key validation logic here
     return False  # Disabled for now
+
+
+def require_application_access(application_name: str):
+    """
+    Factory function that creates a dependency to require application access.
+
+    Usage:
+    @router.get("/endpoint")
+    async def endpoint(current_user: User = Depends(require_application_access("CAUSAL_EDGE"))):
+        ...
+    """
+    async def _require_application_access(
+        current_user: User = Depends(get_current_active_user),
+        db: AsyncSession = Depends(get_async_db)
+    ) -> User:
+        """Check if current user has access to specified application"""
+
+        # Check if user has application access record
+        stmt = select(UserApplicationAccess).where(
+            UserApplicationAccess.user_id == current_user.id,
+            UserApplicationAccess.application == ApplicationType(application_name.upper()),
+            UserApplicationAccess.has_access == True
+        )
+        result = await db.execute(stmt)
+        access_record = result.scalars().first()
+
+        if not access_record:
+            logger.warning("Application access denied", extra={
+                "event": "application_access_denied",
+                "user_id": str(current_user.id),
+                "application": application_name,
+                "user_role": current_user.role.value
+            })
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access to {application_name} application is required"
+            )
+
+        logger.info("Application access granted", extra={
+            "event": "application_access_granted",
+            "user_id": str(current_user.id),
+            "application": application_name
+        })
+
+        return current_user
+
+    return _require_application_access

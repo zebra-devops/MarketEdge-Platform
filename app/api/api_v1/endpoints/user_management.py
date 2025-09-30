@@ -220,6 +220,13 @@ async def update_user(
     
     # Update application access if provided
     if user_update.application_access is not None:
+        logger.info(f"Updating application access for user {user.id}", extra={
+            "user_id": str(user.id),
+            "user_email": user.email,
+            "access_data": [{"app": access.application, "has_access": access.has_access}
+                           for access in user_update.application_access]
+        })
+
         # Remove existing access
         db.query(UserApplicationAccess).filter(UserApplicationAccess.user_id == user.id).delete()
 
@@ -238,8 +245,16 @@ async def update_user(
             # Get the correct ApplicationType enum value
             app_type = app_type_mapping.get(access.application)
             if app_type is None:
-                # Skip invalid application types
-                continue
+                # Log and raise error for invalid application types instead of silently skipping
+                logger.error(f"Invalid application type: {access.application}", extra={
+                    "user_id": str(user.id),
+                    "invalid_app": access.application,
+                    "valid_apps": list(app_type_mapping.keys())
+                })
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Invalid application type: {access.application}. Expected one of: {list(app_type_mapping.keys())}"
+                )
 
             db.add(UserApplicationAccess(
                 user_id=user.id,

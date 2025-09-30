@@ -1,8 +1,8 @@
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ....core.database import get_db
+from ....core.database import get_async_db
 from ....auth.dependencies import get_current_user
 from ....models.user import User
 from ....services.feature_flag_service import FeatureFlagService
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/features", tags=["features"])
 @router.get("/enabled")
 async def get_enabled_features(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     module_id: Optional[str] = None
 ):
     """
@@ -44,7 +44,7 @@ async def get_enabled_features(
 async def check_feature_flag(
     flag_key: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
     Check if a specific feature flag is enabled for the current user

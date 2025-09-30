@@ -6,13 +6,18 @@ import { QueryProvider } from '@/components/providers/QueryProvider'
 import { ToastProvider } from '@/components/providers/ToastProvider'
 import { OrganisationProvider } from '@/components/providers/OrganisationProvider'
 import { FeatureFlagProvider } from '@/components/providers/FeatureFlagProvider'
-import AuthDebugPanel from '@/components/dev/AuthDebugPanel'
+import ErrorTestPanel from '@/components/dev/ErrorTestPanel'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import '@/services/errorMonitoring'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Platform Wrapper - Business Intelligence Suite',
   description: 'Multi-tenant platform for business intelligence tools',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({
@@ -23,22 +28,24 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className} suppressHydrationWarning>
-        <QueryProvider>
-          <AuthProvider>
-            <OrganisationProvider>
-              <FeatureFlagProvider
-                preloadFlags={['market_edge.enhanced_ui', 'admin.advanced_controls']}
-                enableRealTimeUpdates={true}
-                debugMode={process.env.NODE_ENV === 'development'}
-              >
-                <ToastProvider>
-                  {children}
-                  <AuthDebugPanel />
-                </ToastProvider>
-              </FeatureFlagProvider>
-            </OrganisationProvider>
-          </AuthProvider>
-        </QueryProvider>
+        <ErrorBoundary componentName="RootLayout">
+          <QueryProvider>
+            <AuthProvider>
+              <OrganisationProvider>
+                <FeatureFlagProvider
+                  preloadFlags={['market_edge.enhanced_ui', 'admin.advanced_controls']}
+                  enableRealTimeUpdates={true}
+                  debugMode={process.env.NODE_ENV === 'development'}
+                >
+                  <ToastProvider>
+                    {children}
+                    <ErrorTestPanel />
+                  </ToastProvider>
+                </FeatureFlagProvider>
+              </OrganisationProvider>
+            </AuthProvider>
+          </QueryProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )
