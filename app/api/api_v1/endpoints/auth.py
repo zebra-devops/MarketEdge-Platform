@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text, select
 from pydantic import BaseModel, ValidationError as PydanticValidationError
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from datetime import timedelta
 import secrets
 from ....core.database import get_db, get_async_db
