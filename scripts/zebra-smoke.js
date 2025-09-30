@@ -23,7 +23,7 @@ const http = require('http')
 const config = {
   backendUrl: process.env.BACKEND_URL || 'http://localhost:8000',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
-  zebraEmail: 'matt.lindop@zebra.associates',
+  zebraEmail: process.env.ZEBRA_TEST_EMAIL || 'devops@zebra.associates',
   zebraTenantId: '835d4f24-cff2-43e8-a470-93216a3d99a3',
   timeout: 60000 // 60 second timeout per US-0 requirements
 }

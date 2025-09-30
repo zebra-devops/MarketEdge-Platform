@@ -22,7 +22,7 @@ import { test, expect, type Page } from '@playwright/test'
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000'
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000'
 const ZEBRA_TENANT_ID = '835d4f24-cff2-43e8-a470-93216a3d99a3'
-const ZEBRA_EMAIL = 'matt.lindop@zebra.associates'
+const ZEBRA_EMAIL = process.env.ZEBRA_TEST_EMAIL || 'devops@zebra.associates'
 
 // Test timeout: Must complete in < 60s per acceptance criteria
 test.setTimeout(60000)
