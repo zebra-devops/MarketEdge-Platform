@@ -77,8 +77,7 @@
         - name: Start backend server
           run: |
             uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-            timeout 30 bash -c 'until curl -f http://localhost:8000/health; do 
-  sleep 1; done'
+            timeout 30 bash -c 'until curl -f http://localhost:8000/health; do sleep 1; done'
             echo "Backend started successfully"
 
         - name: Setup Node.js 18
@@ -100,8 +99,7 @@
           working-directory: platform-wrapper/frontend
           run: |
             npm run dev &
-            timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 1; 
-  done'
+            timeout 60 bash -c 'until curl -f http://localhost:3000; do sleep 1; done'
             echo "Frontend started successfully"
 
         - name: Run Zebra Associates Smoke Test
@@ -109,8 +107,7 @@
           working-directory: platform-wrapper/frontend
           run: |
             echo "Running Zebra Associates Protection Test"
-            npx playwright test zebra-associates-smoke.spec.ts --project=chromium 
-  --reporter=list
+            npx playwright test zebra-associates-smoke.spec.ts --project=chromium --reporter=list
           timeout-minutes: 2
 
         - name: Run standalone smoke test
@@ -137,10 +134,8 @@
             script: |
               const testPassed = '${{ steps.zebra_test.outcome }}' === 'success'
               const body = testPassed
-                ? '## ✅ Zebra Associates Protection: PASSED\n\n🦓 **£925K 
-  Opportunity Status:** PROTECTED'
-                : '## ❌ Zebra Associates Protection: FAILED\n\n🚨 **£925K 
-  Opportunity Status:** AT RISK'
+                ? '## ✅ Zebra Associates Protection: PASSED\n\n🦓 **£925K Opportunity Status:** PROTECTED'
+                : '## ❌ Zebra Associates Protection: FAILED\n\n🚨 **£925K Opportunity Status:** AT RISK'
               github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
