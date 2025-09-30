@@ -262,12 +262,12 @@ async def login_oauth2(
         
         # Create or update user in database
         user = await _create_or_update_user_from_auth0(db, user_info, client_ip)
-        
-        # Create tokens
-        access_token = create_access_token(
-            data={"sub": str(user.id), "tenant_id": str(user.organisation_id), "role": user.role}
-        )
-        refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+        # US-1: Use Auth0 tokens directly instead of generating internal JWTs
+        # The Auth0 tokens from exchange already contain authentication information
+        # Custom claims (tenant_id, role, permissions) will be added in US-2
+        access_token = tokens["access_token"]
+        refresh_token = tokens.get("refresh_token", "")
         
         # CRITICAL FIX: Set cookies for OAuth2 authentication (same as /login endpoint)
         # US-AUTH-1: Differentiated cookie settings for access and refresh tokens
@@ -324,11 +324,14 @@ async def login_oauth2(
             "cookies_set": ["access_token", "refresh_token", "session_security", "csrf_token"]
         })
 
+        # Get user permissions for response body (not in token yet - that's US-2)
+        permissions = get_user_permissions(user.role.value if hasattr(user.role, 'value') else user.role)
+
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
-            expires_in=3600,
+            expires_in=tokens.get("expires_in", 3600),  # Use Auth0's expiry time
             user={
                 "id": str(user.id),
                 "email": user.email,
@@ -345,7 +348,7 @@ async def login_oauth2(
                 "industry": user.organisation.industry,
                 "subscription_plan": user.organisation.subscription_plan.value if hasattr(user.organisation.subscription_plan, 'value') else user.organisation.subscription_plan
             } if user.organisation else None,
-            permissions=get_user_permissions(user.role.value if hasattr(user.role, 'value') else user.role)
+            permissions=permissions
         )
         
     except HTTPException:
@@ -779,30 +782,17 @@ async def login(
     )
     user = result.scalar_one_or_none()
     
-    # Get user permissions based on role and tenant context
+    # US-1: Use Auth0 tokens directly instead of generating internal JWTs
+    # The Auth0 tokens from token_data already contain authentication information
+    # Custom claims (tenant_id, role, permissions) will be added in US-2
+    access_token = token_data["access_token"]
+    refresh_token = token_data.get("refresh_token", "")  # Auth0 provides refresh token
+
+    # Get user permissions for response body (not in token yet - that's US-2)
     tenant_context = {
         "industry": user.organisation.industry if user.organisation else "default"
     }
     permissions = get_user_permissions(user.role.value if hasattr(user.role, 'value') else user.role, tenant_context)
-    
-    # Create enhanced tokens with tenant context
-    token_data_payload = {
-        "sub": str(user.id), 
-        "email": user.email
-    }
-    
-    access_token = create_access_token(
-        data=token_data_payload,
-        tenant_id=str(user.organisation_id),
-        user_role=user.role.value if hasattr(user.role, 'value') else user.role,
-        permissions=permissions,
-        industry=user.organisation.industry if user.organisation else "default"
-    )
-    
-    refresh_token = create_refresh_token(
-        data=token_data_payload,
-        tenant_id=str(user.organisation_id)
-    )
     
     # US-AUTH-1: Differentiated cookie settings for access and refresh tokens
     base_cookie_settings = settings.get_cookie_settings()
@@ -863,7 +853,7 @@ async def login(
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
-        expires_in=3600,  # 1 hour in seconds
+        expires_in=token_data.get("expires_in", 3600),  # Use Auth0's expiry time
         user={
             "id": str(user.id),
             "email": user.email,
