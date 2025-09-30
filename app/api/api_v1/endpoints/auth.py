@@ -982,173 +982,352 @@ async def login(
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, db: AsyncSession = Depends(get_async_db)):
-    """Enhanced token refresh with tenant validation and rotation"""
-    # Verify refresh token
-    payload = verify_token(refresh_data.refresh_token, expected_type="refresh")
-    if not payload:
-        logger.warning("Invalid refresh token provided", extra={
-            "event": "refresh_token_invalid"
-        })
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token"
-        )
-    
-    user_id = payload.get("sub")
-    tenant_id = payload.get("tenant_id")
-    token_family = payload.get("family")
-    
-    if not user_id:
-        logger.warning("Missing user ID in refresh token", extra={
-            "event": "refresh_token_missing_user_id",
-            "token_jti": payload.get("jti")
-        })
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload"
-        )
-    
-    # CRITICAL FIX: Validate user exists and is active with comprehensive eager loading
-    result = await db.execute(
-        select(User)
-        .options(
-            selectinload(User.organisation),
-            selectinload(User.application_access),
-            selectinload(User.hierarchy_assignments),
-            selectinload(User.permission_overrides)
-        )
-        .filter(User.id == user_id)
-    )
-    user = result.scalar_one_or_none()
-    if not user or not user.is_active:
-        logger.warning("User not found or inactive during refresh", extra={
-            "event": "refresh_user_invalid",
-            "user_id": user_id,
-            "user_exists": bool(user),
-            "user_active": user.is_active if user else False
-        })
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive"
-        )
-    
-    # Validate tenant context
-    if tenant_id and str(user.organisation_id) != tenant_id:
-        logger.warning("Tenant mismatch during refresh", extra={
-            "event": "refresh_tenant_mismatch",
-            "user_id": user_id,
-            "token_tenant_id": tenant_id,
-            "user_tenant_id": str(user.organisation_id)
-        })
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Tenant context mismatch"
-        )
-    
-    # Get updated permissions
-    tenant_context = {
-        "industry": user.organisation.industry if user.organisation else "Technology"
-    }
-    permissions = get_user_permissions(user.role.value if hasattr(user.role, 'value') else user.role, tenant_context)
-    
-    # Create new tokens with rotation
-    token_data_payload = {
-        "sub": str(user.id), 
-        "email": user.email
-    }
-    
-    new_access_token = create_access_token(
-        data=token_data_payload,
-        tenant_id=str(user.organisation_id),
-        user_role=user.role.value if hasattr(user.role, 'value') else user.role,
-        permissions=permissions,
-        industry=user.organisation.industry if user.organisation else "default"
-    )
-    
-    # Create new refresh token with same family for rotation tracking
-    new_refresh_token = create_refresh_token(
-        data=token_data_payload,
-        tenant_id=str(user.organisation_id),
-        token_family=token_family
-    )
-    
-    # US-AUTH-1: Differentiated cookie settings for access and refresh tokens
-    base_cookie_settings = settings.get_cookie_settings()
-    
-    # Access token: Make accessible to frontend JavaScript (httpOnly: False)
-    access_cookie_settings = base_cookie_settings.copy()
-    access_cookie_settings["httponly"] = False  # Allow frontend access
-    
-    response.set_cookie(
-        key="access_token",
-        value=new_access_token,
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        **access_cookie_settings
-    )
-    
-    # Refresh token: Keep secure (httpOnly: True)
-    refresh_cookie_settings = base_cookie_settings.copy()
-    refresh_cookie_settings["httponly"] = True  # Keep secure
-    
-    response.set_cookie(
-        key="refresh_token",
-        value=new_refresh_token,
-        max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
-        **refresh_cookie_settings
-    )
-    
-    # Session security cookie: Keep secure (httpOnly: True)
-    session_cookie_settings = base_cookie_settings.copy()
-    session_cookie_settings["httponly"] = True  # Keep secure
-    
-    response.set_cookie(
-        key="session_security",
-        value="verified",
-        max_age=settings.SESSION_TIMEOUT_MINUTES * 60,
-        **session_cookie_settings
-    )
-    
-    # Update CSRF token
-    csrf_cookie_settings = base_cookie_settings.copy()
-    csrf_cookie_settings["httponly"] = False
-    response.set_cookie(
-        key="csrf_token",
-        value=secrets.token_urlsafe(32),
-        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        **csrf_cookie_settings
-    )
-    
-    logger.info("Token refresh successful", extra={
-        "event": "token_refresh_success",
-        "user_id": user_id,
-        "tenant_id": str(user.organisation_id),
-        "old_token_jti": payload.get("jti"),
-        "token_family": token_family
+    """
+    Enhanced token refresh using Auth0 refresh token flow (CRITICAL SECURITY FIX).
+
+    This fixes CRITICAL ISSUE #3 from code review - token refresh flow inconsistency.
+    Previous implementation expected internal JWT refresh tokens, but login endpoint
+    returns Auth0 tokens. Now using pure Auth0 flow throughout for consistency.
+    """
+    # STEP 1: Try Auth0 refresh token flow first (pure Auth0 approach)
+    logger.info("Attempting Auth0 token refresh", extra={
+        "event": "refresh_attempt_auth0"
     })
-    
-    return TokenResponse(
-        access_token=new_access_token,
-        refresh_token=new_refresh_token,
-        token_type="bearer",
-        expires_in=3600,
-        user={
-            "id": str(user.id),
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "role": user.role.value if hasattr(user.role, 'value') else user.role,
-            "is_active": user.is_active,
-            "created_at": user.created_at.isoformat() if user.created_at else None,
-            "updated_at": user.updated_at.isoformat() if user.updated_at else None
-        },
-        tenant={
-            "id": str(user.organisation.id),
-            "name": user.organisation.name,
-            "industry": user.organisation.industry,
-            "subscription_plan": user.organisation.subscription_plan.value if hasattr(user.organisation.subscription_plan, 'value') else user.organisation.subscription_plan
-        } if user.organisation else None,
-        permissions=permissions
-    )
+
+    try:
+        # Use Auth0 refresh token flow
+        token_response = await auth0_client.refresh_token(
+            refresh_token=refresh_data.refresh_token
+        )
+
+        if not token_response:
+            # STEP 2: Fallback to internal JWT refresh for backwards compatibility
+            logger.info("Auth0 refresh failed, trying internal JWT refresh", extra={
+                "event": "refresh_fallback_internal_jwt"
+            })
+
+            # Verify internal refresh token
+            payload = verify_token(refresh_data.refresh_token, expected_type="refresh")
+            if not payload:
+                logger.warning("Both Auth0 and internal JWT refresh failed", extra={
+                    "event": "refresh_token_invalid"
+                })
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid or expired refresh token"
+                )
+
+            user_id = payload.get("sub")
+            tenant_id = payload.get("tenant_id")
+            token_family = payload.get("family")
+
+            if not user_id:
+                logger.warning("Missing user ID in refresh token", extra={
+                    "event": "refresh_token_missing_user_id",
+                    "token_jti": payload.get("jti")
+                })
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token payload"
+                )
+
+            # CRITICAL FIX: Validate user exists and is active with comprehensive eager loading
+            result = await db.execute(
+                select(User)
+                .options(
+                    selectinload(User.organisation),
+                    selectinload(User.application_access),
+                    selectinload(User.hierarchy_assignments),
+                    selectinload(User.permission_overrides)
+                )
+                .filter(User.id == user_id)
+            )
+            user = result.scalar_one_or_none()
+            if not user or not user.is_active:
+                logger.warning("User not found or inactive during refresh", extra={
+                    "event": "refresh_user_invalid",
+                    "user_id": user_id,
+                    "user_exists": bool(user),
+                    "user_active": user.is_active if user else False
+                })
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User not found or inactive"
+                )
+
+            # Validate tenant context
+            if tenant_id and str(user.organisation_id) != tenant_id:
+                logger.warning("Tenant mismatch during refresh", extra={
+                    "event": "refresh_tenant_mismatch",
+                    "user_id": user_id,
+                    "token_tenant_id": tenant_id,
+                    "user_tenant_id": str(user.organisation_id)
+                })
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Tenant context mismatch"
+                )
+
+            # Get updated permissions
+            tenant_context = {
+                "industry": user.organisation.industry if user.organisation else "Technology"
+            }
+            permissions = get_user_permissions(user.role.value if hasattr(user.role, 'value') else user.role, tenant_context)
+
+            # Create new tokens with rotation
+            token_data_payload = {
+                "sub": str(user.id),
+                "email": user.email
+            }
+
+            new_access_token = create_access_token(
+                data=token_data_payload,
+                tenant_id=str(user.organisation_id),
+                user_role=user.role.value if hasattr(user.role, 'value') else user.role,
+                permissions=permissions,
+                industry=user.organisation.industry if user.organisation else "default"
+            )
+
+            # Create new refresh token with same family for rotation tracking
+            new_refresh_token = create_refresh_token(
+                data=token_data_payload,
+                tenant_id=str(user.organisation_id),
+                token_family=token_family
+            )
+
+            # US-AUTH-1: Differentiated cookie settings for access and refresh tokens
+            base_cookie_settings = settings.get_cookie_settings()
+
+            # Access token: Make accessible to frontend JavaScript (httpOnly: False)
+            access_cookie_settings = base_cookie_settings.copy()
+            access_cookie_settings["httponly"] = False  # Allow frontend access
+
+            response.set_cookie(
+                key="access_token",
+                value=new_access_token,
+                max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+                **access_cookie_settings
+            )
+
+            # Refresh token: Keep secure (httpOnly: True)
+            refresh_cookie_settings = base_cookie_settings.copy()
+            refresh_cookie_settings["httponly"] = True  # Keep secure
+
+            response.set_cookie(
+                key="refresh_token",
+                value=new_refresh_token,
+                max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
+                **refresh_cookie_settings
+            )
+
+            # Session security cookie: Keep secure (httpOnly: True)
+            session_cookie_settings = base_cookie_settings.copy()
+            session_cookie_settings["httponly"] = True  # Keep secure
+
+            response.set_cookie(
+                key="session_security",
+                value="verified",
+                max_age=settings.SESSION_TIMEOUT_MINUTES * 60,
+                **session_cookie_settings
+            )
+
+            # Update CSRF token
+            csrf_cookie_settings = base_cookie_settings.copy()
+            csrf_cookie_settings["httponly"] = False
+            response.set_cookie(
+                key="csrf_token",
+                value=secrets.token_urlsafe(32),
+                max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+                **csrf_cookie_settings
+            )
+
+            logger.info("Internal JWT token refresh successful", extra={
+                "event": "token_refresh_success_internal",
+                "user_id": user_id,
+                "tenant_id": str(user.organisation_id),
+                "old_token_jti": payload.get("jti"),
+                "token_family": token_family
+            })
+
+            return TokenResponse(
+                access_token=new_access_token,
+                refresh_token=new_refresh_token,
+                token_type="bearer",
+                expires_in=3600,
+                user={
+                    "id": str(user.id),
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "role": user.role.value if hasattr(user.role, 'value') else user.role,
+                    "is_active": user.is_active,
+                    "created_at": user.created_at.isoformat() if user.created_at else None,
+                    "updated_at": user.updated_at.isoformat() if user.updated_at else None
+                },
+                tenant={
+                    "id": str(user.organisation.id),
+                    "name": user.organisation.name,
+                    "industry": user.organisation.industry,
+                    "subscription_plan": user.organisation.subscription_plan.value if hasattr(user.organisation.subscription_plan, 'value') else user.organisation.subscription_plan
+                } if user.organisation else None,
+                permissions=permissions
+            )
+
+        # STEP 3: Auth0 refresh succeeded - verify new access token and get user data
+        logger.info("Auth0 token refresh successful", extra={
+            "event": "token_refresh_success_auth0",
+            "has_new_refresh_token": "refresh_token" in token_response
+        })
+
+        # Verify new access token to get user information
+        payload = await verify_auth0_token(token_response["access_token"])
+
+        if not payload:
+            logger.error("Auth0 refresh returned invalid access token", extra={
+                "event": "refresh_invalid_access_token"
+            })
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token refresh failed - invalid access token"
+            )
+
+        # Get user from database
+        user_email = payload.get("email")
+        if not user_email:
+            logger.error("No email in refreshed token payload", extra={
+                "event": "refresh_no_email"
+            })
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+
+        # Query user with all relationships
+        result = await db.execute(
+            select(User)
+            .options(
+                selectinload(User.organisation),
+                selectinload(User.application_access),
+                selectinload(User.hierarchy_assignments),
+                selectinload(User.permission_overrides)
+            )
+            .filter(User.email == user_email)
+        )
+        user = result.scalar_one_or_none()
+
+        if not user or not user.is_active:
+            logger.warning("User not found or inactive after Auth0 refresh", extra={
+                "event": "refresh_user_invalid",
+                "user_email": user_email,
+                "user_exists": bool(user),
+                "user_active": user.is_active if user else False
+            })
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive"
+            )
+
+        # Update user last login
+        user.last_login = datetime.utcnow()
+        await db.commit()
+
+        # Get user permissions
+        tenant_context = {
+            "industry": user.organisation.industry if user.organisation else "Technology"
+        }
+        permissions = get_user_permissions(user.role.value if hasattr(user.role, 'value') else user.role, tenant_context)
+
+        # Set cookies with Auth0 tokens
+        base_cookie_settings = settings.get_cookie_settings()
+
+        # Access token: Make accessible to frontend JavaScript (httpOnly: False)
+        access_cookie_settings = base_cookie_settings.copy()
+        access_cookie_settings["httponly"] = False  # Allow frontend access
+
+        response.set_cookie(
+            key="access_token",
+            value=token_response["access_token"],
+            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            **access_cookie_settings
+        )
+
+        # Refresh token: Keep secure (httpOnly: True)
+        # Auth0 may or may not return a new refresh token
+        refresh_cookie_settings = base_cookie_settings.copy()
+        refresh_cookie_settings["httponly"] = True  # Keep secure
+
+        response.set_cookie(
+            key="refresh_token",
+            value=token_response.get("refresh_token", refresh_data.refresh_token),  # Use new or keep old
+            max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
+            **refresh_cookie_settings
+        )
+
+        # Session security cookie: Keep secure (httpOnly: True)
+        session_cookie_settings = base_cookie_settings.copy()
+        session_cookie_settings["httponly"] = True  # Keep secure
+
+        response.set_cookie(
+            key="session_security",
+            value="verified",
+            max_age=settings.SESSION_TIMEOUT_MINUTES * 60,
+            **session_cookie_settings
+        )
+
+        # Update CSRF token
+        csrf_cookie_settings = base_cookie_settings.copy()
+        csrf_cookie_settings["httponly"] = False
+        response.set_cookie(
+            key="csrf_token",
+            value=secrets.token_urlsafe(32),
+            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            **csrf_cookie_settings
+        )
+
+        logger.info("Auth0 token refresh completed successfully", extra={
+            "event": "token_refresh_complete",
+            "user_id": str(user.id),
+            "user_email": user_email,
+            "tenant_id": str(user.organisation_id)
+        })
+
+        return TokenResponse(
+            access_token=token_response["access_token"],
+            refresh_token=token_response.get("refresh_token", refresh_data.refresh_token),
+            token_type="bearer",
+            expires_in=token_response.get("expires_in", 3600),
+            user={
+                "id": str(user.id),
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": user.role.value if hasattr(user.role, 'value') else user.role,
+                "is_active": user.is_active,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+                "updated_at": user.updated_at.isoformat() if user.updated_at else None
+            },
+            tenant={
+                "id": str(user.organisation.id),
+                "name": user.organisation.name,
+                "industry": user.organisation.industry,
+                "subscription_plan": user.organisation.subscription_plan.value if hasattr(user.organisation.subscription_plan, 'value') else user.organisation.subscription_plan
+            } if user.organisation else None,
+            permissions=permissions
+        )
+
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        logger.error("Token refresh failed with unexpected error", extra={
+            "event": "refresh_unexpected_error",
+            "error": str(e),
+            "error_type": type(e).__name__
+        })
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token refresh failed"
+        )
 
 
 @router.post("/logout")

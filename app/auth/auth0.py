@@ -400,6 +400,145 @@ class Auth0Client:
                     
         return None
     
+    async def refresh_token(self, refresh_token: str) -> Optional[Dict[str, Any]]:
+        """
+        Refresh Auth0 access token using refresh token (CRITICAL SECURITY FIX).
+
+        This implements the Auth0 refresh token flow to fix CRITICAL ISSUE #3 from
+        code review - token refresh flow inconsistency where login returns Auth0
+        tokens but refresh endpoint expected internal tokens.
+
+        Args:
+            refresh_token: Auth0 refresh token received during login
+
+        Returns:
+            Token response with new access_token and optionally new refresh_token,
+            or None if refresh fails
+        """
+        for attempt in range(self.max_retries):
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                try:
+                    logger.debug(
+                        "Initiating Auth0 token refresh",
+                        extra={
+                            "event": "token_refresh_start",
+                            "attempt": attempt + 1,
+                            "max_attempts": self.max_retries
+                        }
+                    )
+
+                    data = {
+                        "grant_type": "refresh_token",
+                        "client_id": self.client_id,
+                        "client_secret": self.client_secret,
+                        "refresh_token": refresh_token
+                    }
+
+                    response = await client.post(
+                        f"{self.base_url}/oauth/token",
+                        data=data,
+                        headers={
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "Accept": "application/json"
+                        }
+                    )
+
+                    logger.debug(
+                        "Token refresh response received",
+                        extra={
+                            "event": "token_refresh_response",
+                            "status_code": response.status_code,
+                            "success": response.is_success,
+                            "attempt": attempt + 1
+                        }
+                    )
+
+                    response.raise_for_status()
+                    token_data = response.json()
+
+                    # Validate token response
+                    if not self._validate_token_response(token_data):
+                        logger.error(
+                            "Invalid token refresh response from Auth0",
+                            extra={
+                                "event": "token_refresh_invalid_response",
+                                "has_access_token": "access_token" in token_data,
+                                "has_token_type": "token_type" in token_data
+                            }
+                        )
+                        return None
+
+                    logger.info(
+                        "Token refresh successful",
+                        extra={
+                            "event": "token_refresh_success",
+                            "token_type": token_data.get("token_type"),
+                            "expires_in": token_data.get("expires_in"),
+                            "has_new_refresh_token": "refresh_token" in token_data
+                        }
+                    )
+
+                    return token_data
+
+                except httpx.TimeoutException as e:
+                    logger.warning(
+                        f"Timeout during token refresh (attempt {attempt + 1})",
+                        extra={
+                            "event": "token_refresh_timeout",
+                            "error": str(e),
+                            "attempt": attempt + 1,
+                            "timeout_duration": self.timeout
+                        }
+                    )
+                    if attempt == self.max_retries - 1:
+                        return None
+                    await self._exponential_backoff(attempt)
+
+                except httpx.HTTPError as e:
+                    status_code = getattr(e.response, 'status_code', None) if hasattr(e, 'response') else None
+                    response_text = getattr(e.response, 'text', 'No response body') if hasattr(e, 'response') else 'No response'
+
+                    logger.error(
+                        "HTTP error during token refresh",
+                        extra={
+                            "event": "token_refresh_http_error",
+                            "error": str(e),
+                            "status_code": status_code,
+                            "response_body": response_text[:500] if response_text else None,
+                            "attempt": attempt + 1
+                        }
+                    )
+
+                    # Don't retry on 4xx errors (client errors like invalid refresh token)
+                    if status_code and 400 <= status_code < 500:
+                        logger.warning(
+                            "Refresh token invalid or expired (4xx error)",
+                            extra={
+                                "event": "token_refresh_invalid_token",
+                                "status_code": status_code
+                            }
+                        )
+                        return None
+                    if attempt == self.max_retries - 1:
+                        return None
+                    await self._exponential_backoff(attempt)
+
+                except Exception as e:
+                    logger.error(
+                        "Unexpected error during token refresh",
+                        extra={
+                            "event": "token_refresh_unexpected_error",
+                            "error": str(e),
+                            "error_type": type(e).__name__,
+                            "attempt": attempt + 1
+                        }
+                    )
+                    if attempt == self.max_retries - 1:
+                        return None
+                    await self._exponential_backoff(attempt)
+
+        return None
+
     async def revoke_token(self, token: str, token_type: str = "refresh_token") -> bool:
         """Revoke Auth0 token for secure logout"""
         async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -410,7 +549,7 @@ class Auth0Client:
                     "client_id": self.client_id,
                     "client_secret": self.client_secret
                 }
-                
+
                 response = await client.post(
                     f"{self.base_url}/oauth/revoke",
                     data=data,
@@ -418,9 +557,9 @@ class Auth0Client:
                         "Content-Type": "application/x-www-form-urlencoded"
                     }
                 )
-                
+
                 response.raise_for_status()
-                
+
                 logger.info(
                     "Successfully revoked token",
                     extra={
@@ -428,9 +567,9 @@ class Auth0Client:
                         "token_type": token_type
                     }
                 )
-                
+
                 return True
-                
+
             except Exception as e:
                 logger.error(
                     "Failed to revoke token",
