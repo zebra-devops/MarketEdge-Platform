@@ -51,6 +51,18 @@ if [ "$ENVIRONMENT" = "staging" ] || [ "$USE_STAGING_AUTH0" = "true" ]; then
     echo "✅ Staging environment setup complete"
 elif [ "$RUN_MIGRATIONS" = "true" ]; then
     echo "🚨 EMERGENCY MIGRATION MODE (PRODUCTION)"
+
+    # Take pre-deployment snapshot before any changes
+    echo "📸 Creating pre-deployment database snapshot..."
+    if bash scripts/production/pre_deploy_snapshot.sh; then
+        echo "✅ Pre-deployment snapshot created successfully"
+    else
+        echo "❌ CRITICAL: Pre-deployment snapshot failed"
+        echo "🛑 Blocking migration to prevent data loss"
+        echo "📋 Fix snapshot issues before proceeding"
+        exit 1
+    fi
+
     echo "🔍 Validating production schema first..."
 
     python database/validate_schema.py --check
