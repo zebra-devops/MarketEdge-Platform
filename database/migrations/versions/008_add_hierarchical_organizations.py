@@ -27,32 +27,30 @@ depends_on = None
 def upgrade():
     """Add hierarchical organization structure and enhanced permissions"""
 
-    # Create enhanced user roles enum with exception handling for duplicates
-    op.execute("""
-        DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enhanceduserrole') THEN
-                CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer');
-            END IF;
-        END $$;
-    """)
+    # Create enhanced user roles enum - check and create separately for idempotency
+    conn = op.get_bind()
+    result = conn.execute(text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enhanceduserrole')"))
+    exists = result.scalar()
 
-    # Create hierarchy level enum with exception handling for duplicates
-    op.execute("""
-        DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'hierarchylevel') THEN
-                CREATE TYPE hierarchylevel AS ENUM ('organization', 'location', 'department', 'user');
-            END IF;
-        END $$;
-    """)
+    if not exists:
+        op.execute("CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer')")
 
-    # Create permission scope enum with exception handling for duplicates
-    op.execute("""
-        DO $$ BEGIN
-            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'permissionscope') THEN
-                CREATE TYPE permissionscope AS ENUM ('read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data');
-            END IF;
-        END $$;
-    """)
+    # Create hierarchy level enum - check and create separately for idempotency
+    # Check if type exists
+    conn = op.get_bind()
+    result = conn.execute(text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'hierarchylevel')"))
+    exists = result.scalar()
+
+    # Only create if it doesn't exist
+    if not exists:
+        op.execute("CREATE TYPE hierarchylevel AS ENUM ('organization', 'location', 'department', 'user')")
+
+    # Create permission scope enum - check and create separately for idempotency
+    result = conn.execute(text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'permissionscope')"))
+    exists = result.scalar()
+
+    if not exists:
+        op.execute("CREATE TYPE permissionscope AS ENUM ('read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data')")
     
     # 1. Create organization_hierarchy table
     op.create_table('organization_hierarchy',
