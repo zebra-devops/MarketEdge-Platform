@@ -18,7 +18,7 @@ from sqlalchemy import text
 import uuid
 
 # revision identifiers, used by Alembic.
-revision = '008_add_hierarchical_organizations'
+revision = '008_hierarchical_orgs'
 down_revision = '007_add_industry_type'
 branch_labels = None
 depends_on = None
