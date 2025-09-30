@@ -194,6 +194,112 @@ class LogoutRequest(BaseModel):
     all_devices: bool = False
 
 
+class UserContextRequest(BaseModel):
+    """Request model for Auth0 Action to fetch user context"""
+    auth0_id: str
+    email: str
+
+
+class UserContextResponse(BaseModel):
+    """Response model containing user's tenant context for Auth0 custom claims"""
+    tenant_id: str
+    role: str
+    permissions: List[str]
+    industry: str
+    organisation_name: str
+
+
+@router.post("/user-context", response_model=UserContextResponse)
+async def get_user_context(
+    user_context_req: UserContextRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    Get user context for Auth0 custom claims.
+
+    This endpoint is called by Auth0 Actions during token issuance to add
+    MarketEdge-specific claims (tenant_id, role, permissions, etc.) to the token.
+
+    Security: Requires X-Auth0-Secret header matching AUTH0_ACTION_SECRET
+    """
+    # Validate Auth0 Action secret
+    auth_secret = request.headers.get("X-Auth0-Secret")
+    if not auth_secret or auth_secret != settings.AUTH0_ACTION_SECRET:
+        logger.warning("Invalid Auth0 Action secret", extra={
+            "event": "user_context_invalid_secret",
+            "email": user_context_req.email,
+            "has_secret": bool(auth_secret)
+        })
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials"
+        )
+
+    logger.info("Auth0 Action requesting user context", extra={
+        "event": "user_context_request",
+        "auth0_id": user_context_req.auth0_id,
+        "email": user_context_req.email
+    })
+
+    # Look up user by auth0_id first, fall back to email
+    result = await db.execute(
+        select(User)
+        .options(
+            selectinload(User.organisation)
+        )
+        .filter(User.email == user_context_req.email)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        logger.warning("User not found for Auth0 context", extra={
+            "event": "user_context_user_not_found",
+            "auth0_id": user_context_req.auth0_id,
+            "email": user_context_req.email
+        })
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    if not user.is_active:
+        logger.warning("Inactive user requested context", extra={
+            "event": "user_context_user_inactive",
+            "user_id": str(user.id),
+            "email": user.email
+        })
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive"
+        )
+
+    # Get user permissions
+    tenant_context = {
+        "industry": user.organisation.industry if user.organisation else "default"
+    }
+    permissions = get_user_permissions(
+        user.role.value if hasattr(user.role, 'value') else user.role,
+        tenant_context
+    )
+
+    logger.info("User context retrieved successfully", extra={
+        "event": "user_context_success",
+        "user_id": str(user.id),
+        "tenant_id": str(user.organisation_id),
+        "role": user.role.value if hasattr(user.role, 'value') else user.role,
+        "permissions_count": len(permissions)
+    })
+
+    return UserContextResponse(
+        tenant_id=str(user.organisation_id),
+        role=user.role.value if hasattr(user.role, 'value') else user.role,
+        permissions=permissions,
+        industry=user.organisation.industry if user.organisation else "default",
+        organisation_name=user.organisation.name if user.organisation else "Default"
+    )
+
+
 @router.post("/login-oauth2", response_model=TokenResponse)
 async def login_oauth2(
     login_data: LoginRequest,

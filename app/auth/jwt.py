@@ -341,16 +341,43 @@ def should_refresh_token(payload: Dict[str, Any], threshold_minutes: int = 15) -
 
 
 def extract_tenant_context_from_token(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Extract tenant context from verified token payload"""
-    if not payload:
+    """
+    Extract tenant context from verified token payload.
+
+    Supports both Auth0 tokens (with namespaced custom claims) and internal tokens.
+    Auth0 custom claims use namespace: https://marketedge.com/
+
+    US-2: Added support for Auth0 namespaced custom claims
+    US-3 will remove internal token fallback
+    """
+    if payload is None:
         return None
-        
+
+    # Auth0 namespace for custom claims (as per OpenID Connect spec)
+    AUTH0_NAMESPACE = "https://marketedge.com/"
+
+    # Try Auth0 namespaced claims first (US-2)
+    tenant_id = payload.get(f"{AUTH0_NAMESPACE}tenant_id")
+    role = payload.get(f"{AUTH0_NAMESPACE}role")
+    industry = payload.get(f"{AUTH0_NAMESPACE}industry")
+    permissions = payload.get(f"{AUTH0_NAMESPACE}permissions", [])
+
+    # Fallback to internal token format (will be removed in US-3)
+    if tenant_id is None:
+        tenant_id = payload.get("tenant_id")
+    if role is None:
+        role = payload.get("user_role") or payload.get("role")
+    if industry is None:
+        industry = payload.get("industry")
+    if not permissions:
+        permissions = payload.get("permissions", [])
+
     return {
-        "tenant_id": payload.get("tenant_id"),
-        "user_role": payload.get("user_role") or payload.get("role"),  # Check both fields
+        "tenant_id": tenant_id,
+        "user_role": role,
         "user_id": payload.get("sub"),
-        "industry": payload.get("industry"),
-        "permissions": payload.get("permissions", [])
+        "industry": industry,
+        "permissions": permissions
     }
 
 
