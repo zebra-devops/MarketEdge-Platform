@@ -24,11 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+
       - name: Test migrations on fresh database
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost/testdb
         run: |
-          pip install alembic sqlalchemy psycopg2-binary
           alembic upgrade head
           
       - name: Verify schema completeness
