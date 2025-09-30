@@ -17,8 +17,14 @@ depends_on = None
 
 
 def upgrade():
-    # Create import status enum
-    op.execute("CREATE TYPE importstatus AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled')")
+    # Create import status enum (idempotent - safe to run multiple times)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE importstatus AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
     
     # Create import_batches table
     op.create_table('import_batches',

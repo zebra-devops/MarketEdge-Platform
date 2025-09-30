@@ -24,18 +24,37 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+
       - name: Test migrations on fresh database
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost/testdb
+          JWT_SECRET_KEY: test-secret-key-for-migrations
+          AUTH0_DOMAIN: test.auth0.com
+          AUTH0_CLIENT_ID: test-client-id
+          AUTH0_CLIENT_SECRET: test-client-secret
         run: |
-          pip install alembic sqlalchemy psycopg2-binary
           alembic upgrade head
           
       - name: Verify schema completeness
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost/testdb
+          JWT_SECRET_KEY: test-secret-key-for-migrations
+          AUTH0_DOMAIN: test.auth0.com
+          AUTH0_CLIENT_ID: test-client-id
+          AUTH0_CLIENT_SECRET: test-client-secret
         run: |
           alembic check  # Fails if models don't match migrations
-          
+
       - name: Test rollback safety
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost/testdb
+          JWT_SECRET_KEY: test-secret-key-for-migrations
+          AUTH0_DOMAIN: test.auth0.com
+          AUTH0_CLIENT_ID: test-client-id
+          AUTH0_CLIENT_SECRET: test-client-secret
         run: |
           alembic downgrade -1
           alembic upgrade head

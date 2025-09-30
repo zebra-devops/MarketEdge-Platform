@@ -37,13 +37,19 @@ def upgrade() -> None:
     """)
 
     # Cast to proper enum type if column was just created
+    # Need to drop default, cast type, then re-add default
     op.execute("""
         DO $$ BEGIN
             IF EXISTS (SELECT 1 FROM information_schema.columns
                       WHERE table_name = 'organisations'
                       AND column_name = 'industry_type'
                       AND data_type = 'character varying') THEN
+                -- Drop the default constraint
+                ALTER TABLE organisations ALTER COLUMN industry_type DROP DEFAULT;
+                -- Cast the column type
                 ALTER TABLE organisations ALTER COLUMN industry_type TYPE industry USING industry_type::industry;
+                -- Re-add the default using enum value
+                ALTER TABLE organisations ALTER COLUMN industry_type SET DEFAULT 'default'::industry;
             END IF;
         END $$;
     """)
