@@ -52,45 +52,9 @@ class ApiService {
           url: config.url
         })
 
-        // UNIFIED STRATEGY: Match auth service getToken() logic exactly
-        // Strategy 1: Try cookies first (both production and development)
-        try {
-          token = Cookies.get('access_token')
-          if (token) {
-            console.debug('✅ Token retrieved from cookies', {
-              source: 'cookies',
-              environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
-              length: token.length,
-              preview: `${token.substring(0, 20)}...`
-            })
-          }
-        } catch (cookieError) {
-          console.warn('Cookie access failed:', cookieError)
-        }
-
-        // Strategy 2: Use auth service which includes all fallback strategies
-        if (!token && typeof window !== 'undefined') {
-          try {
-            // Import auth service dynamically to avoid circular dependency
-            const authModule = require('./auth')
-            if (authModule?.authService?.getToken) {
-              token = authModule.authService.getToken()
-              if (token) {
-                console.debug('✅ Token retrieved from auth service (includes all fallback strategies)', {
-                  source: 'authService',
-                  environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
-                  length: token.length,
-                  preview: `${token.substring(0, 20)}...`
-                })
-              }
-            }
-          } catch (authServiceError) {
-            console.warn('Auth service token retrieval failed:', authServiceError)
-          }
-        }
-
-        // Strategy 3: Direct session storage check (backup for circular dependency issues)
-        if (!token && typeof window !== 'undefined' && sessionStorage) {
+        // PRIORITY FIX: Check session storage FIRST (most reliable immediately after login)
+        // This is where tokens are stored immediately during authentication before cookies are set
+        if (typeof window !== 'undefined' && sessionStorage) {
           try {
             const sessionBackupStr = sessionStorage.getItem('auth_session_backup')
             if (sessionBackupStr) {
@@ -99,8 +63,8 @@ class ApiService {
                 const age = Date.now() - sessionBackup.timestamp
                 if (age < 3600000) { // 1 hour
                   token = sessionBackup.access_token
-                  console.debug('✅ Token retrieved from session storage direct access', {
-                    source: 'sessionStorageDirect',
+                  console.debug('✅ Token retrieved from session storage (immediate after login)', {
+                    source: 'sessionStorage',
                     environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
                     age: Math.round(age / 1000) + 's',
                     length: token.length,
@@ -110,7 +74,45 @@ class ApiService {
               }
             }
           } catch (sessionError) {
-            console.warn('Direct session storage access failed:', sessionError)
+            console.warn('Session storage access failed:', sessionError)
+          }
+        }
+
+        // Strategy 2: Try cookies (both production and development)
+        if (!token) {
+          try {
+            token = Cookies.get('access_token')
+            if (token) {
+              console.debug('✅ Token retrieved from cookies', {
+                source: 'cookies',
+                environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+                length: token.length,
+                preview: `${token.substring(0, 20)}...`
+              })
+            }
+          } catch (cookieError) {
+            console.warn('Cookie access failed:', cookieError)
+          }
+        }
+
+        // Strategy 3: Use auth service which includes all fallback strategies (including temporary token)
+        if (!token && typeof window !== 'undefined') {
+          try {
+            // Import auth service dynamically to avoid circular dependency
+            const authModule = require('./auth')
+            if (authModule?.authService?.getToken) {
+              token = authModule.authService.getToken()
+              if (token) {
+                console.debug('✅ Token retrieved from auth service (includes temporary token)', {
+                  source: 'authService',
+                  environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+                  length: token.length,
+                  preview: `${token.substring(0, 20)}...`
+                })
+              }
+            }
+          } catch (authServiceError) {
+            console.warn('Auth service token retrieval failed:', authServiceError)
           }
         }
 

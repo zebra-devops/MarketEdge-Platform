@@ -115,22 +115,34 @@ export default function CallbackPage() {
         
         try {
           const redirectUri = `${window.location.origin}/callback`
-          
+
           // Attempt login with rate limiting check
           const loginResult = await login({ code, redirect_uri: redirectUri })
-          
+
           console.log('Login successful:', loginResult)
           toast.success('Login successful!')
-          
+
+          // CRITICAL FIX: Small delay to ensure tokens are persisted before navigation
+          // Session storage write is synchronous but we need to ensure React state updates
+          await new Promise(resolve => setTimeout(resolve, 100))
+
+          // Verify token is accessible before redirecting
+          const tokenCheck = sessionStorage.getItem('auth_session_backup')
+          if (tokenCheck) {
+            console.log('✅ Token backup confirmed in session storage before redirect')
+          } else {
+            console.warn('⚠️ Token backup not found in session storage - may cause auth issues')
+          }
+
           // Determine where to redirect based on user's application access
           const intendedDestination = localStorage.getItem('intendedDestination') || undefined
           localStorage.removeItem('intendedDestination') // Clean up
-          
+
           const redirectTo = getPostLoginRedirect(
             loginResult.user?.application_access || loginResult.application_access,
             intendedDestination
           )
-          
+
           console.log('Redirecting to:', redirectTo)
           router.push(redirectTo)
           
