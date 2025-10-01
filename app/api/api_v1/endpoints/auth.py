@@ -18,8 +18,8 @@ from ....auth.jwt import (
     should_refresh_token,
     extract_tenant_context_from_token
 )
-from ....auth.auth0 import auth0_client, verify_auth0_token
-from ....auth.dependencies import get_current_user
+from ....auth.auth0 import auth0_client
+from ....auth.dependencies import get_current_user, verify_auth0_token
 from ....core.logging import get_logger
 from ....core.config import settings
 from ....core.validators import (
