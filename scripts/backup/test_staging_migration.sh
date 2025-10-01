@@ -262,16 +262,23 @@ verify_foreign_key_integrity() {
 test_zebra_user_access() {
     log_step "Testing Zebra Associates user access..."
 
+<<<<<<< HEAD
     # Security: Extract and validate user ID to prevent SQL injection
     local zebra_user_id=$(psql "${STAGING_DATABASE_URL}" -t -c "
         SELECT id FROM users WHERE email = 'matt.lindop@zebra.associates';
     " 2> >(sanitize_db_error >&2) | tr -d ' \n')
+=======
+    local zebra_user_id=$(psql "${STAGING_DATABASE_URL}" -t -c "
+        SELECT id FROM users WHERE email = 'matt.lindop@zebra.associates';
+    ")
+>>>>>>> origin/main
 
     if [ -z "$zebra_user_id" ]; then
         log_warn "Zebra user not found in staging database"
         return 0
     fi
 
+<<<<<<< HEAD
     # Security: Validate UUID format (prevents SQL injection)
     if [[ ! "$zebra_user_id" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
         log_error "Invalid user ID format: ${zebra_user_id}"
@@ -290,6 +297,18 @@ test_zebra_user_access() {
     echo "Zebra User Application Count: ${app_count}" >> "${TEST_LOG}"
 
     if [ "${app_count}" -eq 3 ] 2>/dev/null; then
+=======
+    local app_count=$(psql "${STAGING_DATABASE_URL}" -t -c "
+        SELECT COUNT(*)
+        FROM user_application_access
+        WHERE user_id = '${zebra_user_id}'
+        AND has_access = true;
+    ")
+
+    echo "Zebra User Application Count: ${app_count}" >> "${TEST_LOG}"
+
+    if [ "$app_count" -eq 3 ]; then
+>>>>>>> origin/main
         log_info "Zebra user has access to all 3 applications"
     else
         log_warn "Zebra user has access to ${app_count} applications (expected 3)"
@@ -301,7 +320,10 @@ generate_test_report() {
     log_step "Generating test report..."
 
     local report_file="./test_migration_report_${TIMESTAMP}.md"
+<<<<<<< HEAD
     local database_url_redacted=$(redact_database_url "${STAGING_DATABASE_URL}")
+=======
+>>>>>>> origin/main
 
     cat > "${report_file}" <<EOF
 # Enum Migration Staging Test Report
@@ -309,7 +331,11 @@ generate_test_report() {
 ## Test Execution
 - **Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 - **Environment**: Staging
+<<<<<<< HEAD
 - **Database**: ${database_url_redacted}
+=======
+- **Database**: ${STAGING_DATABASE_URL%%@*}@***
+>>>>>>> origin/main
 - **Test Log**: ${TEST_LOG}
 
 ## Test Results

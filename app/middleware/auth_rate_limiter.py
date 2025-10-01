@@ -197,6 +197,7 @@ class AuthRateLimiter:
     def __init__(self):
         """Initialize authentication rate limiter with security hardening."""
         self.enabled = settings.RATE_LIMIT_ENABLED
+        self.redis_available = False  # Track Redis availability
 
         # Use environment-aware defaults (MEDIUM FIX #6)
         self.limit_string = settings.rate_limit_auth_default
@@ -233,27 +234,42 @@ class AuthRateLimiter:
                 )
                 # Test connection
                 self.redis_client.ping()
+                self.redis_available = True
             except Exception as redis_error:
                 logger.error(
                     "Redis connection failed during rate limiter init",
                     extra={
                         "event": "rate_limiter_redis_failed",
                         "error": str(redis_error),
-                        "storage_url": storage_url
+                        "storage_url": storage_url,
+                        "environment": settings.ENV_NAME
                     }
                 )
-                # Continue without Redis client (will fail-closed on use)
+                # Continue without Redis client
                 self.redis_client = None
+                self.redis_available = False
+
+                # In non-production environments, disable rate limiting if Redis unavailable
+                if settings.ENV_NAME in ["development", "test", "testing"]:
+                    logger.info(
+                        "Rate limiting disabled due to Redis unavailability in test/dev environment",
+                        extra={
+                            "event": "rate_limiter_disabled_no_redis",
+                            "environment": settings.ENV_NAME
+                        }
+                    )
+                    self.enabled = False
 
             logger.info(
                 "Auth rate limiter initialized (SECURITY HARDENED)",
                 extra={
                     "event": "auth_rate_limiter_init",
                     "enabled": self.enabled,
+                    "redis_available": self.redis_available,
                     "ip_limit": self.limit_string,
                     "user_limit": self.user_limit_string,
-                    "storage": "redis",
-                    "fail_mode": "closed",
+                    "storage": "redis" if self.redis_available else "none",
+                    "fail_mode": "closed" if settings.ENV_NAME == "production" else "disabled",
                     "trusted_proxies": len(settings.get_trusted_proxy_cidrs()),
                     "environment": settings.ENV_NAME
                 }
@@ -263,23 +279,54 @@ class AuthRateLimiter:
                 "Failed to initialize auth rate limiter",
                 extra={
                     "event": "auth_rate_limiter_init_failed",
-                    "error": str(e)
+                    "error": str(e),
+                    "environment": settings.ENV_NAME
                 }
             )
-            # CRITICAL FIX #2: Fail-closed - raise exception instead of creating fallback
-            raise
+            # CRITICAL: In production, fail-closed. In test/dev, disable and continue.
+            if settings.ENV_NAME == "production":
+                raise
+            else:
+                logger.warning(
+                    "Rate limiting disabled due to initialization failure in non-production environment",
+                    extra={
+                        "event": "rate_limiter_disabled_init_error",
+                        "environment": settings.ENV_NAME
+                    }
+                )
+                self.enabled = False
+                self.redis_available = False
 
     def _check_redis_health(self) -> None:
         """
         Check Redis health before rate limiting (CRITICAL FIX #2).
 
+        In production: Fail-closed (raise 503 if Redis unavailable)
+        In test/dev: Skip health check (rate limiting disabled if Redis unavailable)
+
         Raises:
-            HTTPException: 503 Service Unavailable if Redis is down
+            HTTPException: 503 Service Unavailable if Redis is down (production only)
         """
-        if not self.redis_client:
+        # If Redis is not available and we're not in production, skip health check
+        # (rate limiting should be disabled in __init__)
+        if not self.redis_available and settings.ENV_NAME in ["development", "test", "testing"]:
+            logger.debug(
+                "Skipping Redis health check in non-production environment",
+                extra={
+                    "event": "rate_limit_health_check_skipped",
+                    "environment": settings.ENV_NAME
+                }
+            )
+            return
+
+        # In production, fail-closed if Redis unavailable
+        if not self.redis_client or not self.redis_available:
             logger.error(
-                "Redis client not available for rate limiting",
-                extra={"event": "rate_limit_redis_unavailable"}
+                "Redis client not available for rate limiting in production",
+                extra={
+                    "event": "rate_limit_redis_unavailable",
+                    "environment": settings.ENV_NAME
+                }
             )
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -297,16 +344,28 @@ class AuthRateLimiter:
                 "Redis health check failed",
                 extra={
                     "event": "rate_limit_redis_health_failed",
-                    "error": str(e)
+                    "error": str(e),
+                    "environment": settings.ENV_NAME
                 }
             )
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={
-                    "detail": "Rate limiting service temporarily unavailable",
-                    "message": "Please try again in a few moments"
-                }
-            )
+            # In production, fail-closed
+            if settings.ENV_NAME == "production":
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={
+                        "detail": "Rate limiting service temporarily unavailable",
+                        "message": "Please try again in a few moments"
+                    }
+                )
+            # In test/dev, log warning but continue
+            else:
+                logger.warning(
+                    "Redis health check failed in non-production, continuing anyway",
+                    extra={
+                        "event": "rate_limit_health_check_failed_continue",
+                        "environment": settings.ENV_NAME
+                    }
+                )
 
     def limit(self, override_limit: Optional[str] = None, check_user_auth: bool = True):
         """
@@ -335,11 +394,16 @@ class AuthRateLimiter:
             async def get_auth0_url(...):
                 ...
         """
+        # Import asyncio and functools for proper async wrapping
+        import asyncio
+        from functools import wraps
+
         def decorator(func):
             if not self.enabled:
                 # Rate limiting disabled, return original function
                 return func
 
+            @wraps(func)  # CRITICAL FIX: Properly preserve function signature for FastAPI
             async def wrapper(*args, **kwargs):
                 # Extract request from args
                 request: Optional[Request] = None
@@ -352,7 +416,9 @@ class AuthRateLimiter:
 
                 if not request:
                     # No request object, skip rate limiting
-                    return await func(*args, **kwargs) if asyncio.iscoroutinefunction(func) else func(*args, **kwargs)
+                    if asyncio.iscoroutinefunction(func):
+                        return await func(*args, **kwargs)
+                    return func(*args, **kwargs)
 
                 # CRITICAL FIX #2: Check Redis health before proceeding
                 self._check_redis_health()
@@ -377,19 +443,56 @@ class AuthRateLimiter:
                 else:
                     limit_str = limit_str or self.limit_string
 
-                # Apply slowapi rate limit
+                # Apply slowapi rate limit check manually (not as decorator)
                 try:
-                    limited_func = self.limiter.limit(limit_str)(func)
-                    return await limited_func(*args, **kwargs) if asyncio.iscoroutinefunction(func) else limited_func(*args, **kwargs)
+                    # Get rate limit key
+                    key = get_rate_limit_key(request, getattr(request.state, "user_id", None))
+
+                    # Check rate limit using slowapi's internal storage
+                    # Instead of dynamically applying decorator, check limit directly
+                    from slowapi.wrappers import Limit as LimitItem
+
+                    # Parse limit string (e.g., "30/5minutes")
+                    limit_item = LimitItem(limit_str, key_func=lambda: key)
+
+                    # Check if limit exceeded using limiter's storage
+                    if self.limiter.storage is not None:
+                        now = time.time()
+                        window = self._parse_limit_window(limit_str)
+                        max_requests = self._parse_limit_requests(limit_str)
+
+                        # Get current request count
+                        current_count = self.limiter.storage.incr(
+                            key,
+                            window,
+                            amount=1
+                        )
+
+                        if current_count > max_requests:
+                            # Rate limit exceeded
+                            error = RateLimitExceeded(f"Rate limit exceeded: {limit_str}")
+                            self._handle_rate_limit_exceeded(request, error, limit_str)
+
+                    # Call original function
+                    if asyncio.iscoroutinefunction(func):
+                        return await func(*args, **kwargs)
+                    return func(*args, **kwargs)
+
                 except RateLimitExceeded as e:
                     self._handle_rate_limit_exceeded(request, e, limit_str)
-
-            # Import asyncio for coroutine check
-            import asyncio
-
-            # Preserve function metadata
-            wrapper.__name__ = func.__name__
-            wrapper.__doc__ = func.__doc__
+                except HTTPException:
+                    raise
+                except Exception as e:
+                    logger.error(f"Rate limit error: {e}", extra={
+                        "event": "rate_limit_error",
+                        "error": str(e),
+                        "path": request.url.path if request else "unknown"
+                    })
+                    # On error, fail-closed (block request)
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail="Rate limiting service error"
+                    )
 
             return wrapper
 
@@ -445,6 +548,58 @@ class AuthRateLimiter:
             }
         )
 
+    def _parse_limit_requests(self, limit_string: str) -> int:
+        """
+        Parse the number of requests from limit string.
+
+        Args:
+            limit_string: Rate limit string (e.g., "30/5minutes")
+
+        Returns:
+            Number of allowed requests
+        """
+        try:
+            parts = limit_string.split("/")
+            if len(parts) >= 1:
+                return int(parts[0])
+            return 10  # Default
+        except Exception as e:
+            logger.error(f"Error parsing limit requests: {e}")
+            return 10  # Default
+
+    def _parse_limit_window(self, limit_string: str) -> int:
+        """
+        Parse the time window from limit string.
+
+        Args:
+            limit_string: Rate limit string (e.g., "30/5minutes")
+
+        Returns:
+            Time window in seconds
+        """
+        try:
+            parts = limit_string.split("/")
+            if len(parts) >= 2:
+                time_part = parts[1].lower()
+
+                if "minute" in time_part:
+                    minutes = int(''.join(filter(str.isdigit, time_part)) or 1)
+                    return minutes * 60
+                elif "hour" in time_part:
+                    hours = int(''.join(filter(str.isdigit, time_part)) or 1)
+                    return hours * 3600
+                elif "second" in time_part:
+                    seconds = int(''.join(filter(str.isdigit, time_part)) or 1)
+                    return seconds
+                elif "day" in time_part:
+                    days = int(''.join(filter(str.isdigit, time_part)) or 1)
+                    return days * 86400
+
+            return 300  # Default to 5 minutes
+        except Exception as e:
+            logger.error(f"Error parsing limit window: {e}")
+            return 300  # Default to 5 minutes
+
     def _calculate_retry_after(self, limit_string: str) -> int:
         """
         Calculate retry_after seconds from rate limit string.
@@ -455,37 +610,7 @@ class AuthRateLimiter:
         Returns:
             Number of seconds until rate limit resets
         """
-        try:
-            # Parse limit string: "10/5minutes" -> 300 seconds
-            if "minute" in limit_string.lower():
-                parts = limit_string.split("/")
-                if len(parts) == 2:
-                    time_window = parts[1].lower()
-                    if "minute" in time_window:
-                        # Extract number of minutes
-                        minutes = int(''.join(filter(str.isdigit, time_window)) or 1)
-                        return minutes * 60
-            elif "hour" in limit_string.lower():
-                parts = limit_string.split("/")
-                if len(parts) == 2:
-                    time_window = parts[1].lower()
-                    if "hour" in time_window:
-                        hours = int(''.join(filter(str.isdigit, time_window)) or 1)
-                        return hours * 3600
-            elif "second" in limit_string.lower():
-                parts = limit_string.split("/")
-                if len(parts) == 2:
-                    time_window = parts[1].lower()
-                    if "second" in time_window:
-                        seconds = int(''.join(filter(str.isdigit, time_window)) or 1)
-                        return seconds
-
-            # Default to 5 minutes if parsing fails
-            return 300
-
-        except Exception as e:
-            logger.error(f"Error calculating retry_after: {e}")
-            return 300  # Default 5 minutes
+        return self._parse_limit_window(limit_string)
 
     def get_rate_limit_info(self, request: Request) -> dict:
         """
