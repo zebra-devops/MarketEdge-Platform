@@ -17,8 +17,15 @@ depends_on = None
 
 
 def upgrade():
-    # Create import status enum (if not exists to prevent duplicate type error)
-    op.execute("CREATE TYPE IF NOT EXISTS importstatus AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled')")
+    # Create import status enum (idempotent with DO block)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'importstatus') THEN
+                CREATE TYPE importstatus AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled');
+            END IF;
+        END $$;
+    """)
     
     # Create import_batches table
     op.create_table('import_batches',
