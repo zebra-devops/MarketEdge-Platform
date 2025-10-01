@@ -53,7 +53,9 @@ jobs:
 
       - name: Clean database before migrations
         run: |
-          PGPASSWORD=postgres psql -h localhost -U postgres -d marketedge_test -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" || true
+          # Drop and recreate database to ensure clean state
+          PGPASSWORD=postgres psql -h localhost -U postgres -d postgres -c "DROP DATABASE IF EXISTS marketedge_test;"
+          PGPASSWORD=postgres psql -h localhost -U postgres -d postgres -c "CREATE DATABASE marketedge_test;"
         env:
           PGPASSWORD: postgres
 
