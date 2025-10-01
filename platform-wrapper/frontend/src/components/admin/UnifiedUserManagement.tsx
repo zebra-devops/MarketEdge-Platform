@@ -47,7 +47,7 @@ interface Organisation {
 }
 
 interface ApplicationAccess {
-  application: 'market_edge' | 'causal_edge' | 'value_edge'
+  application: 'MARKET_EDGE' | 'CAUSAL_EDGE' | 'VALUE_EDGE'
   has_access: boolean
 }
 
@@ -88,9 +88,9 @@ export default function UnifiedUserManagement() {
     role: 'viewer',
     organisation_id: isSuperAdmin ? '' : currentOrganisation?.id || '',
     application_access: [
-      { application: 'market_edge', has_access: false },
-      { application: 'causal_edge', has_access: false },
-      { application: 'value_edge', has_access: false }
+      { application: 'MARKET_EDGE', has_access: false },
+      { application: 'CAUSAL_EDGE', has_access: false },
+      { application: 'VALUE_EDGE', has_access: false }
     ],
     send_invitation: true
   })
@@ -102,9 +102,9 @@ export default function UnifiedUserManagement() {
     role: 'viewer',
     is_active: true,
     application_access: [
-      { application: 'market_edge', has_access: false },
-      { application: 'causal_edge', has_access: false },
-      { application: 'value_edge', has_access: false }
+      { application: 'MARKET_EDGE', has_access: false },
+      { application: 'CAUSAL_EDGE', has_access: false },
+      { application: 'VALUE_EDGE', has_access: false }
     ]
   })
 
@@ -141,9 +141,9 @@ export default function UnifiedUserManagement() {
       } else {
         // Default fallback
         appAccessArray = [
-          { application: 'market_edge', has_access: false },
-          { application: 'causal_edge', has_access: false },
-          { application: 'value_edge', has_access: false }
+          { application: 'MARKET_EDGE', has_access: false },
+          { application: 'CAUSAL_EDGE', has_access: false },
+          { application: 'VALUE_EDGE', has_access: false }
         ]
       }
 
@@ -206,11 +206,11 @@ export default function UnifiedUserManagement() {
 
   const getApplicationIcon = (app: string) => {
     switch (app) {
-      case 'market_edge':
+      case 'MARKET_EDGE':
         return <EyeIcon className="h-4 w-4" />
-      case 'causal_edge':
+      case 'CAUSAL_EDGE':
         return <ChartBarIcon className="h-4 w-4" />
-      case 'value_edge':
+      case 'VALUE_EDGE':
         return <CogIcon className="h-4 w-4" />
       default:
         return null
@@ -253,9 +253,9 @@ export default function UnifiedUserManagement() {
         role: 'viewer',
         organisation_id: isSuperAdmin ? '' : currentOrganisation?.id || '',
         application_access: [
-          { application: 'market_edge', has_access: false },
-          { application: 'causal_edge', has_access: false },
-          { application: 'value_edge', has_access: false }
+          { application: 'MARKET_EDGE', has_access: false },
+          { application: 'CAUSAL_EDGE', has_access: false },
+          { application: 'VALUE_EDGE', has_access: false }
         ],
         send_invitation: true
       })
@@ -284,7 +284,7 @@ export default function UnifiedUserManagement() {
       setIsSubmitting(true)
 
       // Validate application access format before submission
-      const validApplications = ['market_edge', 'causal_edge', 'value_edge']
+      const validApplications = ['MARKET_EDGE', 'CAUSAL_EDGE', 'VALUE_EDGE']
       const invalidApps = editForm.application_access?.filter(
         access => !validApplications.includes(access.application)
       ) || []

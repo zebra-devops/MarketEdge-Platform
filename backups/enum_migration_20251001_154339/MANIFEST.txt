@@ -1,0 +1,59 @@
+MarketEdge Enum Migration Backup Manifest
+==========================================
+
+Backup ID: enum_migration_20251001_154339
+Created: 2025-10-01 14:43:39 UTC
+Purpose: Safety backup before US-6 uppercase enum migration
+
+Files Included:
+---------------
+1. user_application_access.sql - Full table backup with data
+2. user_invitations.sql - Full table backup with data
+3. enum_types.sql - Enum type definitions (applicationtype, invitationstatus)
+4. indexes_and_constraints.sql - Index and constraint definitions
+5. statistics.txt - Pre-migration table statistics
+6. MANIFEST.txt - This file
+
+Restore Procedure:
+------------------
+See docs/auth/rollback-enum-migration.md for detailed restore instructions.
+
+Quick Restore:
+1. cd ./backups/enum_migration_20251001_154339
+2. psql $DATABASE_URL < user_application_access.sql
+3. psql $DATABASE_URL < user_invitations.sql
+4. Verify row counts match statistics.txt
+
+Migration Rollback:
+-------------------
+If migration has been applied, run downgrade first:
+1. alembic downgrade -1
+2. Follow restore procedure above
+3. Verify application values are lowercase
+
+Verification Commands:
+----------------------
+# Check row counts
+psql $DATABASE_URL -c "SELECT COUNT(*) FROM user_application_access;"
+
+# Check enum values
+psql $DATABASE_URL -c "SELECT DISTINCT application FROM user_application_access;"
+
+# Check foreign key integrity
+psql $DATABASE_URL -c "
+    SELECT
+        conname,
+        conrelid::regclass,
+        confrelid::regclass
+    FROM pg_constraint
+    WHERE conrelid IN ('user_application_access'::regclass, 'user_invitations'::regclass);
+"
+
+Backup Validation:
+------------------
+-rw-r--r--  1 matt  staff   158B  1 Oct 15:43 enum_types.sql
+-rw-r--r--  1 matt  staff   5.9K  1 Oct 15:43 indexes_and_constraints.sql
+-rw-r--r--  1 matt  staff   1.6K  1 Oct 15:43 MANIFEST.txt
+-rw-r--r--  1 matt  staff   437B  1 Oct 15:43 statistics.txt
+-rw-r--r--  1 matt  staff   5.4K  1 Oct 15:43 user_application_access.sql
+-rw-r--r--  1 matt  staff   4.5K  1 Oct 15:43 user_invitations.sql

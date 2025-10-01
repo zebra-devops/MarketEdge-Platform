@@ -63,21 +63,21 @@ const industries: Industry[] = [
 
 const applications = [
   {
-    id: 'market_edge',
+    id: 'MARKET_EDGE',
     name: 'Market Edge',
     description: 'Competitive Intelligence & Market Analysis',
     color: 'from-blue-500 to-green-500',
     defaultForIndustries: ['cinema_exhibition', 'accommodation', 'fitness', 'retail_trade', 'business_services']
   },
   {
-    id: 'causal_edge',
+    id: 'CAUSAL_EDGE',
     name: 'Causal Edge',
     description: 'Business Process & Causal Analysis',
     color: 'from-orange-500 to-red-500',
     defaultForIndustries: ['cinema_exhibition', 'accommodation', 'business_services']
   },
   {
-    id: 'value_edge',
+    id: 'VALUE_EDGE',
     name: 'Value Edge',
     description: 'Value Engineering & ROI Analysis',
     color: 'from-purple-500 to-teal-500',

@@ -35,7 +35,7 @@ interface Application {
 
 const applications: Application[] = [
   {
-    id: 'market_edge',
+    id: 'MARKET_EDGE',
     name: 'Market Edge',
     displayName: 'Market Edge',
     route: '/market-edge',
@@ -46,7 +46,7 @@ const applications: Application[] = [
     description: 'Competitive Intelligence & Market Analysis'
   },
   {
-    id: 'causal_edge',
+    id: 'CAUSAL_EDGE',
     name: 'Causal Edge',
     displayName: 'Causal Edge',
     route: '/causal-edge',
@@ -57,7 +57,7 @@ const applications: Application[] = [
     description: 'Business Process & Causal Analysis'
   },
   {
-    id: 'value_edge',
+    id: 'VALUE_EDGE',
     name: 'Value Edge',
     displayName: 'Value Edge',
     route: '/value-edge',

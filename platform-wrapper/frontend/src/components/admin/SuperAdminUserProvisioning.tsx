@@ -22,7 +22,7 @@ import {
 import BulkUserImport from './BulkUserImport'
 
 interface ApplicationAccess {
-  application: 'market_edge' | 'causal_edge' | 'value_edge'
+  application: 'MARKET_EDGE' | 'CAUSAL_EDGE' | 'VALUE_EDGE'
   has_access: boolean
 }
 
@@ -72,9 +72,9 @@ export default function SuperAdminUserProvisioning() {
     role: 'viewer',
     organisation_id: '',
     application_access: [
-      { application: 'market_edge', has_access: false },
-      { application: 'causal_edge', has_access: false },
-      { application: 'value_edge', has_access: false }
+      { application: 'MARKET_EDGE', has_access: false },
+      { application: 'CAUSAL_EDGE', has_access: false },
+      { application: 'VALUE_EDGE', has_access: false }
     ],
     send_invitation: true
   })
@@ -170,9 +170,9 @@ export default function SuperAdminUserProvisioning() {
         role: 'viewer',
         organisation_id: '',
         application_access: [
-          { application: 'market_edge', has_access: false },
-          { application: 'causal_edge', has_access: false },
-          { application: 'value_edge', has_access: false }
+          { application: 'MARKET_EDGE', has_access: false },
+          { application: 'CAUSAL_EDGE', has_access: false },
+          { application: 'VALUE_EDGE', has_access: false }
         ],
         send_invitation: true
       })
@@ -222,9 +222,9 @@ export default function SuperAdminUserProvisioning() {
           role: role as 'admin' | 'analyst' | 'viewer',
           organisation_id: organisation_id || formData.organisation_id || '',
           application_access: [
-            { application: 'market_edge', has_access: true },
-            { application: 'causal_edge', has_access: false },
-            { application: 'value_edge', has_access: false }
+            { application: 'MARKET_EDGE', has_access: true },
+            { application: 'CAUSAL_EDGE', has_access: false },
+            { application: 'VALUE_EDGE', has_access: false }
           ],
           send_invitation: bulkSendInvitations
         })
@@ -265,9 +265,9 @@ export default function SuperAdminUserProvisioning() {
 
   const getApplicationName = (app: string) => {
     switch (app) {
-      case 'market_edge': return 'Market Edge'
-      case 'causal_edge': return 'Causal Edge'
-      case 'value_edge': return 'Value Edge'
+      case 'MARKET_EDGE': return 'Market Edge'
+      case 'CAUSAL_EDGE': return 'Causal Edge'
+      case 'VALUE_EDGE': return 'Value Edge'
       default: return app
     }
   }

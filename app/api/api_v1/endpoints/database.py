@@ -240,7 +240,7 @@ async def verify_admin_access(
         }
         
         # Check for missing applications
-        expected_apps = ["market_edge", "causal_edge", "value_edge"]
+        expected_apps = ["MARKET_EDGE", "CAUSAL_EDGE", "VALUE_EDGE"]
         missing_apps = [app for app in expected_apps if app not in accessible_apps]
         
         verification_result = {

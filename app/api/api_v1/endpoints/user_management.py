@@ -584,9 +584,9 @@ def _format_user_response(user: User) -> UserResponse:
 
     # Map from ApplicationType enum to frontend snake_case keys
     enum_to_frontend = {
-        ApplicationType.MARKET_EDGE: "market_edge",
-        ApplicationType.CAUSAL_EDGE: "causal_edge",
-        ApplicationType.VALUE_EDGE: "value_edge"
+        ApplicationType.MARKET_EDGE: "MARKET_EDGE",
+        ApplicationType.CAUSAL_EDGE: "CAUSAL_EDGE",
+        ApplicationType.VALUE_EDGE: "VALUE_EDGE"
     }
 
     for access in user.application_access:

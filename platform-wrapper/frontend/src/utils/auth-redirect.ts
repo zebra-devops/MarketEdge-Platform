@@ -20,9 +20,9 @@ export function getPostLoginRedirect(
     
     if (isAppRoute) {
       // Extract application name from route
-      const appName = intendedDestination.includes('/market-edge') ? 'market_edge' :
-                     intendedDestination.includes('/causal-edge') ? 'causal_edge' :
-                     intendedDestination.includes('/value-edge') ? 'value_edge' : null
+      const appName = intendedDestination.includes('/market-edge') ? 'MARKET_EDGE' :
+                     intendedDestination.includes('/causal-edge') ? 'CAUSAL_EDGE' :
+                     intendedDestination.includes('/value-edge') ? 'VALUE_EDGE' : null
       
       if (appName) {
         const hasAccess = applicationAccess?.find(app => app.application === appName)?.has_access
@@ -55,9 +55,9 @@ export function getPostLoginRedirect(
  * Check if a route requires specific application access
  */
 export function getRequiredApplicationForRoute(pathname: string): string | null {
-  if (pathname.startsWith('/market-edge')) return 'market_edge'
-  if (pathname.startsWith('/causal-edge')) return 'causal_edge'
-  if (pathname.startsWith('/value-edge')) return 'value_edge'
+  if (pathname.startsWith('/market-edge')) return 'MARKET_EDGE'
+  if (pathname.startsWith('/causal-edge')) return 'CAUSAL_EDGE'
+  if (pathname.startsWith('/value-edge')) return 'VALUE_EDGE'
   return null
 }
 

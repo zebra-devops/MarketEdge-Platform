@@ -36,7 +36,7 @@ interface EditUserForm {
 }
 
 interface ApplicationAccess {
-  application: 'market_edge' | 'causal_edge' | 'value_edge'
+  application: 'MARKET_EDGE' | 'CAUSAL_EDGE' | 'VALUE_EDGE'
   has_access: boolean
 }
 
@@ -57,19 +57,19 @@ interface UserDetailsModalProps {
 
 const applications = [
   { 
-    key: 'market_edge' as const, 
+    key: 'MARKET_EDGE' as const, 
     name: 'Market Edge', 
     description: 'Competitive intelligence and market analysis',
     color: 'blue'
   },
   { 
-    key: 'causal_edge' as const, 
+    key: 'CAUSAL_EDGE' as const, 
     name: 'Causal Edge', 
     description: 'Causal analysis and insights',
     color: 'green'
   },
   { 
-    key: 'value_edge' as const, 
+    key: 'VALUE_EDGE' as const, 
     name: 'Value Edge', 
     description: 'Value creation and optimization',
     color: 'purple'

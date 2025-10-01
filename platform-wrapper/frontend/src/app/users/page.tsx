@@ -39,9 +39,9 @@ interface CreateUserForm {
 }
 
 const applications = [
-  { key: 'market_edge' as const, name: 'Market Edge', description: 'Competitive intelligence and market analysis' },
-  { key: 'causal_edge' as const, name: 'Causal Edge', description: 'Causal analysis and insights' },
-  { key: 'value_edge' as const, name: 'Value Edge', description: 'Value creation and optimization' }
+  { key: 'MARKET_EDGE' as const, name: 'Market Edge', description: 'Competitive intelligence and market analysis' },
+  { key: 'CAUSAL_EDGE' as const, name: 'Causal Edge', description: 'Causal analysis and insights' },
+  { key: 'VALUE_EDGE' as const, name: 'Value Edge', description: 'Value creation and optimization' }
 ]
 
 export default function UsersPage() {
@@ -357,16 +357,16 @@ export default function UsersPage() {
                             key={app.key}
                             className={`w-6 h-6 rounded-full flex items-center justify-center ${
                               hasAccess 
-                                ? app.key === 'market_edge' ? 'bg-blue-100' :
-                                  app.key === 'causal_edge' ? 'bg-green-100' : 'bg-purple-100'
+                                ? app.key === 'MARKET_EDGE' ? 'bg-blue-100' :
+                                  app.key === 'CAUSAL_EDGE' ? 'bg-green-100' : 'bg-purple-100'
                                 : 'bg-gray-100'
                             }`}
                             title={`${app.name}: ${hasAccess ? 'Access granted' : 'No access'}`}
                           >
                             {hasAccess ? (
                               <CheckIcon className={`w-4 h-4 ${
-                                app.key === 'market_edge' ? 'text-blue-600' :
-                                app.key === 'causal_edge' ? 'text-green-600' : 'text-purple-600'
+                                app.key === 'MARKET_EDGE' ? 'text-blue-600' :
+                                app.key === 'CAUSAL_EDGE' ? 'text-green-600' : 'text-purple-600'
                               }`} />
                             ) : (
                               <XMarkIcon className="w-4 h-4 text-gray-400" />

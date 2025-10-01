@@ -40,9 +40,9 @@ const testScenarios: TestScenario[] = [
   {
     name: "Market Edge Only",
     applicationAccess: [
-      { application: 'market_edge', has_access: true },
-      { application: 'causal_edge', has_access: false },
-      { application: 'value_edge', has_access: false }
+      { application: 'MARKET_EDGE', has_access: true },
+      { application: 'CAUSAL_EDGE', has_access: false },
+      { application: 'VALUE_EDGE', has_access: false }
     ],
     expectedResults: {
       accessibleApps: ['MARKET_EDGE'],
@@ -56,9 +56,9 @@ const testScenarios: TestScenario[] = [
   {
     name: "All Applications",
     applicationAccess: [
-      { application: 'market_edge', has_access: true },
-      { application: 'causal_edge', has_access: true },
-      { application: 'value_edge', has_access: true }
+      { application: 'MARKET_EDGE', has_access: true },
+      { application: 'CAUSAL_EDGE', has_access: true },
+      { application: 'VALUE_EDGE', has_access: true }
     ],
     expectedResults: {
       accessibleApps: ['MARKET_EDGE', 'CAUSAL_EDGE', 'VALUE_EDGE'],
@@ -72,9 +72,9 @@ const testScenarios: TestScenario[] = [
   {
     name: "Causal & Value Only",
     applicationAccess: [
-      { application: 'market_edge', has_access: false },
-      { application: 'causal_edge', has_access: true },
-      { application: 'value_edge', has_access: true }
+      { application: 'MARKET_EDGE', has_access: false },
+      { application: 'CAUSAL_EDGE', has_access: true },
+      { application: 'VALUE_EDGE', has_access: true }
     ],
     expectedResults: {
       accessibleApps: ['CAUSAL_EDGE', 'VALUE_EDGE'],
