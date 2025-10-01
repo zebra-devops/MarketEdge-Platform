@@ -2,8 +2,7 @@
 # Restore script for enum migration rollback (US-6A)
 # Restores database state from backup created by backup_enum_migration.sh
 
-set -e  # Exit on error
-set -u  # Exit on undefined variable
+set -euo pipefail  # Exit on error, undefined variable, and pipe failures
 
 # Configuration
 BACKUP_DIR="${1:-}"
@@ -26,6 +25,16 @@ log_warn() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Security: Sanitize database error output to prevent credential exposure
+sanitize_db_error() {
+    sed -E 's/(password|pwd)=([^ ]+)/\1=***/g; s/postgresql:\/\/[^:]+:[^@]+@/postgresql:\/\/***:***@/g'
+}
+
+# Security: Redact database URL credentials completely
+redact_database_url() {
+    echo "${1}" | sed -E 's/postgresql:\/\/[^:]+:[^@]+@/postgresql:\/\/***:***@/g'
 }
 
 # Usage
@@ -56,6 +65,24 @@ check_prerequisites() {
     if [ -z "$BACKUP_DIR" ]; then
         log_error "Backup directory not specified"
         usage
+    fi
+
+    # Security: Prevent path traversal attacks
+    if [[ "$BACKUP_DIR" == *".."* ]]; then
+        log_error "Invalid backup directory: path traversal detected"
+        exit 1
+    fi
+
+    # Security: Ensure backup directory is within expected location
+    local normalized_path=$(realpath -m "$BACKUP_DIR" 2>/dev/null || echo "$BACKUP_DIR")
+    if [[ ! "$normalized_path" =~ ^/.*backups/enum_migration_.* ]] && [[ ! "$normalized_path" =~ ^\./backups/enum_migration_.* ]]; then
+        log_warn "Backup directory outside expected location: ${normalized_path}"
+        log_warn "Expected format: ./backups/enum_migration_YYYYMMDD_HHMMSS"
+        read -p "Continue anyway? (type 'YES' to confirm): " confirm
+        if [ "$confirm" != "YES" ]; then
+            log_info "Restore cancelled by user"
+            exit 0
+        fi
     fi
 
     if [ ! -d "$BACKUP_DIR" ]; then
@@ -139,12 +166,21 @@ EOF
 
 # Confirm restore operation
 confirm_restore() {
+<<<<<<< HEAD
+    local database_url_redacted=$(redact_database_url "${DATABASE_URL}")
+
+=======
+>>>>>>> origin/main
     log_warn "================================"
     log_warn "WARNING: Database Restore Operation"
     log_warn "================================"
     log_warn "This will REPLACE current data with backup data."
     log_warn "Backup location: ${BACKUP_DIR}"
+<<<<<<< HEAD
+    log_warn "Target database: ${database_url_redacted}"
+=======
     log_warn "Target database: ${DATABASE_URL%%@*}@***"
+>>>>>>> origin/main
     log_warn ""
 
     # Show backup manifest
@@ -173,7 +209,11 @@ drop_existing_tables() {
         DROP TABLE IF EXISTS user_application_access CASCADE;
         DROP TYPE IF EXISTS invitationstatus CASCADE;
         DROP TYPE IF EXISTS applicationtype CASCADE;
+<<<<<<< HEAD
+    " 2> >(sanitize_db_error >&2)
+=======
     " 2>&1
+>>>>>>> origin/main
 
     log_info "Existing tables dropped"
 }
@@ -182,7 +222,11 @@ drop_existing_tables() {
 restore_enum_types() {
     log_info "Restoring enum types..."
 
+<<<<<<< HEAD
+    psql "${DATABASE_URL}" < "${BACKUP_DIR}/enum_types.sql" 2> >(sanitize_db_error >&2)
+=======
     psql "${DATABASE_URL}" < "${BACKUP_DIR}/enum_types.sql" 2>&1
+>>>>>>> origin/main
 
     log_info "Enum types restored"
 }
@@ -193,7 +237,11 @@ restore_user_application_access() {
 
     local start_time=$(date +%s)
 
+<<<<<<< HEAD
+    psql "${DATABASE_URL}" < "${BACKUP_DIR}/user_application_access.sql" 2> >(sanitize_db_error >&2)
+=======
     psql "${DATABASE_URL}" < "${BACKUP_DIR}/user_application_access.sql" 2>&1
+>>>>>>> origin/main
 
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))
@@ -205,7 +253,11 @@ restore_user_application_access() {
 restore_user_invitations() {
     log_info "Restoring user_invitations table..."
 
+<<<<<<< HEAD
+    psql "${DATABASE_URL}" < "${BACKUP_DIR}/user_invitations.sql" 2> >(sanitize_db_error >&2)
+=======
     psql "${DATABASE_URL}" < "${BACKUP_DIR}/user_invitations.sql" 2>&1
+>>>>>>> origin/main
 
     log_info "user_invitations table restored"
 }
@@ -264,6 +316,26 @@ EOF
 
     log_info "Verification data saved: ${verification_file}"
 
+<<<<<<< HEAD
+    # Compare with original statistics (CRITICAL: Must match for successful restore)
+    if [ -f "${BACKUP_DIR}/statistics.txt" ]; then
+        log_info "Comparing with backup statistics..."
+
+        # Security: Extract and validate numeric row counts only
+        local backup_count=$(grep -A 1 "total_rows" "${BACKUP_DIR}/statistics.txt" | tail -1 | tr -d ' ' | grep -o '[0-9]*' || echo "0")
+        local restore_count=$(grep -A 1 "total_rows" "${verification_file}" | tail -1 | tr -d ' ' | grep -o '[0-9]*' || echo "0")
+
+        # Use numeric comparison (not string comparison)
+        if [ "${backup_count}" -eq "${restore_count}" ] 2>/dev/null; then
+            log_info "Row count verification PASSED: ${restore_count} rows"
+        else
+            log_error "Row count mismatch: backup=${backup_count}, restored=${restore_count}"
+            log_error "CRITICAL: Restore failed - data integrity check failed"
+            exit 1
+        fi
+    else
+        log_warn "No backup statistics found, skipping row count verification"
+=======
     # Compare with original statistics
     if [ -f "${BACKUP_DIR}/statistics.txt" ]; then
         log_info "Comparing with backup statistics..."
@@ -276,6 +348,7 @@ EOF
         else
             log_warn "Row count mismatch: backup=${backup_count}, restored=${restore_count}"
         fi
+>>>>>>> origin/main
     fi
 }
 
@@ -303,12 +376,20 @@ create_restore_log() {
     log_info "Creating restore log..."
 
     local log_file="${BACKUP_DIR}/restore_log.txt"
+<<<<<<< HEAD
+    local database_url_redacted=$(redact_database_url "${DATABASE_URL}")
+=======
+>>>>>>> origin/main
 
     cat > "${log_file}" <<EOF
 Restore Log
 ===========
 Backup Directory: ${BACKUP_DIR}
+<<<<<<< HEAD
+Target Database: ${database_url_redacted}
+=======
 Target Database: ${DATABASE_URL%%@*}@***
+>>>>>>> origin/main
 Restore Timestamp: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
 Operations Performed:

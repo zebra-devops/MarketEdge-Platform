@@ -32,32 +32,35 @@ def upgrade():
 
     print("Creating enum types for hierarchical organization system...")
 
-    # Create enhanced user roles enum with exception handling for duplicates
+    # Create enhanced user roles enum with idempotent IF NOT EXISTS check
     op.execute(text("""
-        DO $$ BEGIN
-            CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enhanceduserrole') THEN
+                CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer');
+            END IF;
         END $$;
     """))
     print("✅ Created enhanceduserrole enum")
 
-    # Create hierarchy level enum with exception handling for duplicates
+    # Create hierarchy level enum with idempotent IF NOT EXISTS check
     op.execute(text("""
-        DO $$ BEGIN
-            CREATE TYPE hierarchylevel AS ENUM ('organization', 'location', 'department', 'user');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'hierarchylevel') THEN
+                CREATE TYPE hierarchylevel AS ENUM ('organization', 'location', 'department', 'user');
+            END IF;
         END $$;
     """))
     print("✅ Created hierarchylevel enum")
 
-    # Create permission scope enum with exception handling for duplicates
+    # Create permission scope enum with idempotent IF NOT EXISTS check
     op.execute(text("""
-        DO $$ BEGIN
-            CREATE TYPE permissionscope AS ENUM ('read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'permissionscope') THEN
+                CREATE TYPE permissionscope AS ENUM ('read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data');
+            END IF;
         END $$;
     """))
     print("✅ Created permissionscope enum")
@@ -66,7 +69,7 @@ def upgrade():
 
     # 1. Create organization_hierarchy table using raw SQL to avoid enum auto-creation
     op.execute(text("""
-        CREATE TABLE organization_hierarchy (
+        CREATE TABLE IF NOT EXISTS organization_hierarchy (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
@@ -96,7 +99,7 @@ def upgrade():
     
     # 2. Create user_hierarchy_assignments table using raw SQL to avoid enum auto-creation
     op.execute(text("""
-        CREATE TABLE user_hierarchy_assignments (
+        CREATE TABLE IF NOT EXISTS user_hierarchy_assignments (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
@@ -119,7 +122,7 @@ def upgrade():
     
     # 3. Create hierarchy_role_assignments table using raw SQL to avoid enum auto-creation
     op.execute(text("""
-        CREATE TABLE hierarchy_role_assignments (
+        CREATE TABLE IF NOT EXISTS hierarchy_role_assignments (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
@@ -162,7 +165,7 @@ def upgrade():
     
     # 5. Create industry_templates table - using raw SQL to avoid length constraint issues
     op.execute(text("""
-        CREATE TABLE industry_templates (
+        CREATE TABLE IF NOT EXISTS industry_templates (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
             updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -174,23 +177,30 @@ def upgrade():
             default_permissions TEXT NOT NULL,
             default_features TEXT NOT NULL,
             dashboard_config TEXT,
-            parent_template_id UUID REFERENCES industry_templates(id),
+            parent_template_id UUID,
             is_base_template BOOLEAN NOT NULL DEFAULT false,
             customizable_fields TEXT,
             is_active BOOLEAN NOT NULL DEFAULT true,
             version VARCHAR(20) NOT NULL DEFAULT '1.0.0',
             CONSTRAINT uq_industry_template_name UNIQUE (name),
-            CONSTRAINT uq_industry_template_code UNIQUE (industry_code)
+            CONSTRAINT uq_industry_template_code UNIQUE (industry_code),
+            CONSTRAINT fk_industry_template_parent FOREIGN KEY (parent_template_id) REFERENCES industry_templates(id)
         )
     """))
     
-    # Create indexes for industry_templates
-    op.create_index('idx_industry_template_code_active', 'industry_templates', ['industry_code', 'is_active'])
-    op.create_index('idx_industry_template_parent', 'industry_templates', ['parent_template_id', 'is_active'])
+    # Create indexes for industry_templates (idempotent)
+    op.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_industry_template_code_active
+        ON industry_templates (industry_code, is_active)
+    """))
+    op.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_industry_template_parent
+        ON industry_templates (parent_template_id, is_active)
+    """))
     
     # 6. Create organization_template_applications table - using raw SQL for consistency
     op.execute(text("""
-        CREATE TABLE organization_template_applications (
+        CREATE TABLE IF NOT EXISTS organization_template_applications (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
             updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),

@@ -2,8 +2,7 @@
 # Backup script for enum migration safety (US-6A)
 # Creates comprehensive backup before executing uppercase enum migration
 
-set -e  # Exit on error
-set -u  # Exit on undefined variable
+set -euo pipefail  # Exit on error, undefined variable, and pipe failures
 
 # Configuration
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -28,6 +27,22 @@ log_warn() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Security: Sanitize database error output to prevent credential exposure
+sanitize_db_error() {
+    sed -E 's/(password|pwd)=([^ ]+)/\1=***/g; s/postgresql:\/\/[^:]+:[^@]+@/postgresql:\/\/***:***@/g'
+}
+
+# Security: Sanitize AWS CLI output to prevent key exposure
+sanitize_aws_error() {
+    grep -vE '(AccessKeyId|SecretAccessKey|SessionToken)' | \
+    sed -E 's/AKIA[A-Z0-9]{16}/***ACCESS_KEY***/g'
+}
+
+# Security: Redact database URL credentials completely
+redact_database_url() {
+    echo "${1}" | sed -E 's/postgresql:\/\/[^:]+:[^@]+@/postgresql:\/\/***:***@/g'
 }
 
 # Check prerequisites
@@ -69,7 +84,7 @@ backup_user_application_access() {
         --if-exists \
         --create \
         --verbose \
-        > "${backup_file}" 2>&1
+        > "${backup_file}" 2> >(sanitize_db_error >&2)
 
     if [ $? -eq 0 ]; then
         log_info "Table backup completed: ${backup_file}"
@@ -95,7 +110,7 @@ backup_user_invitations() {
         --if-exists \
         --create \
         --verbose \
-        > "${backup_file}" 2>&1
+        > "${backup_file}" 2> >(sanitize_db_error >&2)
 
     if [ $? -eq 0 ]; then
         log_info "Table backup completed: ${backup_file}"
@@ -120,7 +135,7 @@ backup_enum_types() {
         JOIN pg_enum e ON t.oid = e.enumtypid
         WHERE t.typname IN ('applicationtype', 'invitationstatus')
         GROUP BY t.typname;
-    " > "${backup_file}"
+    " > "${backup_file}" 2> >(sanitize_db_error >&2)
 
     log_info "Enum types backed up: ${backup_file}"
 }
@@ -136,7 +151,7 @@ backup_indexes_and_constraints() {
         --table=user_invitations \
         --schema-only \
         --verbose \
-        > "${backup_file}" 2>&1
+        > "${backup_file}" 2> >(sanitize_db_error >&2)
 
     log_info "Indexes and constraints backed up: ${backup_file}"
 }
@@ -146,12 +161,13 @@ get_table_statistics() {
     log_info "Gathering table statistics..."
 
     local stats_file="${BACKUP_DIR}/statistics.txt"
+    local database_url_redacted=$(redact_database_url "${DATABASE_URL}")
 
     cat > "${stats_file}" <<EOF
 Backup Statistics
 ==================
 Timestamp: ${TIMESTAMP}
-Database: ${DATABASE_URL%%@*}@***
+Database: ${database_url_redacted}
 
 Table: user_application_access
 -------------------------------
@@ -163,7 +179,7 @@ EOF
             COUNT(DISTINCT user_id) as unique_users,
             COUNT(DISTINCT application) as unique_applications
         FROM user_application_access;
-    " >> "${stats_file}"
+    " >> "${stats_file}" 2> >(sanitize_db_error >&2)
 
     cat >> "${stats_file}" <<EOF
 
@@ -175,7 +191,7 @@ EOF
         FROM user_application_access
         GROUP BY application
         ORDER BY count DESC;
-    " >> "${stats_file}"
+    " >> "${stats_file}" 2> >(sanitize_db_error >&2)
 
     cat >> "${stats_file}" <<EOF
 
@@ -189,7 +205,7 @@ EOF
             COUNT(DISTINCT user_id) as unique_users,
             COUNT(DISTINCT status) as unique_statuses
         FROM user_invitations;
-    " >> "${stats_file}"
+    " >> "${stats_file}" 2> >(sanitize_db_error >&2)
 
     log_info "Statistics saved: ${stats_file}"
     cat "${stats_file}"
@@ -318,9 +334,8 @@ upload_to_s3() {
 
         local s3_path="${S3_BUCKET}/$(date +%Y-%m-%d)/enum_migration_${TIMESTAMP}/"
 
-        aws s3 cp "${BACKUP_DIR}" "${s3_path}" --recursive
-
-        if [ $? -eq 0 ]; then
+        # Security: Sanitize AWS CLI output to prevent credential exposure
+        if aws s3 cp "${BACKUP_DIR}" "${s3_path}" --recursive 2>&1 | sanitize_aws_error; then
             log_info "Backup uploaded to: ${s3_path}"
             echo "S3 Location: ${s3_path}" >> "${BACKUP_DIR}/MANIFEST.txt"
         else
@@ -337,11 +352,11 @@ create_archive() {
 
     local archive_file="enum_migration_${TIMESTAMP}.tar.gz"
 
-    tar -czf "${archive_file}" -C "$(dirname ${BACKUP_DIR})" "$(basename ${BACKUP_DIR})"
+    tar -czf "${archive_file}" -C "$(dirname "${BACKUP_DIR}")" "$(basename "${BACKUP_DIR}")"
 
     if [ $? -eq 0 ]; then
         log_info "Archive created: ${archive_file}"
-        log_info "Archive size: $(du -h ${archive_file} | cut -f1)"
+        log_info "Archive size: $(du -h "${archive_file}" | cut -f1)"
     else
         log_error "Archive creation failed"
         exit 1

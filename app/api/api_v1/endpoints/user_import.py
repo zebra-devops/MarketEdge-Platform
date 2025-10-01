@@ -126,9 +126,9 @@ async def preview_csv_import(
             'location': row.location,
             'phone': row.phone,
             'applications': {
-                'market_edge': row.market_edge_access,
-                'causal_edge': row.causal_edge_access,
-                'value_edge': row.value_edge_access
+                'MARKET_EDGE': row.market_edge_access,
+                'CAUSAL_EDGE': row.causal_edge_access,
+                'VALUE_EDGE': row.value_edge_access
             }
         })
     

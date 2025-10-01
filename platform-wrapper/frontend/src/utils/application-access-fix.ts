@@ -31,12 +31,13 @@ export function convertArrayToObject(accessArray: ApplicationAccessItem[] | unde
   const result: UserApplicationAccess = {}
 
   for (const item of accessArray) {
-    const app = item.application.toLowerCase()
-    if (app === 'market_edge' || app === 'market-edge') {
+    // US-7: Compare uppercase values directly (no .toLowerCase())
+    const app = item.application
+    if (app === 'MARKET_EDGE' || app === 'market-edge') {
       result.market_edge = item.has_access
-    } else if (app === 'causal_edge' || app === 'causal-edge') {
+    } else if (app === 'CAUSAL_EDGE' || app === 'causal-edge') {
       result.causal_edge = item.has_access
-    } else if (app === 'value_edge' || app === 'value-edge') {
+    } else if (app === 'VALUE_EDGE' || app === 'value-edge') {
       result.value_edge = item.has_access
     }
   }
@@ -55,16 +56,16 @@ export function convertArrayToObject(accessArray: ApplicationAccessItem[] | unde
 export function convertObjectToArray(accessObject: UserApplicationAccess | undefined): ApplicationAccessItem[] {
   if (!accessObject) {
     return [
-      { application: 'market_edge', has_access: false },
-      { application: 'causal_edge', has_access: false },
-      { application: 'value_edge', has_access: false }
+      { application: 'MARKET_EDGE', has_access: false },
+      { application: 'CAUSAL_EDGE', has_access: false },
+      { application: 'VALUE_EDGE', has_access: false }
     ]
   }
 
   return [
-    { application: 'market_edge', has_access: accessObject.market_edge ?? false },
-    { application: 'causal_edge', has_access: accessObject.causal_edge ?? false },
-    { application: 'value_edge', has_access: accessObject.value_edge ?? false }
+    { application: 'MARKET_EDGE', has_access: accessObject.market_edge ?? false },
+    { application: 'CAUSAL_EDGE', has_access: accessObject.causal_edge ?? false },
+    { application: 'VALUE_EDGE', has_access: accessObject.value_edge ?? false }
   ]
 }
 

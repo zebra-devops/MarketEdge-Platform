@@ -113,7 +113,7 @@ jobs:
 
       - name: 🎭 Install Playwright browsers
         working-directory: platform-wrapper/frontend
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox
 
       - name: 🚀 Start frontend server
         working-directory: platform-wrapper/frontend

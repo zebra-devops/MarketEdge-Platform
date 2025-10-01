@@ -1,0 +1,3 @@
+ CREATE TYPE applicationtype AS ENUM ('MARKET_EDGE', 'CAUSAL_EDGE', 'VALUE_EDGE');
+ CREATE TYPE invitationstatus AS ENUM ('PENDING', 'ACCEPTED', 'EXPIRED');
+

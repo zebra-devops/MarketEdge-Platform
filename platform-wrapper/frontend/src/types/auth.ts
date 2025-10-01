@@ -1,5 +1,5 @@
 export interface ApplicationAccess {
-  application: 'market_edge' | 'causal_edge' | 'value_edge'
+  application: 'MARKET_EDGE' | 'CAUSAL_EDGE' | 'VALUE_EDGE'
   has_access: boolean
 }
 

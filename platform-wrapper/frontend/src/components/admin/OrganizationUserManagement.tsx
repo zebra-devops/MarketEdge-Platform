@@ -263,9 +263,9 @@ export default function OrganizationUserManagement() {
 
   const getApplicationName = (app: string) => {
     switch (app) {
-      case 'market_edge': return 'Market Edge'
-      case 'causal_edge': return 'Causal Edge'
-      case 'value_edge': return 'Value Edge'
+      case 'MARKET_EDGE': return 'Market Edge'
+      case 'CAUSAL_EDGE': return 'Causal Edge'
+      case 'VALUE_EDGE': return 'Value Edge'
       default: return app
     }
   }
@@ -533,9 +533,9 @@ export default function OrganizationUserManagement() {
                   className="w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
                 >
                   <option value="all">All Applications</option>
-                  <option value="market_edge">Market Edge</option>
-                  <option value="causal_edge">Causal Edge</option>
-                  <option value="value_edge">Value Edge</option>
+                  <option value="MARKET_EDGE">Market Edge</option>
+                  <option value="CAUSAL_EDGE">Causal Edge</option>
+                  <option value="VALUE_EDGE">Value Edge</option>
                 </select>
               </div>
             </div>
@@ -708,7 +708,7 @@ export default function OrganizationUserManagement() {
                                 ) : (
                                   <XCircleIcon className="h-3 w-3 mr-1" />
                                 )}
-                                {app === 'market_edge' ? 'ME' : app === 'causal_edge' ? 'CE' : 'VE'}
+                                {app === 'MARKET_EDGE' ? 'ME' : app === 'CAUSAL_EDGE' ? 'CE' : 'VE'}
                               </span>
                             ))}
                           </div>

@@ -236,7 +236,7 @@ class AuthRateLimiter:
                 self.redis_client.ping()
                 self.redis_available = True
             except Exception as redis_error:
-                logger.warning(
+                logger.error(
                     "Redis connection failed during rate limiter init",
                     extra={
                         "event": "rate_limiter_redis_failed",

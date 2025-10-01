@@ -17,8 +17,15 @@ depends_on = None
 
 
 def upgrade():
-    # Create import status enum
-    op.execute("CREATE TYPE importstatus AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled')")
+    # Create import status enum (idempotent with DO block)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'importstatus') THEN
+                CREATE TYPE importstatus AS ENUM ('pending', 'processing', 'completed', 'failed', 'cancelled');
+            END IF;
+        END $$;
+    """)
     
     # Create import_batches table
     op.create_table('import_batches',
@@ -26,7 +33,7 @@ def upgrade():
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('filename', sa.String(255), nullable=False),
-        sa.Column('status', sa.Enum('pending', 'processing', 'completed', 'failed', 'cancelled', name='importstatus'), nullable=False, default='pending'),
+        sa.Column('status', postgresql.ENUM('pending', 'processing', 'completed', 'failed', 'cancelled', name='importstatus', create_type=False), nullable=False, server_default=sa.text("'pending'::importstatus")),
         sa.Column('total_rows', sa.Integer(), nullable=False, default=0),
         sa.Column('processed_rows', sa.Integer(), nullable=False, default=0),
         sa.Column('successful_rows', sa.Integer(), nullable=False, default=0),
