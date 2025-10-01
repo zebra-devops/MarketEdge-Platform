@@ -82,6 +82,12 @@ class Settings(BaseSettings):
     RATE_LIMIT_TENANT_REQUESTS_PER_MINUTE: int = 1000
     RATE_LIMIT_ADMIN_REQUESTS_PER_MINUTE: int = 5000
     RATE_LIMIT_STORAGE_URL: str = "redis://localhost:6379/1"
+
+    # Authentication Rate Limiting (DoS Protection)
+    RATE_LIMIT_AUTH_REQUESTS: str = Field(
+        default="10/5minutes",
+        description="Rate limit for authentication endpoints (format: requests/timewindow)"
+    )
     
     # Redis Security Configuration
     REDIS_PASSWORD: Optional[str] = None
