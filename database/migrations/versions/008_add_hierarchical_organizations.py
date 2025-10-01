@@ -69,7 +69,7 @@ def upgrade():
 
     # 1. Create organization_hierarchy table using raw SQL to avoid enum auto-creation
     op.execute(text("""
-        CREATE TABLE organization_hierarchy (
+        CREATE TABLE IF NOT EXISTS organization_hierarchy (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
@@ -99,7 +99,7 @@ def upgrade():
     
     # 2. Create user_hierarchy_assignments table using raw SQL to avoid enum auto-creation
     op.execute(text("""
-        CREATE TABLE user_hierarchy_assignments (
+        CREATE TABLE IF NOT EXISTS user_hierarchy_assignments (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
@@ -122,7 +122,7 @@ def upgrade():
     
     # 3. Create hierarchy_role_assignments table using raw SQL to avoid enum auto-creation
     op.execute(text("""
-        CREATE TABLE hierarchy_role_assignments (
+        CREATE TABLE IF NOT EXISTS hierarchy_role_assignments (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
             updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
@@ -165,7 +165,7 @@ def upgrade():
     
     # 5. Create industry_templates table - using raw SQL to avoid length constraint issues
     op.execute(text("""
-        CREATE TABLE industry_templates (
+        CREATE TABLE IF NOT EXISTS industry_templates (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
             updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
@@ -193,7 +193,7 @@ def upgrade():
     
     # 6. Create organization_template_applications table - using raw SQL for consistency
     op.execute(text("""
-        CREATE TABLE organization_template_applications (
+        CREATE TABLE IF NOT EXISTS organization_template_applications (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
             updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
