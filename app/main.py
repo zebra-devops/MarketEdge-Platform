@@ -66,6 +66,7 @@ except Exception as import_error:
     ROUTER_IMPORT_ERROR = str(import_error)
 from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.logging import LoggingMiddleware
+from app.middleware.csrf import CSRFMiddleware
 from app.core.lazy_startup import lazy_startup_manager
 
 # Lazy Initialization Architecture - Production Ready
@@ -135,6 +136,14 @@ app.add_middleware(
 
 # Add other middleware AFTER CORS
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+
+# CRITICAL FIX #4: Add CSRF protection middleware (Code Review Security Issue)
+if settings.CSRF_ENABLED:
+    app.add_middleware(CSRFMiddleware)
+    logger.info("CSRF protection middleware enabled")
+else:
+    logger.warning("CSRF protection middleware DISABLED - not recommended for production")
+
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(LoggingMiddleware)
 

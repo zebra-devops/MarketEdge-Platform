@@ -98,6 +98,28 @@ python emergency_db_fix.py           # Use cautiously
 ### Security Fixes Implemented
 - **CRITICAL FIX #2**: Auth0 JWT signature verification using JWKS (addresses code review issue)
 - **CRITICAL FIX #3**: Token refresh flow consistency - Auth0 tokens throughout (addresses code review issue)
+- **CRITICAL FIX #4**: CSRF protection validation using double-submit cookie pattern (addresses code review issue)
+
+### CSRF Protection (CRITICAL FIX #4)
+- **Pattern**: Double-submit cookie
+- **Protected Methods**: POST, PUT, PATCH, DELETE
+- **Token Header**: X-CSRF-Token
+- **Cookie**: csrf_token (httpOnly=false for JS access)
+- **Exempt Paths**: /auth/login, /auth/callback, /health, /docs
+- **Token Length**: 64 characters (configurable)
+- **Validation**: Constant-time comparison to prevent timing attacks
+
+**Frontend Usage**:
+1. CSRF token set in cookie on login
+2. Frontend reads token from cookie
+3. Include in X-CSRF-Token header for state-changing requests (POST/PUT/PATCH/DELETE)
+4. Backend validates cookie token matches header token
+
+**Security Benefits**:
+- Prevents cross-site logout attacks
+- Prevents account lockout via forced failed login attempts
+- Protects all state-changing operations
+- £925K Zebra Associates opportunity protected from CSRF attacks
 
 ## Critical Patterns
 
@@ -106,6 +128,7 @@ python emergency_db_fix.py           # Use cautiously
 # app/main.py - Order matters for response processing
 app.add_middleware(CORSMiddleware)          # FIRST (runs last on response)
 app.add_middleware(TrustedHostMiddleware)
+app.add_middleware(CSRFMiddleware)          # CSRF protection
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(LoggingMiddleware)
 ```
