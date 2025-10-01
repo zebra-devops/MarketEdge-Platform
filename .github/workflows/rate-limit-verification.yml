@@ -1,0 +1,169 @@
+name: Rate Limit Post-Merge Verification
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to verify'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  verify-rate-limiting:
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set environment URL
+        id: set-env
+        run: |
+          if [ "${{ github.event.inputs.environment }}" == "production" ]; then
+            echo "url=https://marketedge-platform.onrender.com" >> $GITHUB_OUTPUT
+            echo "env_name=production" >> $GITHUB_OUTPUT
+          else
+            echo "url=https://staging.marketedge.app" >> $GITHUB_OUTPUT
+            echo "env_name=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to complete..."
+          sleep 60  # Wait 1 minute for deployment
+
+      - name: Health check
+        id: health
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.set-env.outputs.url }}/api/v1/health")
+          echo "health_status=$HTTP_CODE" >> $GITHUB_OUTPUT
+
+          if [ "$HTTP_CODE" == "200" ]; then
+            echo "✅ Health check passed (HTTP $HTTP_CODE)"
+          else
+            echo "❌ Health check failed (HTTP $HTTP_CODE)"
+            exit 1
+          fi
+
+      - name: Rate limiting verification
+        id: rate-limit
+        run: |
+          echo "Testing rate limiting on ${{ steps.set-env.outputs.env_name }}..."
+
+          # Create results file
+          RESULTS_FILE="rate_limit_results.txt"
+          > "$RESULTS_FILE"
+
+          # Test auth0-url endpoint (35 requests)
+          for i in {1..35}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+              "${{ steps.set-env.outputs.url }}/api/v1/auth/auth0-url?redirect_uri=${{ steps.set-env.outputs.url }}/callback")
+            echo "$HTTP_CODE" >> "$RESULTS_FILE"
+          done
+
+          # Analyze results
+          COUNT_200=$(grep -c "200" "$RESULTS_FILE" || echo "0")
+          COUNT_429=$(grep -c "429" "$RESULTS_FILE" || echo "0")
+          COUNT_503=$(grep -c "503" "$RESULTS_FILE" || echo "0")
+
+          echo "Results: 200s=$COUNT_200, 429s=$COUNT_429, 503s=$COUNT_503"
+
+          # Set outputs
+          echo "count_200=$COUNT_200" >> $GITHUB_OUTPUT
+          echo "count_429=$COUNT_429" >> $GITHUB_OUTPUT
+          echo "count_503=$COUNT_503" >> $GITHUB_OUTPUT
+
+          # Check expected behavior
+          if [ "$COUNT_200" -eq 30 ] && [ "$COUNT_429" -eq 5 ] && [ "$COUNT_503" -eq 0 ]; then
+            echo "✅ Rate limiting working as expected"
+            echo "rate_limit_pass=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ Rate limiting behavior unexpected"
+            echo "rate_limit_pass=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create verification report
+        if: always()
+        run: |
+          cat << EOF > verification_report.md
+          # Rate Limiting Verification Report
+
+          **Date**: $(date)
+          **Environment**: ${{ steps.set-env.outputs.env_name }}
+          **PR**: #${{ github.event.pull_request.number || 'Manual Run' }}
+
+          ## Results
+
+          ### Health Check
+          - Status Code: ${{ steps.health.outputs.health_status }}
+          - Result: ${{ steps.health.outputs.health_status == '200' && '✅ Passed' || '❌ Failed' }}
+
+          ### Rate Limiting Test
+          - HTTP 200 (Success): ${{ steps.rate-limit.outputs.count_200 }}/30 expected
+          - HTTP 429 (Rate Limited): ${{ steps.rate-limit.outputs.count_429 }}/5 expected
+          - HTTP 503 (Service Unavailable): ${{ steps.rate-limit.outputs.count_503 }}/0 expected
+          - Result: ${{ steps.rate-limit.outputs.rate_limit_pass == 'true' && '✅ Passed' || '❌ Failed' }}
+
+          ## Checklist
+
+          - [x] Automated health check
+          - [x] Rate limiting verification
+          - [ ] Manual backend log review
+          - [ ] Zebra Associates test login
+          - [ ] 24-hour monitoring period
+
+          ## Next Steps
+
+          1. Review backend logs for rate limit enforcement messages
+          2. Test with actual user credentials
+          3. Monitor for 24 hours before production deployment
+          4. Configure production environment variables if staging verification passes
+          EOF
+
+          cat verification_report.md
+
+      - name: Upload verification report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: rate-limit-verification-report
+          path: verification_report.md
+
+      - name: Comment on PR
+        if: github.event.pull_request.number && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('verification_report.md', 'utf8');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ github.event.pull_request.number }},
+              body: report
+            });
+
+      - name: Set job status
+        if: always()
+        run: |
+          if [ "${{ steps.health.outputs.health_status }}" != "200" ]; then
+            echo "❌ Health check failed"
+            exit 1
+          fi
+
+          if [ "${{ steps.rate-limit.outputs.rate_limit_pass }}" != "true" ]; then
+            echo "⚠️ Rate limiting verification needs attention"
+            exit 0  # Warning, not failure
+          fi
+
+          echo "✅ All automated checks passed"
