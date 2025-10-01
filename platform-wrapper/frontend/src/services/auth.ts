@@ -813,9 +813,25 @@ export class AuthService {
     console.debug('🔧 Setting tokens...', {
       environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
       hasAccessToken: !!tokenResponse.access_token,
-      hasRefreshToken: !!tokenResponse.refresh_token
+      hasRefreshToken: !!tokenResponse.refresh_token,
+      accessTokenEmpty: !tokenResponse.access_token || tokenResponse.access_token.trim() === '',
+      refreshTokenEmpty: !tokenResponse.refresh_token || tokenResponse.refresh_token.trim() === ''
     })
-    
+
+    // CRITICAL GUARD: Reject empty string tokens
+    if (!tokenResponse.access_token || tokenResponse.access_token.trim() === '') {
+      console.error('❌ CRITICAL: Cannot store empty access token')
+      throw new Error('Invalid access token received from backend - token is empty')
+    }
+
+    if (!tokenResponse.refresh_token || tokenResponse.refresh_token.trim() === '') {
+      console.error('❌ CRITICAL: Cannot store empty refresh token', {
+        hasRefreshToken: 'refresh_token' in tokenResponse,
+        refreshTokenValue: tokenResponse.refresh_token
+      })
+      throw new Error('Invalid refresh token received from backend - token is empty or missing')
+    }
+
     if (tokenResponse.access_token) {
       // Store token temporarily for immediate access while cookies are being set
       this.temporaryAccessToken = tokenResponse.access_token
@@ -1099,8 +1115,24 @@ export class AuthService {
   }
 
   private clearTokens(): void {
-    Cookies.remove('access_token')
-    Cookies.remove('refresh_token')
+    console.debug('🧹 Clearing tokens...')
+
+    // CRITICAL FIX: DELETE cookies with proper path/domain settings
+    // Must match the settings used when cookies were SET
+    const cookieOptions = {
+      path: '/',
+      domain: typeof window !== 'undefined' ? window.location.hostname : undefined
+    }
+
+    // Remove cookies (this DELETES them, not sets to empty string)
+    Cookies.remove('access_token', cookieOptions)
+    Cookies.remove('refresh_token', cookieOptions)
+
+    // Also try removing without domain specification as fallback
+    Cookies.remove('access_token', { path: '/' })
+    Cookies.remove('refresh_token', { path: '/' })
+
+    // Remove from localStorage (DELETE, not set to "")
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('token_expires_at')
@@ -1115,6 +1147,8 @@ export class AuthService {
 
     // Clear temporary token storage
     this.temporaryAccessToken = null
+
+    console.debug('✅ Token clearing completed')
   }
 
   private clearUserData(): void {

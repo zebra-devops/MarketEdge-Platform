@@ -604,7 +604,24 @@ class Auth0Client:
     def _validate_token_response(self, token_data: Dict[str, Any]) -> bool:
         """Validate Auth0 token response"""
         required_fields = ["access_token", "token_type"]
-        return all(field in token_data for field in required_fields)
+        is_valid = all(field in token_data for field in required_fields)
+
+        # CRITICAL WARNING: Check if refresh_token is missing or empty
+        if is_valid:
+            refresh_token = token_data.get("refresh_token")
+            if not refresh_token or not refresh_token.strip():
+                logger.warning(
+                    "Auth0 token response missing refresh_token - check Auth0 application settings",
+                    extra={
+                        "event": "token_response_missing_refresh_token",
+                        "has_refresh_token_key": "refresh_token" in token_data,
+                        "refresh_token_empty": not refresh_token if refresh_token else True,
+                        "token_type": token_data.get("token_type"),
+                        "hint": "Ensure 'Refresh Token Rotation' is enabled in Auth0 Application settings"
+                    }
+                )
+
+        return is_valid
     
     async def _get_management_api_token(self) -> Optional[str]:
         """Get Auth0 Management API token with secure caching and rotation"""
