@@ -1,0 +1,150 @@
+name: Auth Regression Tests
+
+on:
+  pull_request:
+    branches: [ main, test/* ]
+  push:
+    branches: [ main, test/* ]
+  workflow_dispatch:
+
+jobs:
+  auth-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: marketedge_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install backend dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+
+      - name: Run database migrations
+        run: |
+          alembic upgrade head
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/marketedge_test
+
+      - name: Start backend server
+        run: |
+          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          sleep 5
+          # Wait for backend to be ready
+          timeout 30 bash -c 'until curl -s http://localhost:8000/health > /dev/null; do sleep 1; done'
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/marketedge_test
+          REDIS_URL: redis://localhost:6379/0
+          AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+          AUTH0_CLIENT_ID: ${{ secrets.AUTH0_CLIENT_ID }}
+          AUTH0_CLIENT_SECRET: ${{ secrets.AUTH0_CLIENT_SECRET }}
+          AUTH0_AUDIENCE: ${{ secrets.AUTH0_AUDIENCE }}
+
+      - name: Verify backend health
+        run: |
+          curl -f http://localhost:8000/health || exit 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: platform-wrapper/frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: platform-wrapper/frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: platform-wrapper/frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Start frontend server
+        working-directory: platform-wrapper/frontend
+        run: |
+          npm run build
+          npm run start &
+          sleep 10
+          # Wait for frontend to be ready
+          timeout 30 bash -c 'until curl -s http://localhost:3000 > /dev/null; do sleep 1; done'
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+
+      - name: Run auth regression tests
+        working-directory: platform-wrapper/frontend
+        run: npx playwright test e2e/auth-regression.spec.ts --reporter=list
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3000
+          API_URL: http://localhost:8000
+          TEST_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-results
+          path: |
+            platform-wrapper/frontend/test-results/
+            platform-wrapper/frontend/playwright-report/
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-screenshots
+          path: |
+            platform-wrapper/frontend/test-results/**/*.png
+            platform-wrapper/frontend/*.png
+
+      - name: Comment PR with results
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const resultsPath = 'platform-wrapper/frontend/test-results/';
+            let comment = '## Auth Regression Test Results\n\n';
+
+            if (fs.existsSync(resultsPath)) {
+              comment += '✅ Tests completed. Check artifacts for details.\n';
+            } else {
+              comment += '❌ Tests failed or did not complete.\n';
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
