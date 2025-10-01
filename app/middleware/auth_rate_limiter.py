@@ -448,21 +448,15 @@ class AuthRateLimiter:
                     # Get rate limit key
                     key = get_rate_limit_key(request, getattr(request.state, "user_id", None))
 
-                    # Check rate limit using slowapi's internal storage
-                    # Instead of dynamically applying decorator, check limit directly
-                    from slowapi.wrappers import Limit as LimitItem
-
-                    # Parse limit string (e.g., "30/5minutes")
-                    limit_item = LimitItem(limit_str, key_func=lambda: key)
-
                     # Check if limit exceeded using limiter's storage
-                    if self.limiter.storage is not None:
+                    # Storage is accessed via self.limiter.limiter.storage (slowapi wraps limits library)
+                    if self.limiter.limiter and self.limiter.limiter.storage is not None:
                         now = time.time()
                         window = self._parse_limit_window(limit_str)
                         max_requests = self._parse_limit_requests(limit_str)
 
                         # Get current request count
-                        current_count = self.limiter.storage.incr(
+                        current_count = self.limiter.limiter.storage.incr(
                             key,
                             window,
                             amount=1
