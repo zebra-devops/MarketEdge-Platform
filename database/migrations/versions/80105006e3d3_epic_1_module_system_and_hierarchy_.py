@@ -78,74 +78,82 @@ def upgrade() -> None:
         op.create_index(op.f('ix_organization_hierarchy_hierarchy_path'), 'organization_hierarchy', ['hierarchy_path'], unique=False)
         op.create_index(op.f('ix_organization_hierarchy_name'), 'organization_hierarchy', ['name'], unique=False)
         op.create_index(op.f('ix_organization_hierarchy_slug'), 'organization_hierarchy', ['slug'], unique=True)
-    op.create_table('hierarchy_permission_overrides',
-    sa.Column('user_id', postgresql.UUID(), nullable=False),
-    sa.Column('hierarchy_node_id', postgresql.UUID(), nullable=False),
-    sa.Column('permission', sa.String(length=100), nullable=False),
-    sa.Column('granted', sa.Boolean(), nullable=False),
-    sa.Column('reason', sa.String(length=500), nullable=True),
-    sa.Column('granted_by', postgresql.UUID(), nullable=True),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('id', postgresql.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.ForeignKeyConstraint(['granted_by'], ['users.id'], ),
-    sa.ForeignKeyConstraint(['hierarchy_node_id'], ['organization_hierarchy.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('user_id', 'hierarchy_node_id', 'permission', name='uq_user_permission_override')
-    )
-    op.create_index('idx_permission_override_node_permission', 'hierarchy_permission_overrides', ['hierarchy_node_id', 'permission'], unique=False)
-    op.create_index('idx_permission_override_user_active', 'hierarchy_permission_overrides', ['user_id', 'is_active'], unique=False)
-    op.create_table('hierarchy_role_assignments',
-    sa.Column('hierarchy_node_id', postgresql.UUID(), nullable=False),
-    sa.Column('role', sa.Enum('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer', name='enhanceduserrole', create_type=False), nullable=False),
-    sa.Column('permissions', sa.Text(), nullable=False),
-    sa.Column('inherits_from_parent', sa.Boolean(), nullable=False),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('id', postgresql.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.ForeignKeyConstraint(['hierarchy_node_id'], ['organization_hierarchy.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('hierarchy_node_id', 'role', name='uq_hierarchy_role')
-    )
-    op.create_index('idx_hierarchy_role_active', 'hierarchy_role_assignments', ['role', 'is_active'], unique=False)
-    op.create_index('idx_hierarchy_role_node', 'hierarchy_role_assignments', ['hierarchy_node_id', 'is_active'], unique=False)
-    op.create_table('organization_template_applications',
-    sa.Column('organization_id', postgresql.UUID(), nullable=False),
-    sa.Column('template_id', postgresql.UUID(), nullable=False),
-    sa.Column('applied_settings', sa.Text(), nullable=False),
-    sa.Column('customizations', sa.Text(), nullable=True),
-    sa.Column('applied_by', postgresql.UUID(), nullable=False),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('id', postgresql.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.ForeignKeyConstraint(['applied_by'], ['users.id'], ),
-    sa.ForeignKeyConstraint(['organization_id'], ['organisations.id'], ),
-    sa.ForeignKeyConstraint(['template_id'], ['industry_templates.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('organization_id', 'template_id', name='uq_org_template_application')
-    )
-    op.create_index('idx_org_template_org_active', 'organization_template_applications', ['organization_id', 'is_active'], unique=False)
-    op.create_index('idx_org_template_template_active', 'organization_template_applications', ['template_id', 'is_active'], unique=False)
-    op.create_table('user_hierarchy_assignments',
-    sa.Column('user_id', postgresql.UUID(), nullable=False),
-    sa.Column('hierarchy_node_id', postgresql.UUID(), nullable=False),
-    sa.Column('role', sa.Enum('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer', name='enhanceduserrole', create_type=False), nullable=False),
-    sa.Column('is_primary', sa.Boolean(), nullable=False),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('id', postgresql.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.ForeignKeyConstraint(['hierarchy_node_id'], ['organization_hierarchy.id'], ),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('user_id', 'hierarchy_node_id', name='uq_user_hierarchy_assignment')
-    )
-    op.create_index('idx_user_hierarchy_node_role', 'user_hierarchy_assignments', ['hierarchy_node_id', 'role'], unique=False)
-    op.create_index('idx_user_hierarchy_user_active', 'user_hierarchy_assignments', ['user_id', 'is_active'], unique=False)
+
+    if 'hierarchy_permission_overrides' not in existing_tables:
+        op.create_table('hierarchy_permission_overrides',
+        sa.Column('user_id', postgresql.UUID(), nullable=False),
+        sa.Column('hierarchy_node_id', postgresql.UUID(), nullable=False),
+        sa.Column('permission', sa.String(length=100), nullable=False),
+        sa.Column('granted', sa.Boolean(), nullable=False),
+        sa.Column('reason', sa.String(length=500), nullable=True),
+        sa.Column('granted_by', postgresql.UUID(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), nullable=False),
+        sa.Column('id', postgresql.UUID(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.ForeignKeyConstraint(['granted_by'], ['users.id'], ),
+        sa.ForeignKeyConstraint(['hierarchy_node_id'], ['organization_hierarchy.id'], ),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('user_id', 'hierarchy_node_id', 'permission', name='uq_user_permission_override')
+        )
+        op.create_index('idx_permission_override_node_permission', 'hierarchy_permission_overrides', ['hierarchy_node_id', 'permission'], unique=False)
+        op.create_index('idx_permission_override_user_active', 'hierarchy_permission_overrides', ['user_id', 'is_active'], unique=False)
+
+    if 'hierarchy_role_assignments' not in existing_tables:
+        op.create_table('hierarchy_role_assignments',
+        sa.Column('hierarchy_node_id', postgresql.UUID(), nullable=False),
+        sa.Column('role', sa.Enum('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer', name='enhanceduserrole', create_type=False), nullable=False),
+        sa.Column('permissions', sa.Text(), nullable=False),
+        sa.Column('inherits_from_parent', sa.Boolean(), nullable=False),
+        sa.Column('is_active', sa.Boolean(), nullable=False),
+        sa.Column('id', postgresql.UUID(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.ForeignKeyConstraint(['hierarchy_node_id'], ['organization_hierarchy.id'], ),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('hierarchy_node_id', 'role', name='uq_hierarchy_role')
+        )
+        op.create_index('idx_hierarchy_role_active', 'hierarchy_role_assignments', ['role', 'is_active'], unique=False)
+        op.create_index('idx_hierarchy_role_node', 'hierarchy_role_assignments', ['hierarchy_node_id', 'is_active'], unique=False)
+
+    if 'organization_template_applications' not in existing_tables:
+        op.create_table('organization_template_applications',
+        sa.Column('organization_id', postgresql.UUID(), nullable=False),
+        sa.Column('template_id', postgresql.UUID(), nullable=False),
+        sa.Column('applied_settings', sa.Text(), nullable=False),
+        sa.Column('customizations', sa.Text(), nullable=True),
+        sa.Column('applied_by', postgresql.UUID(), nullable=False),
+        sa.Column('is_active', sa.Boolean(), nullable=False),
+        sa.Column('id', postgresql.UUID(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.ForeignKeyConstraint(['applied_by'], ['users.id'], ),
+        sa.ForeignKeyConstraint(['organization_id'], ['organisations.id'], ),
+        sa.ForeignKeyConstraint(['template_id'], ['industry_templates.id'], ),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('organization_id', 'template_id', name='uq_org_template_application')
+        )
+        op.create_index('idx_org_template_org_active', 'organization_template_applications', ['organization_id', 'is_active'], unique=False)
+        op.create_index('idx_org_template_template_active', 'organization_template_applications', ['template_id', 'is_active'], unique=False)
+
+    if 'user_hierarchy_assignments' not in existing_tables:
+        op.create_table('user_hierarchy_assignments',
+        sa.Column('user_id', postgresql.UUID(), nullable=False),
+        sa.Column('hierarchy_node_id', postgresql.UUID(), nullable=False),
+        sa.Column('role', sa.Enum('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer', name='enhanceduserrole', create_type=False), nullable=False),
+        sa.Column('is_primary', sa.Boolean(), nullable=False),
+        sa.Column('is_active', sa.Boolean(), nullable=False),
+        sa.Column('id', postgresql.UUID(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.ForeignKeyConstraint(['hierarchy_node_id'], ['organization_hierarchy.id'], ),
+        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('user_id', 'hierarchy_node_id', name='uq_user_hierarchy_assignment')
+        )
+        op.create_index('idx_user_hierarchy_node_role', 'user_hierarchy_assignments', ['hierarchy_node_id', 'role'], unique=False)
+        op.create_index('idx_user_hierarchy_user_active', 'user_hierarchy_assignments', ['user_id', 'is_active'], unique=False)
     op.drop_index('ix_pricing_data_competitor_id', table_name='pricing_data')
     op.drop_index('ix_pricing_data_date_collected', table_name='pricing_data')
     op.drop_index('ix_pricing_data_market_id', table_name='pricing_data')
