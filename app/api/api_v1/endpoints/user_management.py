@@ -6,12 +6,15 @@ from typing import List, Optional, Dict
 from datetime import datetime, timedelta
 import uuid
 import secrets
+import logging
 from ....core.database import get_db, get_async_db
 from ....models.user import User, UserRole
 from ....models.user_application_access import UserApplicationAccess, UserInvitation, ApplicationType, InvitationStatus
 from ....models.organisation import Organisation
 from ....auth.dependencies import get_current_user, get_current_active_user, require_admin, require_super_admin
 from ....services.auth import send_invitation_email
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -232,28 +235,20 @@ async def update_user(
 
         # Add new access
         for access in user_update.application_access:
-            # Map frontend snake_case keys to backend ApplicationType enum
-            app_type_mapping = {
-                "market_edge": ApplicationType.MARKET_EDGE,
-                "causal_edge": ApplicationType.CAUSAL_EDGE,
-                "value_edge": ApplicationType.VALUE_EDGE,
-                "MARKET_EDGE": ApplicationType.MARKET_EDGE,
-                "CAUSAL_EDGE": ApplicationType.CAUSAL_EDGE,
-                "VALUE_EDGE": ApplicationType.VALUE_EDGE
-            }
-
-            # Get the correct ApplicationType enum value
-            app_type = app_type_mapping.get(access.application)
-            if app_type is None:
-                # Log and raise error for invalid application types instead of silently skipping
+            # Direct enum lookup (uppercase only - US-7 cleanup)
+            try:
+                app_type = ApplicationType[access.application]
+            except KeyError:
+                # Log and raise error for invalid application types
+                valid_apps = [app.name for app in ApplicationType]
                 logger.error(f"Invalid application type: {access.application}", extra={
                     "user_id": str(user.id),
                     "invalid_app": access.application,
-                    "valid_apps": list(app_type_mapping.keys())
+                    "valid_apps": valid_apps
                 })
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid application type: {access.application}. Expected one of: {list(app_type_mapping.keys())}"
+                    detail=f"Invalid application type: {access.application}. Must be one of: {', '.join(valid_apps)}"
                 )
 
             db.add(UserApplicationAccess(

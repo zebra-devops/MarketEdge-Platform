@@ -31,12 +31,13 @@ export function convertArrayToObject(accessArray: ApplicationAccessItem[] | unde
   const result: UserApplicationAccess = {}
 
   for (const item of accessArray) {
-    const app = item.application.toLowerCase()
-    if (app === 'market_edge' || app === 'market-edge') {
+    // US-7: Compare uppercase values directly (no .toLowerCase())
+    const app = item.application
+    if (app === 'MARKET_EDGE' || app === 'market-edge') {
       result.market_edge = item.has_access
-    } else if (app === 'causal_edge' || app === 'causal-edge') {
+    } else if (app === 'CAUSAL_EDGE' || app === 'causal-edge') {
       result.causal_edge = item.has_access
-    } else if (app === 'value_edge' || app === 'value-edge') {
+    } else if (app === 'VALUE_EDGE' || app === 'value-edge') {
       result.value_edge = item.has_access
     }
   }

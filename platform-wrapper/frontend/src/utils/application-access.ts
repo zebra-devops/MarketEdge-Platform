@@ -4,27 +4,20 @@ export type ApplicationName = 'MARKET_EDGE' | 'CAUSAL_EDGE' | 'VALUE_EDGE'
 export type ApplicationNameLowercase = 'market_edge' | 'causal_edge' | 'value_edge'
 
 /**
- * Convert uppercase application name to lowercase
+ * US-7: Simplified - normalize to uppercase for internal comparison
+ * No longer converts TO lowercase, only FROM lowercase legacy format
  */
-function toLowercase(app: ApplicationName): ApplicationNameLowercase {
-  const mapping: Record<ApplicationName, ApplicationNameLowercase> = {
-    'MARKET_EDGE': 'market_edge',
-    'CAUSAL_EDGE': 'causal_edge',
-    'VALUE_EDGE': 'value_edge'
-  }
-  return mapping[app]
-}
-
-/**
- * Convert lowercase application name to uppercase
- */
-function toUppercase(app: ApplicationNameLowercase): ApplicationName {
-  const mapping: Record<ApplicationNameLowercase, ApplicationName> = {
+function normalizeToUppercase(app: string): ApplicationName | null {
+  const mapping: Record<string, ApplicationName> = {
+    'MARKET_EDGE': 'MARKET_EDGE',
+    'CAUSAL_EDGE': 'CAUSAL_EDGE',
+    'VALUE_EDGE': 'VALUE_EDGE',
+    // Legacy lowercase support (for backward compatibility)
     'market_edge': 'MARKET_EDGE',
     'causal_edge': 'CAUSAL_EDGE',
     'value_edge': 'VALUE_EDGE'
   }
-  return mapping[app]
+  return mapping[app] || null
 }
 
 /**
@@ -39,33 +32,23 @@ export function hasApplicationAccess(
     return false
   }
 
+  // US-7: Normalize application name to uppercase
+  const appName = normalizeToUppercase(application as string)
+  if (!appName) {
+    return false
+  }
+
   // Handle new format (ApplicationAccess[])
   if (Array.isArray(applicationAccess)) {
-    // Backend sends lowercase application names, so normalize to uppercase for comparison
-    const isLowercase = typeof application === 'string' &&
-      application.includes('_') &&
-      application === application.toLowerCase()
-
-    const appName = isLowercase
-      ? toUppercase(application as ApplicationNameLowercase)
-      : application as ApplicationName
-
-    const accessRecord = applicationAccess.find(access =>
-      access.application === appName || access.application === toLowercase(appName)
-    )
+    const accessRecord = applicationAccess.find(access => {
+      const normalizedAccess = normalizeToUppercase(access.application)
+      return normalizedAccess === appName
+    })
 
     return accessRecord?.has_access || false
   }
 
   // Handle old format ({ [key: string]: boolean })
-  const isLowercase = typeof application === 'string' &&
-    application.includes('_') &&
-    application === application.toLowerCase()
-
-  const appName = isLowercase
-    ? toUppercase(application as ApplicationNameLowercase)
-    : application as ApplicationName
-
   return applicationAccess[appName] || false
 }
 
@@ -83,17 +66,8 @@ export function getAccessibleApplications(
   if (Array.isArray(applicationAccess)) {
     return applicationAccess
       .filter(access => access.has_access)
-      .map(access => {
-        // Convert any format to uppercase for consistency
-        if (access.application === 'market_edge' || access.application === 'MARKET_EDGE') {
-          return 'MARKET_EDGE' as ApplicationName
-        } else if (access.application === 'causal_edge' || access.application === 'CAUSAL_EDGE') {
-          return 'CAUSAL_EDGE' as ApplicationName
-        } else if (access.application === 'value_edge' || access.application === 'VALUE_EDGE') {
-          return 'VALUE_EDGE' as ApplicationName
-        }
-        return access.application as ApplicationName
-      })
+      .map(access => normalizeToUppercase(access.application))
+      .filter((app): app is ApplicationName => app !== null)
   }
 
   // Handle old format ({ [key: string]: boolean })
