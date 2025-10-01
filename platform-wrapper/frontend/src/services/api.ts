@@ -189,6 +189,22 @@ class ApiService {
           console.error('   This will likely result in a 403 Forbidden error')
         }
         
+        // CRITICAL FIX #4: Add CSRF token for state-changing requests (POST/PUT/PATCH/DELETE)
+        const stateChangingMethods = ['POST', 'PUT', 'PATCH', 'DELETE']
+        if (config.method && stateChangingMethods.includes(config.method.toUpperCase())) {
+          try {
+            const csrfToken = Cookies.get('csrf_token')
+            if (csrfToken) {
+              config.headers['X-CSRF-Token'] = csrfToken
+              console.log('🛡️ CSRF token added to request')
+            } else {
+              console.warn('⚠️ CSRF token not found for state-changing request')
+            }
+          } catch (csrfError) {
+            console.warn('Failed to retrieve CSRF token:', csrfError)
+          }
+        }
+
         // Add organization context header if set - with validation
         if (this.currentOrganizationId) {
           const cleanOrgId = this.currentOrganizationId.trim()

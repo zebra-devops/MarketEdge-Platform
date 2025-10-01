@@ -54,6 +54,24 @@ class Settings(BaseSettings):
     CSP_ENABLED: bool = True
     HSTS_MAX_AGE: int = 31536000  # 1 year
     HSTS_INCLUDE_SUBDOMAINS: bool = True
+
+    # CSRF Protection (CRITICAL FIX #4 - Code Review)
+    CSRF_ENABLED: bool = Field(
+        default=True,
+        description="Enable CSRF protection middleware"
+    )
+    CSRF_COOKIE_NAME: str = Field(
+        default="csrf_token",
+        description="Name of CSRF token cookie"
+    )
+    CSRF_HEADER_NAME: str = Field(
+        default="X-CSRF-Token",
+        description="Name of CSRF token header"
+    )
+    CSRF_TOKEN_LENGTH: int = Field(
+        default=64,
+        description="Length of generated CSRF tokens (in characters)"
+    )
     
     CORS_ORIGINS: Union[str, List[str]] = Field(default=["http://localhost:3000", "http://localhost:3001"])
     

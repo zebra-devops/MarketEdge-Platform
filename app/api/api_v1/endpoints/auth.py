@@ -413,11 +413,12 @@ async def login_oauth2(
         )
 
         # CSRF protection cookie (readable by JS for CSRF token)
+        # CRITICAL FIX #4: Use configured CSRF token length for security
         csrf_cookie_settings = base_cookie_settings.copy()
         csrf_cookie_settings["httponly"] = False  # Allow JS access for CSRF protection
         response.set_cookie(
-            key="csrf_token",
-            value=secrets.token_urlsafe(32),
+            key=settings.CSRF_COOKIE_NAME,
+            value=secrets.token_urlsafe(settings.CSRF_TOKEN_LENGTH),
             max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             **csrf_cookie_settings
         )
@@ -937,11 +938,12 @@ async def login(
     )
     
     # CSRF protection cookie (readable by JS for CSRF token)
+    # CRITICAL FIX #4: Use configured CSRF token length for security
     csrf_cookie_settings = base_cookie_settings.copy()
     csrf_cookie_settings["httponly"] = False  # Allow JS access for CSRF protection
     response.set_cookie(
-        key="csrf_token",
-        value=secrets.token_urlsafe(32),
+        key=settings.CSRF_COOKIE_NAME,
+        value=secrets.token_urlsafe(settings.CSRF_TOKEN_LENGTH),
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         **csrf_cookie_settings
     )
@@ -1132,11 +1134,12 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
             )
 
             # Update CSRF token
+            # CRITICAL FIX #4: Use configured CSRF token length for security
             csrf_cookie_settings = base_cookie_settings.copy()
             csrf_cookie_settings["httponly"] = False
             response.set_cookie(
-                key="csrf_token",
-                value=secrets.token_urlsafe(32),
+                key=settings.CSRF_COOKIE_NAME,
+                value=secrets.token_urlsafe(settings.CSRF_TOKEN_LENGTH),
                 max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
                 **csrf_cookie_settings
             )
@@ -1275,11 +1278,12 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
         )
 
         # Update CSRF token
+        # CRITICAL FIX #4: Use configured CSRF token length for security
         csrf_cookie_settings = base_cookie_settings.copy()
         csrf_cookie_settings["httponly"] = False
         response.set_cookie(
-            key="csrf_token",
-            value=secrets.token_urlsafe(32),
+            key=settings.CSRF_COOKIE_NAME,
+            value=secrets.token_urlsafe(settings.CSRF_TOKEN_LENGTH),
             max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             **csrf_cookie_settings
         )
@@ -1349,11 +1353,12 @@ async def logout(
                 })
         
         # Clear secure cookies with proper settings
+        # CRITICAL FIX #4: Use configured CSRF cookie name
         cookie_settings = settings.get_cookie_settings()
         response.delete_cookie(key="access_token", **cookie_settings)
         response.delete_cookie(key="refresh_token", **cookie_settings)
         response.delete_cookie(key="session_security", **cookie_settings)
-        response.delete_cookie(key="csrf_token", **cookie_settings)
+        response.delete_cookie(key=settings.CSRF_COOKIE_NAME, **cookie_settings)
         
         logger.info("User logout successful", extra={
             "event": "logout_success",
@@ -1372,11 +1377,12 @@ async def logout(
             "error_type": type(e).__name__
         })
         # Still clear cookies even if revocation fails
+        # CRITICAL FIX #4: Use configured CSRF cookie name
         cookie_settings = settings.get_cookie_settings()
         response.delete_cookie(key="access_token", **cookie_settings)
         response.delete_cookie(key="refresh_token", **cookie_settings)
         response.delete_cookie(key="session_security", **cookie_settings)
-        response.delete_cookie(key="csrf_token", **cookie_settings)
+        response.delete_cookie(key=settings.CSRF_COOKIE_NAME, **cookie_settings)
         
         return {"message": "Logout completed with warnings"}
 
