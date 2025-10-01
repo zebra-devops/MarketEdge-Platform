@@ -33,7 +33,7 @@ def upgrade():
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('filename', sa.String(255), nullable=False),
-        sa.Column('status', sa.Enum('pending', 'processing', 'completed', 'failed', 'cancelled', name='importstatus', create_type=False), nullable=False, default='pending'),
+        sa.Column('status', postgresql.ENUM('pending', 'processing', 'completed', 'failed', 'cancelled', name='importstatus', create_type=False), nullable=False, server_default=sa.text("'pending'::importstatus")),
         sa.Column('total_rows', sa.Integer(), nullable=False, default=0),
         sa.Column('processed_rows', sa.Integer(), nullable=False, default=0),
         sa.Column('successful_rows', sa.Integer(), nullable=False, default=0),
