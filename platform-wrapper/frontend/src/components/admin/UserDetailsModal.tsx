@@ -10,7 +10,7 @@ interface User {
   email: string
   first_name: string
   last_name: string
-  role: 'client_admin' | 'end_user' | 'analyst' | 'viewer'
+  role: string
   organisation_id: string
   is_active: boolean
   created_at: string
@@ -26,7 +26,7 @@ interface User {
 interface EditUserForm {
   first_name: string
   last_name: string
-  role: 'client_admin' | 'end_user' | 'analyst' | 'viewer'
+  role: string
   is_active: boolean
   application_access: {
     market_edge: boolean
@@ -186,10 +186,10 @@ export default function UserDetailsModal({
 
   const getRoleDescription = (role: string) => {
     switch (role) {
-      case 'client_admin': return 'Can manage users within this organization'
-      case 'end_user': return 'Can access competitive intelligence tools'
+      case 'admin': return 'Can manage users within this organization'
       case 'analyst': return 'Can access advanced analytics features'
       case 'viewer': return 'Read-only access to applications'
+      case 'super_admin': return 'Full system administration privileges across all organizations'
       default: return ''
     }
   }
@@ -262,10 +262,10 @@ export default function UserDetailsModal({
                 onChange={handleInputChange}
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
               >
-                <option value="end_user">End User</option>
+                <option value="viewer">Viewer</option>
                 <option value="analyst">Analyst</option>
-                <option value="client_admin">Client Admin</option>
-                {isSuperAdmin && <option value="viewer">Viewer</option>}
+                <option value="admin">Admin</option>
+                <option value="super_admin">Super Admin</option>
               </select>
               <p className="mt-1 text-xs text-gray-500">
                 {getRoleDescription(formData.role)}

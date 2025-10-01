@@ -22,7 +22,9 @@
     "test:multi-tenant": "jest --testPathPattern=.*multi.*tenant.*",
     "test:components": "jest --testPathPattern=src/components/.*test.*",
     "test:token-retrieval": "node src/test-token-retrieval.js",
-    "test:auth": "npm run test:token-retrieval"
+    "test:auth": "npm run test:token-retrieval",
+    "test:zebra-smoke": "playwright test zebra-associates-smoke.spec.ts --project=chromium",
+    "zebra-smoke": "node ../../scripts/zebra-smoke.js"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",

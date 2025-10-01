@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RefreshCw, CheckCircle, XCircle, AlertTriangle, ExternalLink } from 'lucide-react';
+import { ArrowPathIcon, CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline';
 
 interface EnvironmentInfo {
   status: string;
@@ -154,11 +154,11 @@ export default function DebugPage() {
     switch (status.toLowerCase()) {
       case 'success':
       case 'healthy':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircleIcon className="h-4 w-4 text-green-500" />;
       case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+        return <ExclamationTriangleIcon className="h-4 w-4 text-yellow-500" />;
       default:
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircleIcon className="h-4 w-4 text-red-500" />;
     }
   };
 
@@ -189,11 +189,11 @@ export default function DebugPage() {
             disabled={loading}
             variant="outline"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <ArrowPathIcon className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <Button onClick={testCors} variant="outline">
-            <ExternalLink className="h-4 w-4 mr-2" />
+            <ArrowTopRightOnSquareIcon className="h-4 w-4 mr-2" />
             Test CORS
           </Button>
         </div>
@@ -209,7 +209,7 @@ export default function DebugPage() {
 
       {error && (
         <Alert variant="destructive">
-          <XCircle className="h-4 w-4" />
+          <XCircleIcon className="h-4 w-4" />
           <AlertDescription>
             <strong>Error:</strong> {error}
           </AlertDescription>

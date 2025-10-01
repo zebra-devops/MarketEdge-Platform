@@ -26,7 +26,7 @@ export interface UserCreate {
   email: string
   first_name: string
   last_name: string
-  role: 'admin' | 'analyst' | 'viewer'
+  role: 'super_admin' | 'admin' | 'analyst' | 'viewer'
   organisation_id?: string
   application_access: ApplicationAccess[]
   send_invitation: boolean
@@ -35,7 +35,7 @@ export interface UserCreate {
 export interface UserUpdate {
   first_name?: string
   last_name?: string
-  role?: 'admin' | 'analyst' | 'viewer'
+  role?: 'super_admin' | 'admin' | 'analyst' | 'viewer'
   is_active?: boolean
   application_access?: ApplicationAccess[]
 }

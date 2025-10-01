@@ -73,8 +73,10 @@ export const OrganisationProvider: React.FC<OrganisationProviderProps> = ({ chil
   
   // Update admin status when user changes
   useEffect(() => {
-    const adminStatus = hasRole('admin')
-    setIsSuperAdmin(adminStatus)
+    const isSuperAdminRole = hasRole('super_admin')
+    const isAdminRole = hasRole('admin')
+    const adminStatus = isSuperAdminRole || isAdminRole
+    setIsSuperAdmin(isSuperAdminRole)
     setCanManageOrganisations(adminStatus)
   }, [user?.id, user?.role]) // Only depend on stable user properties
 

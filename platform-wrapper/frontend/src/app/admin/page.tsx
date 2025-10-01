@@ -16,21 +16,18 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuthContext } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
-import { FeatureFlagManager } from '@/components/admin/FeatureFlagManager';
-import { ModuleManager } from '@/components/admin/ModuleManager';
-import { EnhancedModuleManager } from '@/components/admin/EnhancedModuleManager';
+import { ApplicationsManager } from '@/components/admin/ApplicationsManager';
 import { AuditLogViewer } from '@/components/admin/AuditLogViewer';
 import { AdminStats } from '@/components/admin/AdminStats';
 import { SecurityEvents } from '@/components/admin/SecurityEvents';
 import { OrganisationManager } from '@/components/admin/OrganisationManager';
-import SuperAdminUserProvisioning from '@/components/admin/SuperAdminUserProvisioning';
-import OrganizationUserManagement from '@/components/admin/OrganizationUserManagement';
-import ApplicationAccessMatrix from '@/components/admin/ApplicationAccessMatrix';
+import UnifiedUserManagement from '@/components/admin/UnifiedUserManagement';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // CRITICAL: Import auth debug utilities for Zebra Associates troubleshooting
 import '@/utils/auth-debug';
 
-type TabType = 'dashboard' | 'organisations' | 'user-provisioning' | 'user-management' | 'access-matrix' | 'feature-flags' | 'modules' | 'audit-logs' | 'security';
+type TabType = 'dashboard' | 'organisations' | 'applications' | 'user-management' | 'audit-logs' | 'security';
 
 export default function AdminPage() {
   const { user, isLoading, isAuthenticated, isInitialized } = useAuthContext();
@@ -184,57 +181,39 @@ export default function AdminPage() {
   }
 
   const tabs = [
-    { 
-      id: 'dashboard', 
-      name: 'Dashboard', 
+    {
+      id: 'dashboard',
+      name: 'Dashboard',
       icon: ChartBarIcon,
       description: 'Overview and statistics'
     },
-    { 
-      id: 'organisations', 
-      name: 'Organisations', 
+    {
+      id: 'organisations',
+      name: 'Organisations',
       icon: BuildingOffice2Icon,
-      description: 'Create and manage organisations'
+      description: 'Client management and configuration'
     },
-    { 
-      id: 'user-provisioning', 
-      name: 'User Provisioning', 
-      icon: UsersIcon,
-      description: 'Create users across organizations'
-    },
-    { 
-      id: 'user-management', 
-      name: 'User Management', 
-      icon: UsersIcon,
-      description: 'Manage organization users'
-    },
-    { 
-      id: 'access-matrix', 
-      name: 'Access Matrix', 
-      icon: CogIcon,
-      description: 'Application access permissions'
-    },
-    { 
-      id: 'feature-flags', 
-      name: 'Feature Flags', 
-      icon: FlagIcon,
-      description: 'Manage feature rollouts'
-    },
-    { 
-      id: 'modules', 
-      name: 'Modules', 
+    {
+      id: 'applications',
+      name: 'Applications',
       icon: CubeIcon,
-      description: 'Analytics module management'
+      description: 'Manage apps and capabilities'
     },
-    { 
-      id: 'audit-logs', 
-      name: 'Audit Logs', 
+    {
+      id: 'user-management',
+      name: 'User Management',
+      icon: UsersIcon,
+      description: 'Manage users and provisioning'
+    },
+    {
+      id: 'audit-logs',
+      name: 'Audit Logs',
       icon: ClockIcon,
       description: 'System activity logs'
     },
-    { 
-      id: 'security', 
-      name: 'Security', 
+    {
+      id: 'security',
+      name: 'Security',
       icon: ExclamationTriangleIcon,
       description: 'Security events and alerts'
     }
@@ -315,15 +294,36 @@ export default function AdminPage() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0">
-            {activeTab === 'dashboard' && <AdminStats />}
-            {activeTab === 'organisations' && <OrganisationManager />}
-            {activeTab === 'user-provisioning' && <SuperAdminUserProvisioning />}
-            {activeTab === 'user-management' && <OrganizationUserManagement />}
-            {activeTab === 'access-matrix' && <ApplicationAccessMatrix />}
-            {activeTab === 'feature-flags' && <FeatureFlagManager />}
-            {activeTab === 'modules' && <EnhancedModuleManager />}
-            {activeTab === 'audit-logs' && <AuditLogViewer />}
-            {activeTab === 'security' && <SecurityEvents />}
+            {activeTab === 'dashboard' && (
+              <ErrorBoundary componentName="AdminStats">
+                <AdminStats />
+              </ErrorBoundary>
+            )}
+            {activeTab === 'organisations' && (
+              <ErrorBoundary componentName="OrganisationManager">
+                <OrganisationManager />
+              </ErrorBoundary>
+            )}
+            {activeTab === 'applications' && (
+              <ErrorBoundary componentName="ApplicationsManager">
+                <ApplicationsManager />
+              </ErrorBoundary>
+            )}
+            {activeTab === 'user-management' && (
+              <ErrorBoundary componentName="UnifiedUserManagement">
+                <UnifiedUserManagement />
+              </ErrorBoundary>
+            )}
+            {activeTab === 'audit-logs' && (
+              <ErrorBoundary componentName="AuditLogViewer">
+                <AuditLogViewer />
+              </ErrorBoundary>
+            )}
+            {activeTab === 'security' && (
+              <ErrorBoundary componentName="SecurityEvents">
+                <SecurityEvents />
+              </ErrorBoundary>
+            )}
           </div>
         </div>
       </div>

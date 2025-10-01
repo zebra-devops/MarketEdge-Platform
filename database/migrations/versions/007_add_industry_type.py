@@ -36,14 +36,44 @@ def upgrade() -> None:
         ADD COLUMN IF NOT EXISTS industry_type VARCHAR(50) DEFAULT 'default' NOT NULL
     """)
 
-    # Cast to proper enum type if column was just created
+    # Convert VARCHAR column to enum type using safe drop/recreate approach
     op.execute("""
-        DO $$ BEGIN
+        DO $$
+        DECLARE
+            existing_data RECORD;
+        BEGIN
+            -- Check if column exists as VARCHAR and needs conversion
             IF EXISTS (SELECT 1 FROM information_schema.columns
                       WHERE table_name = 'organisations'
                       AND column_name = 'industry_type'
                       AND data_type = 'character varying') THEN
-                ALTER TABLE organisations ALTER COLUMN industry_type TYPE industry USING industry_type::industry;
+
+                -- Create temporary table to store existing data with proper enum mapping
+                CREATE TEMP TABLE temp_industry_mapping AS
+                SELECT
+                    id,
+                    CASE
+                        WHEN industry_type IN ('cinema', 'hotel', 'gym', 'b2b', 'retail', 'default')
+                        THEN industry_type
+                        ELSE 'default'
+                    END as mapped_industry_type
+                FROM organisations;
+
+                -- Drop the VARCHAR column
+                ALTER TABLE organisations DROP COLUMN industry_type;
+
+                -- Add the column back as enum type
+                ALTER TABLE organisations ADD COLUMN industry_type industry NOT NULL DEFAULT 'default'::industry;
+
+                -- Update with mapped values
+                UPDATE organisations
+                SET industry_type = temp_industry_mapping.mapped_industry_type::industry
+                FROM temp_industry_mapping
+                WHERE organisations.id = temp_industry_mapping.id;
+
+                -- Clean up temp table
+                DROP TABLE temp_industry_mapping;
+
             END IF;
         END $$;
     """)

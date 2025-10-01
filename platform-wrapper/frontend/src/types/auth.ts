@@ -8,7 +8,7 @@ export interface User {
   email: string
   first_name: string
   last_name: string
-  role: 'admin' | 'analyst' | 'viewer'
+  role: 'super_admin' | 'admin' | 'analyst' | 'viewer'
   organisation_id: string
   is_active: boolean
   application_access?: ApplicationAccess[]

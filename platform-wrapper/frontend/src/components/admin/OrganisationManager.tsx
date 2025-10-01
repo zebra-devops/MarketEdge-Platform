@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { PlusIcon, BuildingOffice2Icon } from '@heroicons/react/24/outline'
+import { PlusIcon, BuildingOffice2Icon, CogIcon } from '@heroicons/react/24/outline'
 import { OrganisationsList } from './OrganisationsList'
 import { OrganisationCreateForm } from './OrganisationCreateForm'
 import { OrganisationEditForm } from './OrganisationEditForm'
+import { OrganisationApplicationConfig } from './OrganisationApplicationConfig'
 import { Modal } from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 import { useOrganisationContext } from '@/components/providers/OrganisationProvider'
@@ -13,6 +14,7 @@ import { Organisation } from '@/types/api'
 export function OrganisationManager() {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showEditForm, setShowEditForm] = useState(false)
+  const [showAppConfigForm, setShowAppConfigForm] = useState(false)
   const [selectedOrganisation, setSelectedOrganisation] = useState<Organisation | null>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const { isSuperAdmin, allOrganisations, isLoadingAll } = useOrganisationContext()
@@ -46,6 +48,23 @@ export function OrganisationManager() {
     setSelectedOrganisation(null)
   }
 
+  const handleConfigureApplications = (organisation: Organisation) => {
+    setSelectedOrganisation(organisation)
+    setShowAppConfigForm(true)
+  }
+
+  const handleAppConfigSave = (config: any) => {
+    setShowAppConfigForm(false)
+    setSelectedOrganisation(null)
+    console.log('Application configuration saved:', config)
+    // Here you would save the configuration to the backend
+  }
+
+  const handleAppConfigCancel = () => {
+    setShowAppConfigForm(false)
+    setSelectedOrganisation(null)
+  }
+
   if (!isSuperAdmin) {
     return (
       <div className="text-center py-12">
@@ -69,7 +88,7 @@ export function OrganisationManager() {
               Organisation Management
             </h1>
             <p className="text-sm text-gray-600 mt-1">
-              Create new organisations and manage existing ones. Perfect for setting up clients like Odeon Cinema.
+              Create new organisations and configure their application access and capabilities.
             </p>
           </div>
           
@@ -113,6 +132,7 @@ export function OrganisationManager() {
         refreshTrigger={refreshTrigger}
         onCreateNew={() => setShowCreateForm(true)}
         onSelectOrganisation={handleSelectOrganisation}
+        onConfigureApplications={handleConfigureApplications}
       />
 
       {/* Create Organisation Modal */}
@@ -140,6 +160,23 @@ export function OrganisationManager() {
             organisation={selectedOrganisation}
             onSuccess={handleEditSuccess}
             onCancel={handleEditCancel}
+          />
+        )}
+      </Modal>
+
+      {/* Application Configuration Modal */}
+      <Modal
+        isOpen={showAppConfigForm}
+        onClose={handleAppConfigCancel}
+        title="Application Configuration"
+        size="full"
+        maxWidth="7xl"
+      >
+        {selectedOrganisation && (
+          <OrganisationApplicationConfig
+            organisation={selectedOrganisation}
+            onSave={handleAppConfigSave}
+            onCancel={handleAppConfigCancel}
           />
         )}
       </Modal>

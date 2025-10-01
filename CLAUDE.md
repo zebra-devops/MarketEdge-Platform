@@ -69,17 +69,35 @@ python emergency_db_fix.py           # Use cautiously
 
 ## Authentication & Security
 
-### Critical Auth Flow
-- Auth0 provides authorization codes
-- Backend exchanges for JWT tokens with tenant context
-- Frontend stores access tokens (httpOnly: false) and refresh tokens (httpOnly: true)
-- Admin endpoints require `super_admin` or `admin` role
+### Critical Auth Flow (Pure Auth0 - Security Enhanced)
+1. **Login**: Auth0 provides authorization codes
+2. **Token Exchange**: Backend exchanges for Auth0 JWT tokens with tenant context
+3. **Token Verification**:
+   - Cryptographic JWT signature verification using Auth0 JWKS (public keys)
+   - Validates standard claims (exp, iss, aud)
+   - Secondary validation with Auth0 userinfo endpoint for freshness
+   - JWKS cached for 1 hour with graceful key rotation handling
+4. **Token Refresh**:
+   - Uses Auth0 refresh token flow (not internal JWTs)
+   - Fallback to internal JWT refresh for backwards compatibility
+   - Consistent with login flow (Auth0 tokens throughout)
+5. **Frontend Storage**:
+   - Access tokens: httpOnly: false (accessible to JavaScript)
+   - Refresh tokens: httpOnly: true (secure, HTTP-only)
+6. **Authorization**: Admin endpoints require `super_admin` or `admin` role
 
 ### Key Security Settings
 - **Token expiry**: 30 minutes access, 7 days refresh
+- **JWT verification**: RS256 algorithm with Auth0 public keys
+- **JWKS caching**: 1 hour TTL with stale-if-error fallback
+- **Token refresh**: Pure Auth0 flow with internal JWT fallback
 - **Cookie security**: Production uses httpOnly for refresh tokens
 - **CORS middleware**: MUST be first in middleware stack for error responses
 - **RLS policies**: Complete tenant data isolation at database level
+
+### Security Fixes Implemented
+- **CRITICAL FIX #2**: Auth0 JWT signature verification using JWKS (addresses code review issue)
+- **CRITICAL FIX #3**: Token refresh flow consistency - Auth0 tokens throughout (addresses code review issue)
 
 ## Critical Patterns
 

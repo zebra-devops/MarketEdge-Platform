@@ -74,10 +74,16 @@ interface ApplicationIconsProps {
   userApplicationAccess?: ApplicationAccess[]
 }
 
-export default function ApplicationIcons({ 
-  className = '', 
+export default function ApplicationIcons({
+  className = '',
   userApplicationAccess = []
 }: ApplicationIconsProps) {
+  console.log('🔍 ApplicationIcons called:', {
+    userApplicationAccess,
+    userApplicationAccessContent: userApplicationAccess?.map(item => ({ application: item.application, has_access: item.has_access })),
+    accessibleCount: applications.filter(app => hasApplicationAccess(userApplicationAccess, app.id)).length,
+    applicationIds: applications.map(app => app.id)
+  })
   const router = useRouter()
   const pathname = usePathname()
   const [currentApplication, setCurrentApplication] = useState<Application | null>(null)
@@ -134,9 +140,11 @@ export default function ApplicationIcons({
   }
 
   // Don't show if user has access to only one application or none
-  if (accessibleApplications.length <= 1) {
-    return null
-  }
+  // TODO: Temporarily disabled for debugging - showing even with 1 app
+  // if (accessibleApplications.length <= 1) {
+  //   return null
+  // }
+  console.log('🔍 ApplicationIcons accessibleApplications:', accessibleApplications.map(app => app.id))
 
   return (
     <div className={`flex items-center space-x-1 sm:space-x-2 ${className}`}>

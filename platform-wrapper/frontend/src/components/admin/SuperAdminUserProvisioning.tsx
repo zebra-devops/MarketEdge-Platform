@@ -8,13 +8,16 @@ import Button from '@/components/ui/Button'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Modal from '@/components/ui/Modal'
 import toast from 'react-hot-toast'
-import { 
-  UserPlusIcon, 
-  EnvelopeIcon, 
-  UserGroupIcon, 
+import {
+  UserPlusIcon,
+  EnvelopeIcon,
+  UserGroupIcon,
   DocumentDuplicateIcon,
   CheckCircleIcon,
-  XMarkIcon
+  XMarkIcon,
+  TrashIcon,
+  UserMinusIcon,
+  CheckIcon
 } from '@heroicons/react/24/outline'
 import BulkUserImport from './BulkUserImport'
 
@@ -58,6 +61,8 @@ export default function SuperAdminUserProvisioning() {
   const [allUsers, setAllUsers] = useState<any[]>([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
   const [userSearchTerm, setUserSearchTerm] = useState('')
+  const [selectedCreatedUsers, setSelectedCreatedUsers] = useState<Set<string>>(new Set())
+  const [selectedAllUsers, setSelectedAllUsers] = useState<Set<string>>(new Set())
   
   // Single user form
   const [formData, setFormData] = useState<UserCreate>({
@@ -271,9 +276,101 @@ export default function SuperAdminUserProvisioning() {
     const template = `email@example.com,John,Doe,analyst,org-id
 user2@example.com,Jane,Smith,viewer,org-id
 admin@example.com,Admin,User,admin,org-id`
-    
+
     navigator.clipboard.writeText(template)
     toast.success('Bulk template copied to clipboard')
+  }
+
+  // Bulk actions for recently created users
+  const toggleCreatedUserSelection = (userId: string) => {
+    const newSelection = new Set(selectedCreatedUsers)
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId)
+    } else {
+      newSelection.add(userId)
+    }
+    setSelectedCreatedUsers(newSelection)
+  }
+
+  const selectAllCreatedUsers = () => {
+    setSelectedCreatedUsers(new Set(createdUsers.map(u => u.id)))
+  }
+
+  const clearCreatedUsersSelection = () => {
+    setSelectedCreatedUsers(new Set())
+  }
+
+  // Bulk actions for all users
+  const toggleAllUserSelection = (userId: string) => {
+    const newSelection = new Set(selectedAllUsers)
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId)
+    } else {
+      newSelection.add(userId)
+    }
+    setSelectedAllUsers(newSelection)
+  }
+
+  const selectAllUsersVisible = () => {
+    const filteredUsers = allUsers.filter(user =>
+      user.email.toLowerCase().includes(userSearchTerm.toLowerCase())
+    )
+    setSelectedAllUsers(new Set(filteredUsers.map(u => u.id)))
+  }
+
+  const clearAllUsersSelection = () => {
+    setSelectedAllUsers(new Set())
+  }
+
+  const bulkResendInvitations = async (userIds: Set<string>, isCreatedUsers = false) => {
+    if (userIds.size === 0) return
+
+    try {
+      const promises = Array.from(userIds).map(userId => {
+        return apiService.post(`/users/${userId}/resend-invite`, {})
+      })
+
+      await Promise.all(promises)
+      toast.success(`Resent invitations to ${userIds.size} users`)
+
+      if (isCreatedUsers) {
+        setSelectedCreatedUsers(new Set())
+      } else {
+        setSelectedAllUsers(new Set())
+        await fetchAllUsers()
+      }
+    } catch (error) {
+      console.error('Bulk resend failed:', error)
+      toast.error('Failed to resend invitations')
+    }
+  }
+
+  const bulkDeleteUsers = async (userIds: Set<string>, isCreatedUsers = false) => {
+    if (userIds.size === 0) return
+
+    if (!confirm(`Are you sure you want to delete ${userIds.size} users? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const promises = Array.from(userIds).map(userId => {
+        return apiService.delete(`/users/${userId}`)
+      })
+
+      await Promise.all(promises)
+      toast.success(`Deleted ${userIds.size} users`)
+
+      if (isCreatedUsers) {
+        setCreatedUsers(prev => prev.filter(u => !userIds.has(u.id)))
+        setSelectedCreatedUsers(new Set())
+      } else {
+        setSelectedAllUsers(new Set())
+        await fetchAllUsers()
+      }
+    } catch (error) {
+      console.error('Bulk delete failed:', error)
+      toast.error('Failed to delete users')
+    }
   }
 
   return (
@@ -311,14 +408,67 @@ admin@example.com,Admin,User,admin,org-id`
 
       {/* Recent Created Users */}
       {createdUsers.length > 0 && (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Recently Created Users</h3>
+        <div className="space-y-4">
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">
+                  Selected: {selectedCreatedUsers.size} recently created users
+                </span>
+                <button
+                  onClick={selectAllCreatedUsers}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                  disabled={createdUsers.length === 0}
+                >
+                  Select All
+                </button>
+                <button
+                  onClick={clearCreatedUsersSelection}
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                  disabled={selectedCreatedUsers.size === 0}
+                >
+                  Clear
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Bulk Actions:</span>
+                <button
+                  onClick={() => bulkResendInvitations(selectedCreatedUsers, true)}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                  disabled={selectedCreatedUsers.size === 0}
+                >
+                  <EnvelopeIcon className="h-4 w-4 mr-1" />
+                  Resend Invites
+                </button>
+                <button
+                  onClick={() => bulkDeleteUsers(selectedCreatedUsers, true)}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200"
+                  disabled={selectedCreatedUsers.size === 0}
+                >
+                  <TrashIcon className="h-4 w-4 mr-1" />
+                  Delete
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="overflow-x-auto">
+
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Recently Created Users</h3>
+            </div>
+            <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <input
+                      type="checkbox"
+                      checked={selectedCreatedUsers.size === createdUsers.length && createdUsers.length > 0}
+                      onChange={selectedCreatedUsers.size === createdUsers.length ? clearCreatedUsersSelection : selectAllCreatedUsers}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     User
                   </th>
@@ -332,7 +482,18 @@ admin@example.com,Admin,User,admin,org-id`
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {createdUsers.slice(-10).map((user, index) => (
-                  <tr key={user.id || index}>
+                  <tr
+                    key={user.id || index}
+                    className={`hover:bg-gray-50 ${selectedCreatedUsers.has(user.id) ? 'bg-indigo-50' : ''}`}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedCreatedUsers.has(user.id)}
+                        onChange={() => toggleCreatedUserSelection(user.id)}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
@@ -361,29 +522,78 @@ admin@example.com,Admin,User,admin,org-id`
             </table>
           </div>
         </div>
+      </div>
       )}
 
       {/* All Users List */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900">All Users in System</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                {isLoadingUsers ? 'Loading...' : `${allUsers.length} total users across all organisations`}
-              </p>
-            </div>
-            <div className="w-64">
-              <input
-                type="text"
-                placeholder="Search users by email..."
-                value={userSearchTerm}
-                onChange={(e) => setUserSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              />
+      <div className="space-y-4">
+        {/* Bulk Actions for All Users */}
+        {allUsers.length > 0 && (
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">
+                  Selected: {selectedAllUsers.size} users
+                </span>
+                <button
+                  onClick={selectAllUsersVisible}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                  disabled={allUsers.length === 0}
+                >
+                  Select All Visible
+                </button>
+                <button
+                  onClick={clearAllUsersSelection}
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                  disabled={selectedAllUsers.size === 0}
+                >
+                  Clear
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Bulk Actions:</span>
+                <button
+                  onClick={() => bulkResendInvitations(selectedAllUsers, false)}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
+                  disabled={selectedAllUsers.size === 0}
+                >
+                  <EnvelopeIcon className="h-4 w-4 mr-1" />
+                  Resend Invites
+                </button>
+                <button
+                  onClick={() => bulkDeleteUsers(selectedAllUsers, false)}
+                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200"
+                  disabled={selectedAllUsers.size === 0}
+                >
+                  <TrashIcon className="h-4 w-4 mr-1" />
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        <div className="bg-white shadow rounded-lg overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">All Users in System</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {isLoadingUsers ? 'Loading...' : `${allUsers.length} total users across all organisations`}
+                </p>
+              </div>
+              <div className="w-64">
+                <input
+                  type="text"
+                  placeholder="Search users by email..."
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                />
+              </div>
+            </div>
+          </div>
         
         {isLoadingUsers ? (
           <div className="flex justify-center py-8">
@@ -394,6 +604,18 @@ admin@example.com,Admin,User,admin,org-id`
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <input
+                      type="checkbox"
+                      checked={selectedAllUsers.size > 0 && selectedAllUsers.size === allUsers.filter(user =>
+                        !userSearchTerm ||
+                        user.email?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+                        `${user.first_name} ${user.last_name}`.toLowerCase().includes(userSearchTerm.toLowerCase())
+                      ).slice(0, 20).length}
+                      onChange={selectedAllUsers.size > 0 ? clearAllUsersSelection : selectAllUsersVisible}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     User
                   </th>
@@ -417,7 +639,18 @@ admin@example.com,Admin,User,admin,org-id`
                   )
                   .slice(0, 20)
                   .map((user, index) => (
-                  <tr key={user.id || index}>
+                  <tr
+                    key={user.id || index}
+                    className={`hover:bg-gray-50 ${selectedAllUsers.has(user.id) ? 'bg-indigo-50' : ''}`}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedAllUsers.has(user.id)}
+                        onChange={() => toggleAllUserSelection(user.id)}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
@@ -459,6 +692,7 @@ admin@example.com,Admin,User,admin,org-id`
             <p className="text-gray-500">No users found in the system</p>
           </div>
         )}
+        </div>
       </div>
 
       {/* Single User Creation Modal */}

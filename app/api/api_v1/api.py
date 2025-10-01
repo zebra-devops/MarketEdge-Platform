@@ -1,9 +1,17 @@
 from fastapi import APIRouter
 from .endpoints import (
     auth, users, organisations, tools, market_edge, admin, features,
-    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, user_import, database, debug_auth, module_management, system, config, environment_validation
+    rate_limits, rate_limit_observability, organization_hierarchy, industry_templates, user_management, user_import, database, debug_auth, module_management, system, config, environment_validation, logging
 )
 from ..health import router as health_router
+
+# Try to import causal_edge (requires pandas, scipy, numpy)
+try:
+    from .endpoints import causal_edge
+    CAUSAL_EDGE_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️  Causal Edge module not available: {e}")
+    CAUSAL_EDGE_AVAILABLE = False
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
@@ -39,6 +47,17 @@ api_router.include_router(system.router, tags=["system"])
 
 # Configuration endpoints for environment-aware frontend setup
 api_router.include_router(config.router, prefix="/config", tags=["configuration"])
+
+# Frontend error logging endpoints
+api_router.include_router(logging.router, prefix="/logging", tags=["logging"])
+
+# Causal Edge endpoints for advanced causal analysis (optional - requires scientific computing libraries)
+if CAUSAL_EDGE_AVAILABLE:
+    api_router.include_router(causal_edge.router, prefix="/causal-edge", tags=["causal-edge"])
+    print("✅ Causal Edge module loaded successfully")
+else:
+    print("⚠️  Causal Edge endpoints disabled (missing dependencies: pandas, scipy, numpy)")
+
 
 # Note: Removed broken_endpoint router that was causing production API failures
 

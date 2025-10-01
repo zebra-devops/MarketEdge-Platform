@@ -18,7 +18,7 @@ from sqlalchemy import text
 import uuid
 
 # revision identifiers, used by Alembic.
-revision = '008_add_hierarchical_organizations'
+revision = '008_hierarchical_orgs'
 down_revision = '007_add_industry_type'
 branch_labels = None
 depends_on = None
@@ -27,52 +27,66 @@ depends_on = None
 def upgrade():
     """Add hierarchical organization structure and enhanced permissions"""
 
+    # CRITICAL: Create ALL enum types FIRST before any table creation
+    # This prevents SQLAlchemy auto-creation conflicts during table creation
+
+    print("Creating enum types for hierarchical organization system...")
+
     # Create enhanced user roles enum with exception handling for duplicates
-    op.execute("""
+    op.execute(text("""
         DO $$ BEGIN
             CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer');
         EXCEPTION
             WHEN duplicate_object THEN null;
         END $$;
-    """)
+    """))
+    print("✅ Created enhanceduserrole enum")
 
     # Create hierarchy level enum with exception handling for duplicates
-    op.execute("""
+    op.execute(text("""
         DO $$ BEGIN
             CREATE TYPE hierarchylevel AS ENUM ('organization', 'location', 'department', 'user');
         EXCEPTION
             WHEN duplicate_object THEN null;
         END $$;
-    """)
+    """))
+    print("✅ Created hierarchylevel enum")
 
     # Create permission scope enum with exception handling for duplicates
-    op.execute("""
+    op.execute(text("""
         DO $$ BEGIN
             CREATE TYPE permissionscope AS ENUM ('read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data');
         EXCEPTION
             WHEN duplicate_object THEN null;
         END $$;
-    """)
-    
-    # 1. Create organization_hierarchy table
-    op.create_table('organization_hierarchy',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('name', sa.String(length=255), nullable=False),
-        sa.Column('slug', sa.String(length=100), nullable=False),
-        sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('parent_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('level', sa.Enum('organization', 'location', 'department', 'user', name='hierarchylevel', create_type=False), nullable=False, default='organization'),
-        sa.Column('hierarchy_path', sa.String(length=500), nullable=False),
-        sa.Column('depth', sa.Integer(), nullable=False, default=0),
-        sa.Column('legacy_organisation_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
-        sa.Column('settings', sa.Text(), nullable=True),
-        sa.ForeignKeyConstraint(['parent_id'], ['organization_hierarchy.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['legacy_organisation_id'], ['organisations.id'], ondelete='CASCADE'),
-        sa.UniqueConstraint('slug', 'parent_id', name='uq_hierarchy_slug_parent')
-    )
+    """))
+    print("✅ Created permissionscope enum")
+
+    print("All enum types created successfully. Now creating tables...")
+
+    # 1. Create organization_hierarchy table using raw SQL to avoid enum auto-creation
+    op.execute(text("""
+        CREATE TABLE organization_hierarchy (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            slug VARCHAR(100) NOT NULL,
+            description TEXT,
+            parent_id UUID,
+            level hierarchylevel NOT NULL DEFAULT 'organization'::hierarchylevel,
+            hierarchy_path VARCHAR(500) NOT NULL,
+            depth INTEGER NOT NULL DEFAULT 0,
+            legacy_organisation_id UUID,
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            settings TEXT,
+            CONSTRAINT fk_org_hier_parent_id
+                FOREIGN KEY (parent_id) REFERENCES organization_hierarchy(id) ON DELETE CASCADE,
+            CONSTRAINT fk_org_hier_legacy_org_id
+                FOREIGN KEY (legacy_organisation_id) REFERENCES organisations(id) ON DELETE CASCADE,
+            CONSTRAINT uq_hierarchy_slug_parent UNIQUE (slug, parent_id)
+        )
+    """))
     
     # Create indexes for organization_hierarchy
     op.create_index('idx_hierarchy_path', 'organization_hierarchy', ['hierarchy_path'])
@@ -80,38 +94,45 @@ def upgrade():
     op.create_index('idx_hierarchy_parent_level', 'organization_hierarchy', ['parent_id', 'level'])
     op.create_index('idx_hierarchy_legacy_org', 'organization_hierarchy', ['legacy_organisation_id'])
     
-    # 2. Create user_hierarchy_assignments table
-    op.create_table('user_hierarchy_assignments',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('hierarchy_node_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('role', sa.Enum('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer', name='enhanceduserrole', create_type=False), nullable=False),
-        sa.Column('is_primary', sa.Boolean(), nullable=False, default=False),
-        sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['hierarchy_node_id'], ['organization_hierarchy.id'], ondelete='CASCADE'),
-        sa.UniqueConstraint('user_id', 'hierarchy_node_id', name='uq_user_hierarchy_assignment')
-    )
+    # 2. Create user_hierarchy_assignments table using raw SQL to avoid enum auto-creation
+    op.execute(text("""
+        CREATE TABLE user_hierarchy_assignments (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+            user_id UUID NOT NULL,
+            hierarchy_node_id UUID NOT NULL,
+            role enhanceduserrole NOT NULL,
+            is_primary BOOLEAN NOT NULL DEFAULT false,
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            CONSTRAINT fk_user_hier_user_id
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_user_hier_node_id
+                FOREIGN KEY (hierarchy_node_id) REFERENCES organization_hierarchy(id) ON DELETE CASCADE,
+            CONSTRAINT uq_user_hierarchy_assignment UNIQUE (user_id, hierarchy_node_id)
+        )
+    """))
     
     # Create indexes for user_hierarchy_assignments
     op.create_index('idx_user_hierarchy_user_active', 'user_hierarchy_assignments', ['user_id', 'is_active'])
     op.create_index('idx_user_hierarchy_node_role', 'user_hierarchy_assignments', ['hierarchy_node_id', 'role'])
     
-    # 3. Create hierarchy_role_assignments table
-    op.create_table('hierarchy_role_assignments',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('hierarchy_node_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('role', sa.Enum('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer', name='enhanceduserrole', create_type=False), nullable=False),
-        sa.Column('permissions', sa.Text(), nullable=False),  # JSON array
-        sa.Column('inherits_from_parent', sa.Boolean(), nullable=False, default=True),
-        sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
-        sa.ForeignKeyConstraint(['hierarchy_node_id'], ['organization_hierarchy.id'], ondelete='CASCADE'),
-        sa.UniqueConstraint('hierarchy_node_id', 'role', name='uq_hierarchy_role')
-    )
+    # 3. Create hierarchy_role_assignments table using raw SQL to avoid enum auto-creation
+    op.execute(text("""
+        CREATE TABLE hierarchy_role_assignments (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+            hierarchy_node_id UUID NOT NULL,
+            role enhanceduserrole NOT NULL,
+            permissions TEXT NOT NULL,
+            inherits_from_parent BOOLEAN NOT NULL DEFAULT true,
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            CONSTRAINT fk_hier_role_node_id
+                FOREIGN KEY (hierarchy_node_id) REFERENCES organization_hierarchy(id) ON DELETE CASCADE,
+            CONSTRAINT uq_hierarchy_role UNIQUE (hierarchy_node_id, role)
+        )
+    """))
     
     # Create indexes for hierarchy_role_assignments
     op.create_index('idx_hierarchy_role_active', 'hierarchy_role_assignments', ['role', 'is_active'])
@@ -139,49 +160,49 @@ def upgrade():
     op.create_index('idx_permission_override_user_active', 'hierarchy_permission_overrides', ['user_id', 'is_active'])
     op.create_index('idx_permission_override_node_permission', 'hierarchy_permission_overrides', ['hierarchy_node_id', 'permission'])
     
-    # 5. Create industry_templates table
-    op.create_table('industry_templates',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('name', sa.String(length=100), nullable=False),
-        sa.Column('industry_code', sa.String(length=20), nullable=False),
-        sa.Column('display_name', sa.String(length=200), nullable=False),
-        sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('default_settings', sa.Text(), nullable=False),  # JSON
-        sa.Column('default_permissions', sa.Text(), nullable=False),  # JSON
-        sa.Column('default_features', sa.Text(), nullable=False),  # JSON
-        sa.Column('dashboard_config', sa.Text(), nullable=True),  # JSON
-        sa.Column('parent_template_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('is_base_template', sa.Boolean(), nullable=False, default=False),
-        sa.Column('customizable_fields', sa.Text(), nullable=True),  # JSON
-        sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
-        sa.Column('version', sa.String(length=20), nullable=False, default='1.0.0'),
-        sa.ForeignKeyConstraint(['parent_template_id'], ['industry_templates.id']),
-        sa.UniqueConstraint('name', name='uq_industry_template_name'),
-        sa.UniqueConstraint('industry_code', name='uq_industry_template_code')
-    )
+    # 5. Create industry_templates table - using raw SQL to avoid length constraint issues
+    op.execute(text("""
+        CREATE TABLE industry_templates (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+            updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+            name VARCHAR(100) NOT NULL,
+            industry_code VARCHAR(20) NOT NULL,
+            display_name VARCHAR(200) NOT NULL,
+            description TEXT,
+            default_settings TEXT NOT NULL,
+            default_permissions TEXT NOT NULL,
+            default_features TEXT NOT NULL,
+            dashboard_config TEXT,
+            parent_template_id UUID REFERENCES industry_templates(id),
+            is_base_template BOOLEAN NOT NULL DEFAULT false,
+            customizable_fields TEXT,
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            version VARCHAR(20) NOT NULL DEFAULT '1.0.0',
+            CONSTRAINT uq_industry_template_name UNIQUE (name),
+            CONSTRAINT uq_industry_template_code UNIQUE (industry_code)
+        )
+    """))
     
     # Create indexes for industry_templates
     op.create_index('idx_industry_template_code_active', 'industry_templates', ['industry_code', 'is_active'])
     op.create_index('idx_industry_template_parent', 'industry_templates', ['parent_template_id', 'is_active'])
     
-    # 6. Create organization_template_applications table
-    op.create_table('organization_template_applications',
-        sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, nullable=False),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-        sa.Column('organization_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('template_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('applied_settings', sa.Text(), nullable=False),  # JSON
-        sa.Column('customizations', sa.Text(), nullable=True),  # JSON
-        sa.Column('applied_by', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('is_active', sa.Boolean(), nullable=False, default=True),
-        sa.ForeignKeyConstraint(['organization_id'], ['organisations.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['template_id'], ['industry_templates.id']),
-        sa.ForeignKeyConstraint(['applied_by'], ['users.id']),
-        sa.UniqueConstraint('organization_id', 'template_id', name='uq_org_template_application')
-    )
+    # 6. Create organization_template_applications table - using raw SQL for consistency
+    op.execute(text("""
+        CREATE TABLE organization_template_applications (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+            updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+            organization_id UUID NOT NULL REFERENCES organisations(id) ON DELETE CASCADE,
+            template_id UUID NOT NULL REFERENCES industry_templates(id),
+            applied_settings TEXT NOT NULL,
+            customizations TEXT,
+            applied_by UUID NOT NULL REFERENCES users(id),
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            CONSTRAINT uq_org_template_application UNIQUE (organization_id, template_id)
+        )
+    """))
     
     # Create indexes for organization_template_applications
     op.create_index('idx_org_template_org_active', 'organization_template_applications', ['organization_id', 'is_active'])
@@ -201,34 +222,36 @@ def upgrade():
         op.execute(text(f"ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY"))
         
         # Create policy for regular users - they can only access their organization's data
-        op.execute(text(f"""
-            CREATE POLICY tenant_isolation_{table_name} ON {table_name}
-                FOR ALL TO public
-                USING (
-                    CASE 
-                        WHEN '{table_name}' = 'organization_hierarchy' THEN
-                            legacy_organisation_id = current_setting('app.current_tenant_id')::uuid
-                        WHEN '{table_name}' = 'user_hierarchy_assignments' THEN
-                            hierarchy_node_id IN (
-                                SELECT id FROM organization_hierarchy 
-                                WHERE legacy_organisation_id = current_setting('app.current_tenant_id')::uuid
-                            )
-                        WHEN '{table_name}' = 'hierarchy_role_assignments' THEN
-                            hierarchy_node_id IN (
-                                SELECT id FROM organization_hierarchy 
-                                WHERE legacy_organisation_id = current_setting('app.current_tenant_id')::uuid
-                            )
-                        WHEN '{table_name}' = 'hierarchy_permission_overrides' THEN
-                            hierarchy_node_id IN (
-                                SELECT id FROM organization_hierarchy 
-                                WHERE legacy_organisation_id = current_setting('app.current_tenant_id')::uuid
-                            )
-                        WHEN '{table_name}' = 'organization_template_applications' THEN
-                            organization_id = current_setting('app.current_tenant_id')::uuid
-                        ELSE false
-                    END
-                )
-        """))
+        if table_name == 'organization_hierarchy':
+            op.execute(text(f"""
+                CREATE POLICY tenant_isolation_{table_name} ON {table_name}
+                    FOR ALL TO public
+                    USING (legacy_organisation_id = current_setting('app.current_tenant_id')::uuid)
+            """))
+        elif table_name in ['user_hierarchy_assignments', 'hierarchy_role_assignments', 'hierarchy_permission_overrides']:
+            op.execute(text(f"""
+                CREATE POLICY tenant_isolation_{table_name} ON {table_name}
+                    FOR ALL TO public
+                    USING (
+                        hierarchy_node_id IN (
+                            SELECT id FROM organization_hierarchy
+                            WHERE legacy_organisation_id = current_setting('app.current_tenant_id')::uuid
+                        )
+                    )
+            """))
+        elif table_name == 'organization_template_applications':
+            op.execute(text(f"""
+                CREATE POLICY tenant_isolation_{table_name} ON {table_name}
+                    FOR ALL TO public
+                    USING (organization_id = current_setting('app.current_tenant_id')::uuid)
+            """))
+        else:
+            # Default policy for other tables
+            op.execute(text(f"""
+                CREATE POLICY tenant_isolation_{table_name} ON {table_name}
+                    FOR ALL TO public
+                    USING (false)  -- No access by default
+            """))
         
         # Create policy for super admins - they can access all data when explicitly allowed
         op.execute(text(f"""
@@ -320,11 +343,12 @@ def upgrade():
     # Insert default industry templates
     op.execute(text("""
         INSERT INTO industry_templates (
-            name, industry_code, display_name, description,
+            id, name, industry_code, display_name, description,
             default_settings, default_permissions, default_features,
             dashboard_config, customizable_fields, is_base_template, is_active, version
-        ) VALUES 
+        ) VALUES
         (
+            gen_random_uuid(),
             'Cinema Industry Standard',
             'CINEMA',
             'Cinema & Entertainment',
@@ -339,6 +363,7 @@ def upgrade():
             '1.0.0'
         ),
         (
+            gen_random_uuid(),
             'Hotel Industry Standard',
             'HOTEL',
             'Hotel & Hospitality',
