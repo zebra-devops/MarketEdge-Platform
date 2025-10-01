@@ -95,6 +95,16 @@ class Settings(BaseSettings):
     REDIS_RETRY_ON_TIMEOUT: bool = True
     REDIS_MAX_CONNECTIONS: int = 50
 
+    # Organisation Cache Settings (CRITICAL FIX #5)
+    ORG_CACHE_TTL_SECONDS: int = Field(
+        default=300,
+        description="Organisation cache TTL in seconds (5 minutes default)"
+    )
+    ORG_CACHE_ENABLED: bool = Field(
+        default=True,
+        description="Enable organisation caching for Auth0 tenant mapping"
+    )
+
     class SupabaseConfig(BaseModel):
         URL: str
         KEY: str

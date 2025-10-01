@@ -242,7 +242,7 @@ async def startup_event():
     try:
         logger.info("🚀 PRODUCTION STARTUP: MarketEdge Platform initializing...")
         logger.info("🎯 CRITICAL: Ensuring frontend-backend communication for £925K Odeon opportunity")
-        
+
         # Test CORS configuration immediately
         cors_origins = [
             "https://app.zebra.associates",
@@ -252,11 +252,25 @@ async def startup_event():
         ]
         logger.info(f"✅ CORS configured for origins: {cors_origins}")
         logger.info("🔐 CORS credentials enabled for authentication flow")
-        
+
+        # Initialize Organisation Cache (CRITICAL FIX #5)
+        try:
+            from app.cache.organisation_cache import OrganisationCache
+            OrganisationCache.set_ttl(settings.ORG_CACHE_TTL_SECONDS)
+            logger.info(
+                "✅ Organisation cache configured",
+                extra={
+                    "ttl_seconds": settings.ORG_CACHE_TTL_SECONDS,
+                    "cache_enabled": settings.ORG_CACHE_ENABLED
+                }
+            )
+        except Exception as cache_error:
+            logger.error(f"⚠️  Organisation cache initialization failed: {cache_error}")
+
         # Initialize lazy startup manager with timeout protection
         try:
             await asyncio.wait_for(
-                _initialize_startup_safely(), 
+                _initialize_startup_safely(),
                 timeout=10.0  # 10 second timeout
             )
             logger.info("⚡ Lazy initialization registered successfully")

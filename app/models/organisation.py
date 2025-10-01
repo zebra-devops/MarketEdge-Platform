@@ -20,6 +20,15 @@ class Organisation(Base):
     industry_type: Mapped[Industry] = mapped_column(Enum(Industry, name='industry', create_constraint=False, values_callable=lambda x: [e.value for e in x]), default=Industry.DEFAULT, nullable=False, server_default='DEFAULT')
     subscription_plan: Mapped[SubscriptionPlan] = mapped_column(Enum(SubscriptionPlan), default=SubscriptionPlan.basic, server_default='basic')
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, server_default='true')
+
+    # Auth0 Integration
+    auth0_organization_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=True,
+        index=True,
+        comment="Auth0 organization ID for tenant mapping"
+    )
     
     # Rate limiting configuration
     rate_limit_per_hour: Mapped[int] = mapped_column(Integer, default=1000, nullable=False)

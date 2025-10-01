@@ -12,11 +12,13 @@ from .jwt import verify_token, extract_tenant_context_from_token, should_refresh
 from ..auth.auth0 import auth0_client
 from ..core.config import settings
 from ..core.logging import logger
+from ..cache.organisation_cache import OrganisationCache
 import httpx
 from jose import jwt, jwk
 from jose.exceptions import JWTError, ExpiredSignatureError, JWTClaimsError
 import time
 from functools import lru_cache
+import uuid
 
 security = HTTPBearer(auto_error=False)  # Disable auto_error to handle manually
 
@@ -24,6 +26,78 @@ security = HTTPBearer(auto_error=False)  # Disable auto_error to handle manually
 _jwks_cache: Dict[str, Any] = {}
 _jwks_cache_timestamp: float = 0
 _jwks_cache_ttl: int = 3600  # Cache JWKS for 1 hour
+
+
+def is_valid_uuid(value: str) -> bool:
+    """Check if string is valid UUID format"""
+    try:
+        uuid.UUID(value)
+        return True
+    except (ValueError, AttributeError, TypeError):
+        return False
+
+
+async def resolve_tenant_id(tenant_id: str, db: AsyncSession) -> Optional[str]:
+    """
+    Resolve tenant ID from Auth0 org ID or UUID.
+
+    CRITICAL FIX #5: Database-backed tenant mapping replaces hardcoded dictionary.
+
+    Args:
+        tenant_id: Either Auth0 org ID (string) or organisation UUID
+        db: Database session for lookup
+
+    Returns:
+        Organisation UUID if found, None otherwise
+    """
+    if not tenant_id:
+        return None
+
+    # If it's already a valid UUID, return as-is
+    if is_valid_uuid(tenant_id):
+        logger.debug(
+            "Tenant ID is valid UUID",
+            extra={"tenant_id": tenant_id, "event": "tenant_id_uuid"}
+        )
+        return tenant_id
+
+    # Otherwise, lookup in database by Auth0 org ID with caching
+    logger.info(
+        "Tenant ID is Auth0 org ID, looking up in database",
+        extra={"auth0_org_id": tenant_id, "event": "tenant_id_auth0_lookup"}
+    )
+
+    if settings.ORG_CACHE_ENABLED:
+        org = await OrganisationCache.get_by_auth0_org_id(tenant_id, db)
+    else:
+        # Cache disabled - direct database query
+        result = await db.execute(
+            select(Organisation).where(
+                Organisation.auth0_organization_id == tenant_id
+            )
+        )
+        org = result.scalar_one_or_none()
+
+    if org:
+        logger.info(
+            "Successfully mapped Auth0 org ID to organisation UUID",
+            extra={
+                "auth0_org_id": tenant_id,
+                "organisation_id": str(org.id),
+                "organisation_name": org.name,
+                "event": "tenant_mapping_success"
+            }
+        )
+        return str(org.id)
+    else:
+        logger.warning(
+            "Auth0 org ID not found in database",
+            extra={
+                "auth0_org_id": tenant_id,
+                "event": "tenant_mapping_not_found"
+            }
+        )
+        return None
 
 async def get_auth0_jwks() -> Dict[str, Any]:
     """
@@ -401,20 +475,27 @@ async def get_current_user(
             detail="User account is inactive"
         )
     
-        # Validate tenant context with Auth0 organization mapping
+    # Validate tenant context with Auth0 organization mapping
+    # CRITICAL FIX #5: Database-backed tenant mapping (replaces hardcoded dictionary)
     if tenant_id and str(user.organisation_id) != tenant_id:
-        # Auth0 organization ID mapping for Zebra Associates opportunity
-        auth0_org_mapping = {
-            "zebra-associates-org-id": "835d4f24-cff2-43e8-a470-93216a3d99a3",
-            "zebra-associates": "835d4f24-cff2-43e8-a470-93216a3d99a3",
-            "zebra": "835d4f24-cff2-43e8-a470-93216a3d99a3",
-        }
-        
-        # Try to map Auth0 organization ID to database UUID
-        mapped_tenant_id = auth0_org_mapping.get(tenant_id, tenant_id)
-        
+        # Resolve tenant_id (could be Auth0 org ID or UUID)
+        mapped_tenant_id = await resolve_tenant_id(tenant_id, db)
+
+        if not mapped_tenant_id:
+            logger.error("Failed to resolve tenant ID", extra={
+                "event": "auth_tenant_resolve_failed",
+                "user_id": user_id,
+                "token_tenant_id": tenant_id,
+                "user_tenant_id": str(user.organisation_id),
+                "path": request.url.path
+            })
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid tenant context"
+            )
+
         if str(user.organisation_id) != mapped_tenant_id:
-            logger.error("Tenant context mismatch after Auth0 mapping", extra={
+            logger.error("Tenant context mismatch after mapping", extra={
                 "event": "auth_tenant_mismatch",
                 "user_id": user_id,
                 "token_tenant_id": tenant_id,
@@ -427,8 +508,8 @@ async def get_current_user(
                 detail="Tenant context mismatch"
             )
         else:
-            logger.info("Auth0 organization mapping successful", extra={
-                "event": "auth0_org_mapping_success",
+            logger.info("Tenant mapping successful", extra={
+                "event": "tenant_mapping_success",
                 "original_tenant_id": tenant_id,
                 "mapped_tenant_id": mapped_tenant_id,
                 "user_org_id": str(user.organisation_id),
