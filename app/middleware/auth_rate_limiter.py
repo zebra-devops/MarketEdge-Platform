@@ -197,6 +197,7 @@ class AuthRateLimiter:
     def __init__(self):
         """Initialize authentication rate limiter with security hardening."""
         self.enabled = settings.RATE_LIMIT_ENABLED
+        self.redis_available = False  # Track Redis availability
 
         # Use environment-aware defaults (MEDIUM FIX #6)
         self.limit_string = settings.rate_limit_auth_default
@@ -233,27 +234,42 @@ class AuthRateLimiter:
                 )
                 # Test connection
                 self.redis_client.ping()
+                self.redis_available = True
             except Exception as redis_error:
-                logger.error(
+                logger.warning(
                     "Redis connection failed during rate limiter init",
                     extra={
                         "event": "rate_limiter_redis_failed",
                         "error": str(redis_error),
-                        "storage_url": storage_url
+                        "storage_url": storage_url,
+                        "environment": settings.ENV_NAME
                     }
                 )
-                # Continue without Redis client (will fail-closed on use)
+                # Continue without Redis client
                 self.redis_client = None
+                self.redis_available = False
+
+                # In non-production environments, disable rate limiting if Redis unavailable
+                if settings.ENV_NAME in ["development", "test", "testing"]:
+                    logger.info(
+                        "Rate limiting disabled due to Redis unavailability in test/dev environment",
+                        extra={
+                            "event": "rate_limiter_disabled_no_redis",
+                            "environment": settings.ENV_NAME
+                        }
+                    )
+                    self.enabled = False
 
             logger.info(
                 "Auth rate limiter initialized (SECURITY HARDENED)",
                 extra={
                     "event": "auth_rate_limiter_init",
                     "enabled": self.enabled,
+                    "redis_available": self.redis_available,
                     "ip_limit": self.limit_string,
                     "user_limit": self.user_limit_string,
-                    "storage": "redis",
-                    "fail_mode": "closed",
+                    "storage": "redis" if self.redis_available else "none",
+                    "fail_mode": "closed" if settings.ENV_NAME == "production" else "disabled",
                     "trusted_proxies": len(settings.get_trusted_proxy_cidrs()),
                     "environment": settings.ENV_NAME
                 }
@@ -263,23 +279,54 @@ class AuthRateLimiter:
                 "Failed to initialize auth rate limiter",
                 extra={
                     "event": "auth_rate_limiter_init_failed",
-                    "error": str(e)
+                    "error": str(e),
+                    "environment": settings.ENV_NAME
                 }
             )
-            # CRITICAL FIX #2: Fail-closed - raise exception instead of creating fallback
-            raise
+            # CRITICAL: In production, fail-closed. In test/dev, disable and continue.
+            if settings.ENV_NAME == "production":
+                raise
+            else:
+                logger.warning(
+                    "Rate limiting disabled due to initialization failure in non-production environment",
+                    extra={
+                        "event": "rate_limiter_disabled_init_error",
+                        "environment": settings.ENV_NAME
+                    }
+                )
+                self.enabled = False
+                self.redis_available = False
 
     def _check_redis_health(self) -> None:
         """
         Check Redis health before rate limiting (CRITICAL FIX #2).
 
+        In production: Fail-closed (raise 503 if Redis unavailable)
+        In test/dev: Skip health check (rate limiting disabled if Redis unavailable)
+
         Raises:
-            HTTPException: 503 Service Unavailable if Redis is down
+            HTTPException: 503 Service Unavailable if Redis is down (production only)
         """
-        if not self.redis_client:
+        # If Redis is not available and we're not in production, skip health check
+        # (rate limiting should be disabled in __init__)
+        if not self.redis_available and settings.ENV_NAME in ["development", "test", "testing"]:
+            logger.debug(
+                "Skipping Redis health check in non-production environment",
+                extra={
+                    "event": "rate_limit_health_check_skipped",
+                    "environment": settings.ENV_NAME
+                }
+            )
+            return
+
+        # In production, fail-closed if Redis unavailable
+        if not self.redis_client or not self.redis_available:
             logger.error(
-                "Redis client not available for rate limiting",
-                extra={"event": "rate_limit_redis_unavailable"}
+                "Redis client not available for rate limiting in production",
+                extra={
+                    "event": "rate_limit_redis_unavailable",
+                    "environment": settings.ENV_NAME
+                }
             )
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -297,16 +344,28 @@ class AuthRateLimiter:
                 "Redis health check failed",
                 extra={
                     "event": "rate_limit_redis_health_failed",
-                    "error": str(e)
+                    "error": str(e),
+                    "environment": settings.ENV_NAME
                 }
             )
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={
-                    "detail": "Rate limiting service temporarily unavailable",
-                    "message": "Please try again in a few moments"
-                }
-            )
+            # In production, fail-closed
+            if settings.ENV_NAME == "production":
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail={
+                        "detail": "Rate limiting service temporarily unavailable",
+                        "message": "Please try again in a few moments"
+                    }
+                )
+            # In test/dev, log warning but continue
+            else:
+                logger.warning(
+                    "Redis health check failed in non-production, continuing anyway",
+                    extra={
+                        "event": "rate_limit_health_check_failed_continue",
+                        "environment": settings.ENV_NAME
+                    }
+                )
 
     def limit(self, override_limit: Optional[str] = None, check_user_auth: bool = True):
         """
