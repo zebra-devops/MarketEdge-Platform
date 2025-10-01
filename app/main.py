@@ -67,7 +67,10 @@ except Exception as import_error:
 from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.logging import LoggingMiddleware
 from app.middleware.csrf import CSRFMiddleware
+from app.middleware.auth_rate_limiter import auth_rate_limiter
 from app.core.lazy_startup import lazy_startup_manager
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 
 # Lazy Initialization Architecture - Production Ready
 DEPLOYMENT_TIMESTAMP = "2025-09-23T19:30:00Z"
@@ -146,6 +149,10 @@ else:
 
 app.add_middleware(ErrorHandlerMiddleware)
 app.add_middleware(LoggingMiddleware)
+
+# Add slowapi state and exception handler for rate limiting
+app.state.limiter = auth_rate_limiter.limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Include full API router with Epic 1 and Epic 2 endpoints - CRITICAL FOR £925K OPPORTUNITY
 if API_ROUTER_IMPORT_SUCCESS:

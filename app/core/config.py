@@ -82,6 +82,26 @@ class Settings(BaseSettings):
     RATE_LIMIT_TENANT_REQUESTS_PER_MINUTE: int = 1000
     RATE_LIMIT_ADMIN_REQUESTS_PER_MINUTE: int = 5000
     RATE_LIMIT_STORAGE_URL: str = "redis://localhost:6379/1"
+
+    # Authentication Rate Limiting (DoS Protection)
+    RATE_LIMIT_AUTH_REQUESTS: str = Field(
+        default="10/5minutes",
+        description="Rate limit for authentication endpoints (format: requests/timewindow)"
+    )
+    RATE_LIMIT_AUTH_REQUESTS_USER: str = Field(
+        default="50/5minutes",
+        description="Rate limit for authenticated users (higher than IP-based limit)"
+    )
+
+    # Rate Limiting Security Configuration (CRITICAL FIXES)
+    TRUSTED_PROXIES: str = Field(
+        default="10.0.0.0/8,192.168.0.0/16,172.16.0.0/12",
+        description="Comma-separated list of CIDR blocks for trusted proxies (for X-Forwarded-For validation)"
+    )
+    ENV_NAME: str = Field(
+        default="development",
+        description="Environment name for Redis namespace isolation (uses RENDER_ENVIRONMENT if available)"
+    )
     
     # Redis Security Configuration
     REDIS_PASSWORD: Optional[str] = None
@@ -127,6 +147,15 @@ class Settings(BaseSettings):
         
         return v
     
+    @field_validator("ENV_NAME", mode="before")
+    @classmethod
+    def set_env_name_from_render(cls, v, info):
+        """Use RENDER_ENVIRONMENT if available, otherwise use provided value"""
+        render_env = os.getenv("RENDER_ENVIRONMENT")
+        if render_env:
+            return render_env
+        return v or "development"
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v):
@@ -135,7 +164,7 @@ class Settings(BaseSettings):
             # Handle empty or whitespace-only strings
             if not v.strip():
                 return ["http://localhost:3000"]
-                
+
             if v.startswith("[") and v.endswith("]"):
                 # Handle JSON-like format: ["url1","url2"]
                 import json
@@ -162,6 +191,22 @@ class Settings(BaseSettings):
     def is_staging(self) -> bool:
         """Check if running in staging/preview environment"""
         return self.ENVIRONMENT.lower() in ["staging", "preview"] or self.USE_STAGING_AUTH0
+
+    @property
+    def rate_limit_auth_default(self) -> str:
+        """Get environment-aware rate limit for authentication endpoints"""
+        if self.ENVIRONMENT == "development":
+            return "100/minute"  # Effectively unlimited for development
+        elif self.ENVIRONMENT in ["staging", "preview"]:
+            return "20/5minutes"  # More lenient for staging testing
+        else:
+            return self.RATE_LIMIT_AUTH_REQUESTS  # Production default
+
+    def get_trusted_proxy_cidrs(self) -> List[str]:
+        """Parse TRUSTED_PROXIES into list of CIDR blocks"""
+        if not self.TRUSTED_PROXIES:
+            return []
+        return [cidr.strip() for cidr in self.TRUSTED_PROXIES.split(",") if cidr.strip()]
 
     def get_auth0_config(self) -> Dict[str, str]:
         """Get Auth0 configuration based on environment"""

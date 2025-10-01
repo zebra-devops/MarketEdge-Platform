@@ -5,30 +5,31 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text, select
 from pydantic import BaseModel, ValidationError as PydanticValidationError
 from typing import Dict, Any, Optional, List
-from datetime import timedelta
+from datetime import timedelta, datetime
 import secrets
 from ....core.database import get_db, get_async_db
 from ....models.user import User
 from ....models.organisation import Organisation
 from ....auth.jwt import (
-    create_access_token, 
-    create_refresh_token, 
-    verify_token, 
+    create_access_token,
+    create_refresh_token,
+    verify_token,
     get_user_permissions,
     should_refresh_token,
     extract_tenant_context_from_token
 )
 from ....auth.auth0 import auth0_client
-from ....auth.dependencies import get_current_user
+from ....auth.dependencies import get_current_user, verify_auth0_token
 from ....core.logging import get_logger
 from ....core.config import settings
 from ....core.validators import (
-    AuthParameterValidator, 
-    ValidationError, 
-    sanitize_string_input, 
+    AuthParameterValidator,
+    ValidationError,
+    sanitize_string_input,
     validate_tenant_id,
     create_security_headers
 )
+from ....middleware.auth_rate_limiter import auth_rate_limiter
 
 logger = get_logger(__name__)
 
@@ -210,6 +211,7 @@ class UserContextResponse(BaseModel):
 
 
 @router.post("/user-context", response_model=UserContextResponse)
+@auth_rate_limiter.limit()
 async def get_user_context(
     user_context_req: UserContextRequest,
     request: Request,
@@ -301,6 +303,7 @@ async def get_user_context(
 
 
 @router.post("/login-oauth2", response_model=TokenResponse)
+@auth_rate_limiter.limit()
 async def login_oauth2(
     login_data: LoginRequest,
     response: Response,
@@ -605,6 +608,7 @@ async def login_json_body(request: Request) -> Optional[LoginRequest]:
     return None
 
 @router.post("/login", response_model=TokenResponse)
+@auth_rate_limiter.limit()
 async def login(
     response: Response,
     request: Request,
@@ -983,6 +987,7 @@ async def login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
+@auth_rate_limiter.limit()
 async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, db: AsyncSession = Depends(get_async_db)):
     """
     Enhanced token refresh using Auth0 refresh token flow (CRITICAL SECURITY FIX).
@@ -1445,7 +1450,8 @@ async def get_current_user_info(
 
 
 @router.get("/auth0-url")
-async def get_auth0_url(redirect_uri: str, additional_scopes: Optional[str] = None, organization_hint: Optional[str] = None):
+@auth_rate_limiter.limit("30/5minutes")  # CRITICAL FIX #4: Rate limit auth0-url endpoint
+async def get_auth0_url(request: Request, redirect_uri: str, additional_scopes: Optional[str] = None, organization_hint: Optional[str] = None):
     """Get Auth0 authorization URL with enhanced security and multi-tenant organization context"""
     try:
         # Parse additional scopes if provided
