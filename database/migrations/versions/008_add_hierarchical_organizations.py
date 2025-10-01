@@ -32,32 +32,35 @@ def upgrade():
 
     print("Creating enum types for hierarchical organization system...")
 
-    # Create enhanced user roles enum with exception handling for duplicates
+    # Create enhanced user roles enum with idempotent IF NOT EXISTS check
     op.execute(text("""
-        DO $$ BEGIN
-            CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enhanceduserrole') THEN
+                CREATE TYPE enhanceduserrole AS ENUM ('super_admin', 'org_admin', 'location_manager', 'department_lead', 'user', 'viewer');
+            END IF;
         END $$;
     """))
     print("✅ Created enhanceduserrole enum")
 
-    # Create hierarchy level enum with exception handling for duplicates
+    # Create hierarchy level enum with idempotent IF NOT EXISTS check
     op.execute(text("""
-        DO $$ BEGIN
-            CREATE TYPE hierarchylevel AS ENUM ('organization', 'location', 'department', 'user');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'hierarchylevel') THEN
+                CREATE TYPE hierarchylevel AS ENUM ('organization', 'location', 'department', 'user');
+            END IF;
         END $$;
     """))
     print("✅ Created hierarchylevel enum")
 
-    # Create permission scope enum with exception handling for duplicates
+    # Create permission scope enum with idempotent IF NOT EXISTS check
     op.execute(text("""
-        DO $$ BEGIN
-            CREATE TYPE permissionscope AS ENUM ('read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'permissionscope') THEN
+                CREATE TYPE permissionscope AS ENUM ('read', 'write', 'delete', 'admin', 'manage_users', 'manage_settings', 'view_reports', 'export_data');
+            END IF;
         END $$;
     """))
     print("✅ Created permissionscope enum")
