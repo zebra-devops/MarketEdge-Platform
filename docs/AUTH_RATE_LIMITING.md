@@ -1,4 +1,4 @@
-# Authentication Rate Limiting
+# Authentication Rate Limiting - SECURITY HARDENED
 
 ## Overview
 
@@ -6,6 +6,17 @@ Authentication rate limiting protects the MarketEdge platform from:
 - **DoS attacks** on expensive Auth0 endpoints
 - **CPU burn** from excessive authentication attempts
 - **Auth0 bill spikes** from brute force attacks
+
+## Security Hardening (2025-10-01)
+
+This implementation includes **6 CRITICAL security fixes** from code review:
+
+1. **IP Spoofing Prevention (CRITICAL)** - X-Forwarded-For validation with trusted proxies
+2. **Fail-Closed Security (CRITICAL)** - Returns 503 on Redis failure instead of bypass
+3. **Redis Namespace Isolation (CRITICAL)** - Environment-specific keys prevent interference
+4. **Auth0 URL Protection (HIGH)** - /auth0-url endpoint rate limited
+5. **Per-User Rate Limiting (HIGH)** - Higher limits for authenticated users
+6. **Environment-Aware Defaults (MEDIUM)** - Development-friendly testing
 
 ## Configuration
 
@@ -15,11 +26,20 @@ Authentication rate limiting protects the MarketEdge platform from:
 # Enable/disable rate limiting (default: true)
 RATE_LIMIT_ENABLED=true
 
-# Rate limit for authentication endpoints (default: "10/5minutes")
+# Rate limit for unauthenticated requests (per-IP, default: "10/5minutes")
 RATE_LIMIT_AUTH_REQUESTS="10/5minutes"
+
+# Rate limit for authenticated users (per-user, default: "50/5minutes")
+RATE_LIMIT_AUTH_REQUESTS_USER="50/5minutes"
 
 # Redis URL for distributed rate limiting (default: redis://localhost:6379/1)
 RATE_LIMIT_STORAGE_URL="redis://localhost:6379/1"
+
+# SECURITY: Trusted proxy CIDR blocks (CRITICAL for IP spoofing prevention)
+TRUSTED_PROXIES="10.0.0.0/8,192.168.0.0/16,172.16.0.0/12"
+
+# Environment namespace for Redis key isolation (auto-detects from RENDER_ENVIRONMENT)
+ENV_NAME="development"  # or "staging", "production"
 ```
 
 ### Rate Limit Format
@@ -35,20 +55,31 @@ Examples:
 
 The following authentication endpoints are rate limited:
 
-1. **POST /api/v1/auth/login** - OAuth2 login with authorization code
-2. **POST /api/v1/auth/login-oauth2** - Alternative OAuth2 login endpoint
-3. **POST /api/v1/auth/refresh** - Token refresh endpoint
-4. **POST /api/v1/auth/user-context** - Auth0 Action callback for user context
+1. **POST /api/v1/auth/login** - OAuth2 login with authorization code (10/5min per IP)
+2. **POST /api/v1/auth/login-oauth2** - Alternative OAuth2 login endpoint (10/5min per IP)
+3. **POST /api/v1/auth/refresh** - Token refresh endpoint (50/5min per user)
+4. **POST /api/v1/auth/user-context** - Auth0 Action callback for user context (10/5min per IP)
+5. **GET /api/v1/auth/auth0-url** - Auth0 authorization URL generation (30/5min per IP) **[NEW]**
 
 ## Rate Limiting Behavior
 
-### Per-IP Address Tracking
+### Per-IP and Per-User Tracking
 
-Rate limits are enforced **per IP address**, preventing distributed attacks while allowing legitimate users across different IPs to authenticate simultaneously.
+Rate limits are enforced using two strategies:
+
+1. **Per-IP Tracking (Unauthenticated)**: 10 requests / 5 minutes per IP address
+   - Used for login, auth0-url, and other unauthenticated endpoints
+   - Prevents distributed attacks
+   - Protected against IP spoofing with trusted proxy validation
+
+2. **Per-User Tracking (Authenticated)**: 50 requests / 5 minutes per user
+   - Used for token refresh and authenticated endpoints
+   - Higher limit to prevent corporate NAT blocking
+   - Zebra Associates use case: Multiple users behind same corporate proxy
 
 **Example:**
-- IP 192.168.1.1 can make 10 requests in 5 minutes
-- IP 192.168.1.2 can make 10 requests in 5 minutes (independently)
+- **Unauthenticated**: IP 192.168.1.1 can make 10 login requests in 5 minutes
+- **Authenticated**: user_123 from any IP can make 50 refresh requests in 5 minutes
 
 ### Rate Limit Exceeded Response
 
@@ -73,12 +104,22 @@ X-RateLimit-Limit: 10/5minutes
 X-RateLimit-Reset: 1704123600
 ```
 
-### Graceful Degradation
+### Fail-Closed Security (CRITICAL FIX #2)
+
+**BREAKING CHANGE**: Rate limiting now **fails closed** instead of fail-open.
 
 If Redis is unavailable:
-- Rate limiting **fails open** (allows requests)
+- Rate limiting **returns 503 Service Unavailable** (fails closed)
+- **Does NOT allow bypass** (prevents DoS vulnerability)
 - Error is logged for monitoring
-- Service remains available
+- Client should retry after brief delay
+
+**Why fail-closed?**
+- Fail-open allows DoS attacks when Redis is down
+- Attacker could intentionally crash Redis to bypass limits
+- 503 response provides clear signal that service is degraded
+
+**Rollback procedure**: Set `RATE_LIMIT_ENABLED=false` to disable rate limiting entirely
 
 ## Implementation
 
@@ -163,10 +204,17 @@ Rate limit violations are logged with the following event:
 - Limits Auth0 API calls to prevent bill spikes
 - Protects backend CPU from excessive authentication processing
 - Distributed Redis ensures consistent limits across instances
+- Fail-closed mode prevents Redis-crash bypass attacks
 
 **Distributed Attack Mitigation:**
 - Per-IP tracking prevents single attacker from overwhelming system
 - Multiple IPs required for sustained attack (increases cost)
+
+**IP Spoofing Prevention (CRITICAL FIX #1):**
+- X-Forwarded-For validated against TRUSTED_PROXIES
+- Only accepts headers from RFC1918 private ranges by default
+- Uses last IP in chain (closest to server, hardest to spoof)
+- Untrusted proxies fall back to direct connection IP
 
 ### Bypass Prevention
 
@@ -174,11 +222,19 @@ Rate limit violations are logged with the following event:
 - Cannot be disabled per-request
 - No special headers to skip rate limiting
 - Admin bypass requires code deployment (not runtime configuration)
+- Fail-closed on Redis failure (no automatic bypass)
 
 **Redis Security:**
 - Use Redis AUTH password in production
 - Enable Redis SSL/TLS for encrypted communication
 - Isolate Redis instance on private network
+- Environment namespace isolation (staging/production separated)
+
+**Trusted Proxy Configuration:**
+- Default: RFC1918 private ranges (10.0.0.0/8, 192.168.0.0/16, 172.16.0.0/12)
+- Production: Configure TRUSTED_PROXIES for your infrastructure
+- Render.com: Add Render's proxy IPs if using X-Forwarded-For
+- Verify with: `curl -H "X-Forwarded-For: spoofed.ip" your-api.com/endpoint`
 
 ## Testing
 
@@ -294,23 +350,30 @@ Before deploying rate limiting to production:
 
 - [ ] Redis is configured and accessible
 - [ ] `RATE_LIMIT_STORAGE_URL` points to production Redis
-- [ ] Rate limits are configured appropriately
+- [ ] Rate limits are configured appropriately (RATE_LIMIT_AUTH_REQUESTS, RATE_LIMIT_AUTH_REQUESTS_USER)
+- [ ] `TRUSTED_PROXIES` configured for your infrastructure (CRITICAL)
+- [ ] `ENV_NAME` set to "production" or auto-detected from RENDER_ENVIRONMENT
 - [ ] Monitoring is set up for rate limit violations
 - [ ] Alerts configured for excessive 429 responses
+- [ ] Alerts configured for Redis failures (503 responses)
 - [ ] Rollback plan documented and tested
 - [ ] Team trained on troubleshooting
-- [ ] Tests passing: `pytest tests/test_auth_rate_limiter.py`
+- [ ] Tests passing: `pytest tests/test_auth_rate_limiter.py -v`
+- [ ] Verify fail-closed behavior: Stop Redis, expect 503 responses
+- [ ] Verify IP spoofing protection: Test X-Forwarded-For from untrusted IPs
+- [ ] Verify namespace isolation: Check Redis keys include environment prefix
 
 ## Future Enhancements
 
 Potential improvements for authentication rate limiting:
 
-1. **Per-User Rate Limiting** - Separate limits per authenticated user
+1. ~~**Per-User Rate Limiting**~~ - ✅ **IMPLEMENTED** (HIGH FIX #5)
 2. **Adaptive Rate Limiting** - Adjust limits based on system load
 3. **IP Reputation** - Lower limits for suspicious IPs
 4. **Rate Limit Dashboard** - Real-time visualization of rate limits
 5. **Custom Bypass** - Admin API to temporarily bypass for specific IPs
 6. **Geo-blocking** - Different limits per geographic region
+7. **In-Memory Fallback** - Short-term memory cache when Redis is down (fail-degraded instead of fail-closed)
 
 ## References
 
@@ -332,5 +395,37 @@ For issues or questions about authentication rate limiting:
 ---
 
 **Last Updated:** 2025-10-01
-**Version:** 1.0.0
+**Version:** 2.0.0 (SECURITY HARDENED)
 **Status:** Production Ready
+
+## Changelog
+
+### Version 2.0.0 (2025-10-01) - SECURITY HARDENING
+
+**CRITICAL SECURITY FIXES:**
+1. ✅ IP Spoofing Prevention - X-Forwarded-For validation with TRUSTED_PROXIES
+2. ✅ Fail-Closed Security - Redis failure returns 503 instead of bypass
+3. ✅ Redis Namespace Isolation - Environment-specific keys (ENV_NAME)
+4. ✅ Auth0 URL Protection - /auth0-url endpoint now rate limited (30/5min)
+
+**HIGH PRIORITY IMPROVEMENTS:**
+5. ✅ Per-User Rate Limiting - Authenticated users get 50/5min (vs 10/5min for IPs)
+6. ✅ Environment-Aware Defaults - Development: 100/min, Staging: 20/5min, Production: 10/5min
+
+**BREAKING CHANGES:**
+- Fail-closed behavior: Redis failures now return 503 (previously allowed requests)
+- TRUSTED_PROXIES validation: X-Forwarded-For from untrusted sources ignored
+- Environment namespacing: Redis keys now include ENV_NAME prefix
+
+**Migration:**
+- Add `TRUSTED_PROXIES` to production environment variables
+- Verify `ENV_NAME` is set correctly (or use RENDER_ENVIRONMENT)
+- Test Redis failure scenario (should return 503)
+- Update monitoring to alert on 503 responses
+
+### Version 1.0.0 (2025-09-01) - INITIAL RELEASE
+
+- Basic rate limiting for authentication endpoints
+- Redis-backed distributed limiting
+- Per-IP tracking
+- Graceful degradation (fail-open)

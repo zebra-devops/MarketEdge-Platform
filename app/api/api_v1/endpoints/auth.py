@@ -1450,7 +1450,8 @@ async def get_current_user_info(
 
 
 @router.get("/auth0-url")
-async def get_auth0_url(redirect_uri: str, additional_scopes: Optional[str] = None, organization_hint: Optional[str] = None):
+@auth_rate_limiter.limit("30/5minutes")  # CRITICAL FIX #4: Rate limit auth0-url endpoint
+async def get_auth0_url(request: Request, redirect_uri: str, additional_scopes: Optional[str] = None, organization_hint: Optional[str] = None):
     """Get Auth0 authorization URL with enhanced security and multi-tenant organization context"""
     try:
         # Parse additional scopes if provided
