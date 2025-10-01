@@ -51,31 +51,33 @@ def upgrade() -> None:
         op.create_index('idx_industry_template_parent', 'industry_templates', ['parent_template_id', 'is_active'], unique=False)
         op.create_index(op.f('ix_industry_templates_industry_code'), 'industry_templates', ['industry_code'], unique=True)
         op.create_index(op.f('ix_industry_templates_name'), 'industry_templates', ['name'], unique=True)
-    op.create_table('organization_hierarchy',
-    sa.Column('name', sa.String(length=255), nullable=False),
-    sa.Column('slug', sa.String(length=100), nullable=False),
-    sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('parent_id', postgresql.UUID(), nullable=True),
-    sa.Column('level', sa.Enum('ORGANIZATION', 'LOCATION', 'DEPARTMENT', 'USER', name='hierarchylevel', create_type=False), nullable=False),
-    sa.Column('hierarchy_path', sa.String(length=500), nullable=False),
-    sa.Column('depth', sa.Integer(), nullable=False),
-    sa.Column('legacy_organisation_id', postgresql.UUID(), nullable=True),
-    sa.Column('is_active', sa.Boolean(), nullable=False),
-    sa.Column('settings', sa.Text(), nullable=True),
-    sa.Column('id', postgresql.UUID(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-    sa.ForeignKeyConstraint(['legacy_organisation_id'], ['organisations.id'], ),
-    sa.ForeignKeyConstraint(['parent_id'], ['organization_hierarchy.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('slug', 'parent_id', name='uq_hierarchy_slug_parent')
-    )
-    op.create_index('idx_hierarchy_level_active', 'organization_hierarchy', ['level', 'is_active'], unique=False)
-    op.create_index('idx_hierarchy_parent_level', 'organization_hierarchy', ['parent_id', 'level'], unique=False)
-    op.create_index('idx_hierarchy_path', 'organization_hierarchy', ['hierarchy_path'], unique=False)
-    op.create_index(op.f('ix_organization_hierarchy_hierarchy_path'), 'organization_hierarchy', ['hierarchy_path'], unique=False)
-    op.create_index(op.f('ix_organization_hierarchy_name'), 'organization_hierarchy', ['name'], unique=False)
-    op.create_index(op.f('ix_organization_hierarchy_slug'), 'organization_hierarchy', ['slug'], unique=True)
+
+    if 'organization_hierarchy' not in existing_tables:
+        op.create_table('organization_hierarchy',
+        sa.Column('name', sa.String(length=255), nullable=False),
+        sa.Column('slug', sa.String(length=100), nullable=False),
+        sa.Column('description', sa.Text(), nullable=True),
+        sa.Column('parent_id', postgresql.UUID(), nullable=True),
+        sa.Column('level', sa.Enum('ORGANIZATION', 'LOCATION', 'DEPARTMENT', 'USER', name='hierarchylevel', create_type=False), nullable=False),
+        sa.Column('hierarchy_path', sa.String(length=500), nullable=False),
+        sa.Column('depth', sa.Integer(), nullable=False),
+        sa.Column('legacy_organisation_id', postgresql.UUID(), nullable=True),
+        sa.Column('is_active', sa.Boolean(), nullable=False),
+        sa.Column('settings', sa.Text(), nullable=True),
+        sa.Column('id', postgresql.UUID(), nullable=False),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+        sa.ForeignKeyConstraint(['legacy_organisation_id'], ['organisations.id'], ),
+        sa.ForeignKeyConstraint(['parent_id'], ['organization_hierarchy.id'], ),
+        sa.PrimaryKeyConstraint('id'),
+        sa.UniqueConstraint('slug', 'parent_id', name='uq_hierarchy_slug_parent')
+        )
+        op.create_index('idx_hierarchy_level_active', 'organization_hierarchy', ['level', 'is_active'], unique=False)
+        op.create_index('idx_hierarchy_parent_level', 'organization_hierarchy', ['parent_id', 'level'], unique=False)
+        op.create_index('idx_hierarchy_path', 'organization_hierarchy', ['hierarchy_path'], unique=False)
+        op.create_index(op.f('ix_organization_hierarchy_hierarchy_path'), 'organization_hierarchy', ['hierarchy_path'], unique=False)
+        op.create_index(op.f('ix_organization_hierarchy_name'), 'organization_hierarchy', ['name'], unique=False)
+        op.create_index(op.f('ix_organization_hierarchy_slug'), 'organization_hierarchy', ['slug'], unique=True)
     op.create_table('hierarchy_permission_overrides',
     sa.Column('user_id', postgresql.UUID(), nullable=False),
     sa.Column('hierarchy_node_id', postgresql.UUID(), nullable=False),
