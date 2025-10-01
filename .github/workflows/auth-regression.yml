@@ -10,7 +10,7 @@ on:
 jobs:
   auth-regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     services:
       postgres:
@@ -19,10 +19,10 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: marketedge_test
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
         ports:
           - 5432:5432
 
@@ -30,9 +30,9 @@ jobs:
         image: redis:7
         options: >-
           --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
         ports:
           - 6379:6379
 
