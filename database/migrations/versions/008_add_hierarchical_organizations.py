@@ -177,19 +177,26 @@ def upgrade():
             default_permissions TEXT NOT NULL,
             default_features TEXT NOT NULL,
             dashboard_config TEXT,
-            parent_template_id UUID REFERENCES industry_templates(id),
+            parent_template_id UUID,
             is_base_template BOOLEAN NOT NULL DEFAULT false,
             customizable_fields TEXT,
             is_active BOOLEAN NOT NULL DEFAULT true,
             version VARCHAR(20) NOT NULL DEFAULT '1.0.0',
             CONSTRAINT uq_industry_template_name UNIQUE (name),
-            CONSTRAINT uq_industry_template_code UNIQUE (industry_code)
+            CONSTRAINT uq_industry_template_code UNIQUE (industry_code),
+            CONSTRAINT fk_industry_template_parent FOREIGN KEY (parent_template_id) REFERENCES industry_templates(id)
         )
     """))
     
-    # Create indexes for industry_templates
-    op.create_index('idx_industry_template_code_active', 'industry_templates', ['industry_code', 'is_active'])
-    op.create_index('idx_industry_template_parent', 'industry_templates', ['parent_template_id', 'is_active'])
+    # Create indexes for industry_templates (idempotent)
+    op.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_industry_template_code_active
+        ON industry_templates (industry_code, is_active)
+    """))
+    op.execute(text("""
+        CREATE INDEX IF NOT EXISTS idx_industry_template_parent
+        ON industry_templates (parent_template_id, is_active)
+    """))
     
     # 6. Create organization_template_applications table - using raw SQL for consistency
     op.execute(text("""
