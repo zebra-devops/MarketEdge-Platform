@@ -387,7 +387,7 @@ def downgrade() -> None:
     sa.Column('created_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('now()'), autoincrement=False, nullable=False),
     sa.Column('updated_at', postgresql.TIMESTAMP(timezone=True), server_default=sa.text('now()'), autoincrement=False, nullable=False),
     sa.Column('filename', sa.VARCHAR(length=255), autoincrement=False, nullable=False),
-    sa.Column('status', postgresql.ENUM('pending', 'processing', 'completed', 'failed', 'cancelled', name='importstatus'), server_default=sa.text("'pending'::importstatus"), autoincrement=False, nullable=False),
+    sa.Column('status', postgresql.ENUM('pending', 'processing', 'completed', 'failed', 'cancelled', name='importstatus', create_type=False), server_default=sa.text("'pending'::importstatus"), autoincrement=False, nullable=False),
     sa.Column('total_rows', sa.INTEGER(), server_default=sa.text('0'), autoincrement=False, nullable=False),
     sa.Column('processed_rows', sa.INTEGER(), server_default=sa.text('0'), autoincrement=False, nullable=False),
     sa.Column('successful_rows', sa.INTEGER(), server_default=sa.text('0'), autoincrement=False, nullable=False),
