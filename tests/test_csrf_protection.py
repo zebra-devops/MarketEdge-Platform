@@ -341,5 +341,54 @@ class TestCSRFIntegration:
                 assert new_csrf != csrf_token  # Should be a new token
 
 
+class TestCSRFTimingAttack:
+    """Tests for timing attack resistance"""
+
+    def test_csrf_timing_attack_resistance(self):
+        """
+        Test that CSRF validation uses constant-time comparison.
+
+        This test runs a timing attack stress test to verify that
+        the constant-time comparison doesn't leak information about
+        the token through timing differences.
+        """
+        import subprocess
+        from pathlib import Path
+
+        # Find the timing test script
+        script_path = Path(__file__).parent / "security" / "test_csrf_timing.sh"
+
+        if not script_path.exists():
+            pytest.skip("Timing test script not found")
+
+        # Check if backend is running
+        try:
+            import requests
+            response = requests.get("http://localhost:8000/health", timeout=1)
+            if response.status_code != 200:
+                pytest.skip("Backend not running for timing test")
+        except:
+            pytest.skip("Backend not running for timing test")
+
+        # Run timing attack test
+        result = subprocess.run(
+            [str(script_path)],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        # Check result
+        assert result.returncode == 0, (
+            f"Timing attack test failed:\n"
+            f"STDOUT:\n{result.stdout}\n"
+            f"STDERR:\n{result.stderr}"
+        )
+
+        # Verify output contains success message
+        assert "PASS: Constant-time comparison verified" in result.stdout
+        assert "no O(n) timing leak" in result.stdout
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
