@@ -239,11 +239,27 @@ def upgrade() -> None:
                existing_type=postgresql.TIMESTAMP(timezone=True),
                nullable=True,
                existing_server_default=sa.text('now()'))
-    op.drop_index('idx_user_application_access_application', table_name='user_application_access')
-    op.drop_index('idx_user_application_access_user_id', table_name='user_application_access')
-    op.drop_constraint('user_application_access_user_id_application_key', 'user_application_access', type_='unique')
-    op.drop_constraint('user_application_access_granted_by_fkey', 'user_application_access', type_='foreignkey')
-    op.drop_constraint('user_application_access_user_id_fkey', 'user_application_access', type_='foreignkey')
+    # Drop constraints/indexes if they exist (idempotent)
+    try:
+        op.drop_index('idx_user_application_access_application', table_name='user_application_access')
+    except:
+        pass
+    try:
+        op.drop_index('idx_user_application_access_user_id', table_name='user_application_access')
+    except:
+        pass
+    try:
+        op.drop_constraint('user_application_access_user_id_application_key', 'user_application_access', type_='unique')
+    except:
+        pass
+    try:
+        op.drop_constraint('user_application_access_granted_by_fkey', 'user_application_access', type_='foreignkey')
+    except:
+        pass
+    try:
+        op.drop_constraint('user_application_access_user_id_fkey', 'user_application_access', type_='foreignkey')
+    except:
+        pass
     op.create_foreign_key(None, 'user_application_access', 'users', ['user_id'], ['id'])
     op.create_foreign_key(None, 'user_application_access', 'users', ['granted_by'], ['id'])
     op.alter_column('user_invitations', 'updated_at',
