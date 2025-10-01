@@ -399,6 +399,137 @@ git revert f6a6887
 - **Staging**: 🔄 Ready for deployment
 - **Production**: 🔄 Ready for deployment
 
+## Deployment Safety
+
+### Kill-Switch Procedure
+
+**CRITICAL**: Always deploy with CSRF disabled initially, then enable after smoke test.
+
+#### Step 1: Deploy with CSRF Disabled (5 minutes)
+
+```bash
+# In staging/production .env
+CSRF_ENABLED=False
+
+# Deploy application
+git pull origin main
+systemctl restart marketedge-backend  # or your deployment command
+
+# Run 5-minute smoke test
+curl http://localhost:8000/health
+curl -X POST http://localhost:8000/api/v1/auth/login -d '{"code":"test","redirect_uri":"..."}'
+curl -X POST http://localhost:8000/api/v1/auth/logout
+# Monitor logs for errors
+tail -f /var/log/marketedge/app.log
+```
+
+#### Step 2: Enable CSRF After Smoke Test
+
+```bash
+# Change .env
+CSRF_ENABLED=True
+
+# Restart application
+systemctl restart marketedge-backend
+
+# Monitor CSRF validation logs
+tail -f /var/log/marketedge/app.log | grep csrf_validation
+```
+
+#### Rollback
+
+If issues detected:
+```bash
+# Immediate rollback
+CSRF_ENABLED=False
+systemctl restart marketedge-backend
+```
+
+#### Using Helper Script
+
+```bash
+# Enable CSRF interactively after smoke test
+./scripts/deployment/csrf-enable.sh .env
+
+# Script will:
+# 1. Show current CSRF status
+# 2. Ask for confirmation
+# 3. Update .env with CSRF_ENABLED=True
+# 4. Provide restart instructions
+# 5. Show monitoring commands
+```
+
+### Timing Attack Resistance
+
+**Verification**: Run timing attack stress test before production deployment.
+
+#### Running Timing Test
+
+```bash
+# Start backend locally
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Run timing test
+./tests/security/test_csrf_timing.sh
+```
+
+**Expected Output**:
+```
+🔒 CSRF Timing Attack Stress Test
+==================================
+Backend: http://localhost:8000
+Endpoint: http://localhost:8000/api/v1/auth/logout
+Requests: 50 (parallel: 50)
+
+✅ Backend is running
+
+Running timing attack test...
+Testing with wrong CSRF tokens (should be rejected in constant time)
+
+📊 Timing Statistics (seconds):
+  Min:    0.005
+  Max:    0.007
+  Avg:    0.006
+  Median: 0.006
+
+📈 Timing Variance: 1.40x
+
+✅ PASS: Constant-time comparison verified
+   Variance < 1.5x indicates no timing leak
+   max ≈ min → no O(n) timing leak ✅
+```
+
+#### One-liner Stress Test
+
+```bash
+# Quick timing test (50 parallel requests)
+seq 1 50 | xargs -P 50 -I {} curl -s -o /dev/null -w "%{time_total}\n" \
+    -H "X-CSRF-Token: wrong-token" http://localhost:8000/api/v1/auth/logout \
+| sort -n | tail -1
+# max ≈ min → no timing leak ✅
+```
+
+#### Timing Analysis
+
+- **Variance < 1.5x** = PASS (constant-time)
+- **Variance > 2.0x** = FAIL (potential timing leak)
+- **Variance 1.5x-2.0x** = WARNING (review implementation)
+
+The constant-time comparison ensures:
+- No early exit on mismatch
+- XOR comparison byte-by-byte
+- Equal time for correct and incorrect tokens
+- No information leak about token content
+
+#### Running as Pytest
+
+```bash
+# Run timing test as part of test suite
+pytest tests/test_csrf_protection.py::TestCSRFTimingAttack::test_csrf_timing_attack_resistance -v
+
+# Requires backend running at http://localhost:8000
+```
+
 ---
 
 **Generated with Claude Code**
