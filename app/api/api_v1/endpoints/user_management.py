@@ -433,18 +433,34 @@ async def update_user_application_access(
     
     # Remove existing access
     db.query(UserApplicationAccess).filter(UserApplicationAccess.user_id == user.id).delete()
-    
+
     # Add new access
     for access in access_updates:
+        # Direct enum lookup (uppercase only - US-7 cleanup)
+        try:
+            app_type = ApplicationType[access.application]
+        except KeyError:
+            # Log and raise error for invalid application types
+            valid_apps = [app.name for app in ApplicationType]
+            logger.error(f"Invalid application type: {access.application}", extra={
+                "user_id": str(user.id),
+                "invalid_app": access.application,
+                "valid_apps": valid_apps
+            })
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid application type: {access.application}. Must be one of: {', '.join(valid_apps)}"
+            )
+
         db.add(UserApplicationAccess(
             user_id=user.id,
-            application=access.application,
+            application=app_type,
             has_access=access.has_access,
             granted_by=current_user.id
         ))
-    
+
     db.commit()
-    
+
     return {"message": "Application access updated successfully"}
 
 
@@ -467,16 +483,32 @@ async def bulk_update_application_access(
         if user and (current_user.role == UserRole.super_admin or user.organisation_id == current_user.organisation_id):
             # Remove existing access
             db.query(UserApplicationAccess).filter(UserApplicationAccess.user_id == user.id).delete()
-            
+
             # Add new access
             for access in access_list:
+                # Direct enum lookup (uppercase only - US-7 cleanup)
+                try:
+                    app_type = ApplicationType[access.application]
+                except KeyError:
+                    # Log and raise error for invalid application types
+                    valid_apps = [app.name for app in ApplicationType]
+                    logger.error(f"Invalid application type: {access.application}", extra={
+                        "user_id": str(user.id),
+                        "invalid_app": access.application,
+                        "valid_apps": valid_apps
+                    })
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Invalid application type: {access.application}. Must be one of: {', '.join(valid_apps)}"
+                    )
+
                 db.add(UserApplicationAccess(
                     user_id=user.id,
-                    application=access.application,
+                    application=app_type,
                     has_access=access.has_access,
                     granted_by=current_user.id
                 ))
-    
+
     db.commit()
     
     return {"message": f"Application access updated for {len(updates)} users"}
@@ -524,13 +556,29 @@ async def _create_user_internal(
     
     # Set up application access
     for access in user_data.application_access:
+        # Direct enum lookup (uppercase only - US-7 cleanup)
+        try:
+            app_type = ApplicationType[access.application]
+        except KeyError:
+            # Log and raise error for invalid application types
+            valid_apps = [app.name for app in ApplicationType]
+            logger.error(f"Invalid application type: {access.application}", extra={
+                "user_id": str(new_user.id),
+                "invalid_app": access.application,
+                "valid_apps": valid_apps
+            })
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid application type: {access.application}. Must be one of: {', '.join(valid_apps)}"
+            )
+
         db.add(UserApplicationAccess(
             user_id=new_user.id,
-            application=access.application,
+            application=app_type,
             has_access=access.has_access,
             granted_by=current_user.id
         ))
-    
+
     db.commit()
     
     # Send invitation if requested
