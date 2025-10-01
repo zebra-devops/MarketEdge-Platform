@@ -51,6 +51,12 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-asyncio
 
+      - name: Clean database before migrations
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d marketedge_test -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;" || true
+        env:
+          PGPASSWORD: postgres
+
       - name: Run database migrations
         run: |
           alembic upgrade head
