@@ -54,35 +54,10 @@ services:
     startCommand: ./render-startup.sh
 
     # Preview Configuration (inherited by PR previews)
+    # Preview environments automatically inherit envVars from parent service
+    # Preview-specific values are set using 'previewValue' in envVars section below
     previews:
       generation: automatic
-      envVars:
-        # Preview-specific environment variables
-        - key: ENVIRONMENT
-          value: preview
-
-        - key: DEBUG
-          value: "true"
-
-        - key: LOG_LEVEL
-          value: DEBUG
-
-        - key: ENABLE_DEBUG_LOGGING
-          value: "true"
-
-        - key: USE_STAGING_AUTH0
-          value: "true"  # Use staging Auth0 config for previews
-
-        # CORS Configuration (wildcard for preview URLs)
-        - key: CORS_ORIGINS
-          value: "https://*.onrender.com,https://*.vercel.app,http://localhost:3000"
-
-        # Disable features not needed in preview
-        - key: SENTRY_DSN
-          value: ""  # No Sentry in preview
-
-        - key: COOKIE_SECURE
-          value: "false"  # Allow non-HTTPS cookies in preview
 
     # Production and Preview Environment Variables
     envVars:
