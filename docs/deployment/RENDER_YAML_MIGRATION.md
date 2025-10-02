@@ -335,7 +335,29 @@ databases:
 
 ## Migration Steps
 
-### Step 0: Pre-Migration Checklist
+### Step 0: Pre-Migration Validation
+
+**Before starting migration:**
+
+- [ ] **Validate render.yaml syntax**
+  ```bash
+  # Run validation script to check for configuration errors
+  ./scripts/validate-render-yaml.sh
+
+  # Expected output:
+  # ✅ YAML syntax is valid
+  # ✅ No value + sync conflicts found
+  # ✅ Secret configuration looks good
+  # ✅ No duplicate environment variables
+  # ✅ Service configuration valid
+  # =========================================
+  # ✅ Validation PASSED
+  # render.yaml is ready for deployment
+  ```
+
+  **CRITICAL:** Do not proceed if validation fails. Fix any errors first.
+
+### Step 0.1: Pre-Migration Checklist
 
 **Before starting migration:**
 

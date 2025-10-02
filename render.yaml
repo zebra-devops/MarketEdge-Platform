@@ -72,7 +72,6 @@ services:
       # Without this, Auth0 returns opaque tokens instead of JWT tokens
       - key: AUTH0_AUDIENCE
         value: https://dev-g8trhgbfdq2sk2m8.us.auth0.com/api/v2/
-        sync: false
 
       # ========================================================================
       # AUTH0 CONFIGURATION (Production)
@@ -80,11 +79,9 @@ services:
 
       - key: AUTH0_DOMAIN
         value: dev-g8trhgbfdq2sk2m8.us.auth0.com
-        sync: false
 
       - key: AUTH0_CLIENT_ID
         value: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
-        sync: false
 
       - key: AUTH0_CLIENT_SECRET
         sync: false  # MUST be set in Render Dashboard
@@ -109,18 +106,15 @@ services:
 
       - key: AUTH0_DOMAIN_STAGING
         value: dev-g8trhgbfdq2sk2m8.us.auth0.com
-        sync: false
 
       - key: AUTH0_CLIENT_ID_STAGING
         value: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6  # Currently uses dev client ID
-        sync: false
 
       - key: AUTH0_CLIENT_SECRET_STAGING
         sync: false  # MUST be set in Render Dashboard
 
       - key: AUTH0_AUDIENCE_STAGING
         value: https://dev-g8trhgbfdq2sk2m8.us.auth0.com/api/v2/
-        sync: false
 
       # Environment-aware Auth0 selection (production uses production, preview uses staging)
       - key: USE_STAGING_AUTH0
