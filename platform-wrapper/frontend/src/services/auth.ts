@@ -810,31 +810,46 @@ export class AuthService {
 
     const isProduction = this.detectProductionEnvironment()
 
-    console.debug('🔧 Setting tokens...', {
+    console.log('🔐 AUTH SERVICE: setTokens() called with:', {
       environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
       hasAccessToken: !!tokenResponse.access_token,
       hasRefreshToken: !!tokenResponse.refresh_token,
+      accessTokenLength: tokenResponse.access_token?.length || 0,
+      refreshTokenLength: tokenResponse.refresh_token?.length || 0,
+      accessTokenPreview: tokenResponse.access_token ? tokenResponse.access_token.substring(0, 20) + '...' : 'NONE',
       accessTokenEmpty: !tokenResponse.access_token || tokenResponse.access_token.trim() === '',
-      refreshTokenEmpty: !tokenResponse.refresh_token || tokenResponse.refresh_token.trim() === ''
+      refreshTokenEmpty: !tokenResponse.refresh_token || tokenResponse.refresh_token.trim() === '',
+      responseKeys: Object.keys(tokenResponse)
     })
 
     // CRITICAL GUARD: Reject empty string tokens
     if (!tokenResponse.access_token || tokenResponse.access_token.trim() === '') {
-      console.error('❌ CRITICAL: Cannot store empty access token')
+      console.error('❌ CRITICAL: Cannot store empty access token', {
+        fullResponse: tokenResponse,
+        accessTokenValue: tokenResponse.access_token,
+        typeof: typeof tokenResponse.access_token
+      })
       throw new Error('Invalid access token received from backend - token is empty')
     }
 
     if (!tokenResponse.refresh_token || tokenResponse.refresh_token.trim() === '') {
       console.error('❌ CRITICAL: Cannot store empty refresh token', {
+        fullResponse: tokenResponse,
         hasRefreshToken: 'refresh_token' in tokenResponse,
-        refreshTokenValue: tokenResponse.refresh_token
+        refreshTokenValue: tokenResponse.refresh_token,
+        typeof: typeof tokenResponse.refresh_token
       })
       throw new Error('Invalid refresh token received from backend - token is empty or missing')
     }
 
+    console.log('✅ Token validation passed, proceeding with storage...')
+
     if (tokenResponse.access_token) {
+      console.log('🔐 AUTH SERVICE: Storing access token...')
+
       // Store token temporarily for immediate access while cookies are being set
       this.temporaryAccessToken = tokenResponse.access_token
+      console.log('✅ Temporary token stored in memory')
 
       // CRITICAL FIX: Add session storage backup for navigation persistence
       // Session storage persists during navigation but clears when tab closes
@@ -848,14 +863,19 @@ export class AuthService {
         sessionStorage.setItem(this.sessionStorageKey, JSON.stringify(sessionBackup))
         console.log('✅ Session storage backup created for navigation persistence')
       } catch (sessionError) {
-        console.warn('Session storage backup failed:', sessionError)
+        console.error('❌ Session storage backup failed:', sessionError)
       }
 
       // Backend has already set the access_token cookie (httpOnly: false)
       // For development, also store in localStorage for debugging
       if (!isProduction) {
         console.log('🛠️  DEVELOPMENT: Also storing access token in localStorage for debugging')
-        localStorage.setItem('access_token', tokenResponse.access_token)
+        try {
+          localStorage.setItem('access_token', tokenResponse.access_token)
+          console.log('✅ LocalStorage token stored successfully')
+        } catch (localStorageError) {
+          console.error('❌ LocalStorage storage failed:', localStorageError)
+        }
       } else {
         // PRODUCTION: Clear any localStorage tokens for security
         localStorage.removeItem('access_token')
@@ -878,12 +898,19 @@ export class AuthService {
 
       // CRITICAL FIX: Enhanced cookie availability detection with extended timeouts
       // and graceful fallback strategy for production environments
+      console.log('🔐 AUTH SERVICE: Starting cookie availability detection...')
       let cookieCheckAttempts = 0
       const maxCookieCheckAttempts = 10 // Up to 5 seconds total
 
       const checkCookieAvailability = () => {
         cookieCheckAttempts++
         const cookieToken = Cookies.get('access_token')
+
+        console.log(`🔐 Cookie check attempt ${cookieCheckAttempts}/${maxCookieCheckAttempts}:`, {
+          cookieFound: !!cookieToken,
+          cookiePreview: cookieToken ? cookieToken.substring(0, 20) + '...' : 'NONE',
+          allCookies: document.cookie.substring(0, 100)
+        })
 
         if (cookieToken) {
           console.log('✅ Cookie-based token access confirmed, clearing temporary storage', {
@@ -898,7 +925,7 @@ export class AuthService {
         if (cookieCheckAttempts < maxCookieCheckAttempts) {
           // Continue checking every 500ms for up to 5 seconds
           setTimeout(checkCookieAvailability, 500)
-          console.debug(`Cookie availability check ${cookieCheckAttempts}/${maxCookieCheckAttempts} - retrying in 500ms`)
+          console.log(`🔄 Cookie not found yet, will retry in 500ms (attempt ${cookieCheckAttempts}/${maxCookieCheckAttempts})`)
         } else {
           // After 5 seconds, cookies still not available - keep temporary token for fallback
           console.warn('⚠️  CRITICAL: Cookies not accessible after 5 seconds - keeping temporary token as fallback', {
@@ -920,6 +947,7 @@ export class AuthService {
       }
 
       // Start the cookie availability check
+      console.log('🔐 AUTH SERVICE: Scheduling first cookie check in 500ms...')
       setTimeout(checkCookieAvailability, 500)
     }
     
