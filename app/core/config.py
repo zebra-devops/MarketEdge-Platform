@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     AUTH0_CLIENT_SECRET: str
     AUTH0_CALLBACK_URL: str = "http://localhost:3000/callback"
     AUTH0_ACTION_SECRET: str  # Secret for Auth0 Action to call backend
+    AUTH0_AUDIENCE: Optional[str] = None  # API audience for JWT tokens (not opaque tokens)
 
     # Staging Auth0 Configuration
     AUTH0_DOMAIN_STAGING: Optional[str] = None

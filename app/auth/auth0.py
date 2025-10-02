@@ -285,12 +285,28 @@ class Auth0Client:
             "state": state,
             "prompt": "select_account",  # Force user to select account for security
             "max_age": "3600",  # Force re-authentication after 1 hour
-            # CRITICAL FIX: Remove Management API audience for regular login flow
-            # The Management API audience causes access_token to be scoped for /api/v2/ only,
-            # preventing it from being used with /userinfo endpoint (causing 401 errors).
-            # Management API access should be obtained separately when needed.
-            # "audience": f"https://{self.domain}/api/v2/"
         }
+
+        # CRITICAL FIX: Add API audience to get JWT access tokens instead of opaque tokens
+        # Without an audience, Auth0 returns opaque tokens which cannot be verified cryptographically
+        # With an audience, Auth0 returns JWT tokens that can be verified using JWKS
+        if hasattr(settings, 'AUTH0_AUDIENCE') and settings.AUTH0_AUDIENCE:
+            params["audience"] = settings.AUTH0_AUDIENCE
+            logger.info(
+                "API audience added to auth request for JWT tokens",
+                extra={
+                    "event": "auth_url_audience_added",
+                    "audience": settings.AUTH0_AUDIENCE
+                }
+            )
+        else:
+            logger.warning(
+                "No AUTH0_AUDIENCE configured - Auth0 will return opaque tokens",
+                extra={
+                    "event": "auth_url_no_audience",
+                    "note": "Opaque tokens cannot be verified cryptographically"
+                }
+            )
         
         # Add organization hint if provided for multi-tenant routing
         if organization_hint:
