@@ -125,13 +125,19 @@ services:
       # ========================================================================
       # AUTH0 CONFIGURATION (Staging/Preview Environments)
       # ========================================================================
+      # NOTE: Backend currently uses PlatformWrapper-dev (wEgjaOnk...) for all environments
+      # Frontend uses environment-specific client IDs (see Auth0 dashboard)
+      # Auth0 Applications available:
+      #   - PlatformWrapper-dev: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6 (current backend)
+      #   - PlatformWrapper-Staging: 9FRjf82esKN4fx3iY337CT1jpvNVFbAP (frontend staging)
+      #   - PlatformWrapperAuth: mQG0IZ41NhTTN081GHbR9R9C4fBQdPNr (frontend production)
 
       - key: AUTH0_DOMAIN_STAGING
         value: dev-g8trhgbfdq2sk2m8.us.auth0.com
         sync: false
 
       - key: AUTH0_CLIENT_ID_STAGING
-        value: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
+        value: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6  # Currently uses dev client ID
         sync: false
 
       - key: AUTH0_CLIENT_SECRET_STAGING
@@ -293,13 +299,17 @@ services:
       # ========================================================================
       # AUTH0 CONFIGURATION (Staging)
       # ========================================================================
+      # Auth0 Application Options for Staging:
+      #   Option A (Current): PlatformWrapper-dev - wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
+      #   Option B (Dedicated): PlatformWrapper-Staging - 9FRjf82esKN4fx3iY337CT1jpvNVFbAP
+      # Currently using Option A (same as backend production/preview)
 
       # Use same Auth0 tenant as production (can be changed to separate tenant)
       - key: AUTH0_DOMAIN
         value: dev-g8trhgbfdq2sk2m8.us.auth0.com
 
       - key: AUTH0_CLIENT_ID
-        value: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
+        value: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6  # PlatformWrapper-dev (Option A)
 
       - key: AUTH0_CLIENT_SECRET
         sync: false  # MUST be set in Render Dashboard
@@ -447,6 +457,17 @@ services:
 #    - DATABASE_URL (production only - staging uses fromDatabase)
 #    - REDIS_URL (production and staging)
 #    - SENTRY_DSN (optional, production only)
+#
+# 4B. AUTH0 CLIENT ID STRATEGY:
+#    Backend (render.yaml): Uses PlatformWrapper-dev for ALL environments
+#      - Production: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
+#      - Staging: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
+#      - Preview: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
+#    Frontend (Vercel): Uses environment-specific client IDs
+#      - Production: mQG0IZ41NhTTN081GHbR9R9C4fBQdPNr (PlatformWrapperAuth)
+#      - Staging: 9FRjf82esKN4fx3iY337CT1jpvNVFbAP (PlatformWrapper-Staging)
+#      - Development/Preview: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6 (PlatformWrapper-dev)
+#    Rationale: Backend is environment-agnostic, frontend differentiates environments
 #
 # 5. CRITICAL FIXES APPLIED:
 #    - AUTH0_AUDIENCE: Now set correctly for JWT token generation
