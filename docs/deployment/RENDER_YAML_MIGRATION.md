@@ -581,6 +581,8 @@ openssl rand -hex 32
 
 **Action:** Create staging branch so staging service can deploy
 
+**IMPORTANT:** The staging branch MUST exist before applying render.yaml, otherwise Render will fail with "branch staging could not be found" error.
+
 ```bash
 cd /Users/matt/Sites/MarketEdge
 
@@ -590,7 +592,11 @@ git pull origin main
 
 # Create staging branch
 git checkout -b staging
-git push origin staging
+git push -u origin staging
+
+# Verify branch exists remotely
+git branch -a | grep staging
+# Should show: remotes/origin/staging
 
 # Return to current branch
 git checkout test/trigger-zebra-smoke
@@ -1092,6 +1098,9 @@ CORS_ORIGINS=https://platform.marketedge.co.uk,https://marketedge-platform.onren
 
 **A. Staging branch doesn't exist**
 ```bash
+# This is the most common cause of staging deployment failure
+# Error: "branch staging could not be found"
+
 # Check if staging branch exists
 git branch -a | grep staging
 
@@ -1099,7 +1108,11 @@ git branch -a | grep staging
 git checkout main
 git pull origin main
 git checkout -b staging
-git push origin staging
+git push -u origin staging
+
+# Verify it exists remotely
+git branch -a | grep staging
+# Should show: remotes/origin/staging
 ```
 
 **B. Missing secrets in staging service**
