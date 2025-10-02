@@ -66,13 +66,16 @@ class Auth0Client:
                     
                 except httpx.HTTPError as e:
                     status_code = getattr(e.response, 'status_code', None) if hasattr(e, 'response') else None
+                    response_body = getattr(e.response, 'text', None) if hasattr(e, 'response') else None
                     logger.error(
                         "HTTP error getting user info from Auth0",
                         extra={
                             "event": "userinfo_http_error",
                             "status_code": status_code,
                             "error": str(e),
-                            "attempt": attempt + 1
+                            "response_body": response_body[:500] if response_body else None,
+                            "attempt": attempt + 1,
+                            "hint": "If 401/403: check access_token audience and scopes. Token may be for Management API instead of userinfo."
                         }
                     )
                     # Don't retry on 4xx errors (client errors)
@@ -258,18 +261,22 @@ class Auth0Client:
             
         # Base scopes for multi-tenant authentication
         base_scopes = ["openid", "profile", "email"]
-        
+
+        # CRITICAL FIX: Add offline_access scope to enable refresh token rotation
+        # This is required when Auth0 Refresh Token Rotation is enabled
+        base_scopes.append("offline_access")
+
         # Add multi-tenant specific scopes
         tenant_scopes = ["read:organization", "read:roles"]
         base_scopes.extend(tenant_scopes)
-        
+
         # Add additional scopes if provided
         if additional_scopes:
             base_scopes.extend(additional_scopes)
-            
+
         # Remove duplicates while preserving order
         scopes = list(dict.fromkeys(base_scopes))
-        
+
         params = {
             "response_type": "code",
             "client_id": self.client_id,
@@ -278,8 +285,28 @@ class Auth0Client:
             "state": state,
             "prompt": "select_account",  # Force user to select account for security
             "max_age": "3600",  # Force re-authentication after 1 hour
-            "audience": f"https://{self.domain}/api/v2/"  # Auth0 Management API audience for org context
         }
+
+        # CRITICAL FIX: Add API audience to get JWT access tokens instead of opaque tokens
+        # Without an audience, Auth0 returns opaque tokens which cannot be verified cryptographically
+        # With an audience, Auth0 returns JWT tokens that can be verified using JWKS
+        if hasattr(settings, 'AUTH0_AUDIENCE') and settings.AUTH0_AUDIENCE:
+            params["audience"] = settings.AUTH0_AUDIENCE
+            logger.info(
+                "API audience added to auth request for JWT tokens",
+                extra={
+                    "event": "auth_url_audience_added",
+                    "audience": settings.AUTH0_AUDIENCE
+                }
+            )
+        else:
+            logger.warning(
+                "No AUTH0_AUDIENCE configured - Auth0 will return opaque tokens",
+                extra={
+                    "event": "auth_url_no_audience",
+                    "note": "Opaque tokens cannot be verified cryptographically"
+                }
+            )
         
         # Add organization hint if provided for multi-tenant routing
         if organization_hint:
@@ -604,7 +631,24 @@ class Auth0Client:
     def _validate_token_response(self, token_data: Dict[str, Any]) -> bool:
         """Validate Auth0 token response"""
         required_fields = ["access_token", "token_type"]
-        return all(field in token_data for field in required_fields)
+        is_valid = all(field in token_data for field in required_fields)
+
+        # CRITICAL WARNING: Check if refresh_token is missing or empty
+        if is_valid:
+            refresh_token = token_data.get("refresh_token")
+            if not refresh_token or not refresh_token.strip():
+                logger.warning(
+                    "Auth0 token response missing refresh_token - check Auth0 application settings",
+                    extra={
+                        "event": "token_response_missing_refresh_token",
+                        "has_refresh_token_key": "refresh_token" in token_data,
+                        "refresh_token_empty": not refresh_token if refresh_token else True,
+                        "token_type": token_data.get("token_type"),
+                        "hint": "Ensure 'Refresh Token Rotation' is enabled in Auth0 Application settings"
+                    }
+                )
+
+        return is_valid
     
     async def _get_management_api_token(self) -> Optional[str]:
         """Get Auth0 Management API token with secure caching and rotation"""

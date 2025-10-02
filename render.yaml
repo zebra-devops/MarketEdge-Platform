@@ -1,89 +1,483 @@
-# Render.yaml Configuration for MarketEdge Platform
-# Production and Preview Environment Setup
+# Render Blueprint Configuration for MarketEdge Platform
+# Infrastructure-as-Code for Backend Deployment
+# Documentation: /docs/deployment/RENDER_YAML_REFERENCE.md
 
 # Preview Environment Configuration
+# Applies to all PR preview deployments
 previews:
-  generation: automatic  # Generate preview environments for all PRs automatically
-  expireAfterDays: 7     # Clean up preview environments after 7 days
+  generation: automatic  # Generate preview for every PR
+  expireAfterDays: 7    # Auto-cleanup after 7 days
+  # Environment variables inherited from preview-specific envVars
 
+# Environment Variable Groups
 envVarGroups:
   - name: production-env
+    # Production environment variables managed via Render Dashboard
+    # Secrets (sync: false) must be configured manually:
+    # - DATABASE_URL
+    # - REDIS_URL
+    # - AUTH0_CLIENT_SECRET
+    # - AUTH0_ACTION_SECRET
+    # - JWT_SECRET_KEY
 
+  - name: staging-env
+    # Staging environment variables
+    # Managed via Render Dashboard for long-lived staging service
+
+# Database Configuration
+databases:
+  # Preview Database (shared by all PR previews)
+  - name: marketedge-preview-db
+    databaseName: marketedge_preview
+    plan: free
+    # Each preview gets isolated data via application-level tenant separation
+
+  # Staging Database (dedicated, long-lived)
+  - name: marketedge-staging-db
+    databaseName: marketedge_staging
+    plan: free  # Upgrade to starter ($7/month) for better performance
+    # Note: Production database managed separately (not in render.yaml)
+
+# Services Configuration
 services:
+  # ============================================================================
+  # PRODUCTION SERVICE
+  # ============================================================================
+  # Note: Production service configuration remains in render.yaml but
+  # production-specific secrets managed via Render Dashboard
   - type: web
     name: marketedge-platform
-    env: python-3.11
+    runtime: python
     plan: free
+    region: oregon
     buildCommand: "python --version && pip install --upgrade pip && pip install --no-cache-dir --only-binary=:all: -r requirements.txt"
     startCommand: ./render-startup.sh
+
+    # Preview Configuration (inherited by PR previews)
     previews:
-      numInstances: 1        # inherit plan from base; do not set previews.plan: free
+      generation: automatic
+      envVars:
+        # Preview-specific environment variables
+        - key: ENVIRONMENT
+          value: preview
+
+        - key: DEBUG
+          value: "true"
+
+        - key: LOG_LEVEL
+          value: DEBUG
+
+        - key: ENABLE_DEBUG_LOGGING
+          value: "true"
+
+        - key: USE_STAGING_AUTH0
+          value: "true"  # Use staging Auth0 config for previews
+
+        # CORS Configuration (wildcard for preview URLs)
+        - key: CORS_ORIGINS
+          value: "https://*.onrender.com,https://*.vercel.app,http://localhost:3000"
+
+        # Disable features not needed in preview
+        - key: SENTRY_DSN
+          value: ""  # No Sentry in preview
+
+        - key: COOKIE_SECURE
+          value: "false"  # Allow non-HTTPS cookies in preview
+
+    # Production and Preview Environment Variables
     envVars:
+      # From Environment Group
       - fromGroup: production-env
 
-      # Migration control
-      - key: RUN_MIGRATIONS
-        value: true
+      # ========================================================================
+      # CRITICAL FIXES (Applied 2025-10-02)
+      # ========================================================================
 
-      # Port configuration
+      # CRITICAL FIX #1: AUTH0_AUDIENCE (MUST BE SET)
+      # Without this, Auth0 returns opaque tokens instead of JWT tokens
+      - key: AUTH0_AUDIENCE
+        value: https://dev-g8trhgbfdq2sk2m8.us.auth0.com/api/v2/
+        sync: false
+
+      # ========================================================================
+      # AUTH0 CONFIGURATION (Production)
+      # ========================================================================
+
+      - key: AUTH0_DOMAIN
+        value: dev-g8trhgbfdq2sk2m8.us.auth0.com
+        sync: false
+
+      - key: AUTH0_CLIENT_ID
+        value: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
+        sync: false
+
+      - key: AUTH0_CLIENT_SECRET
+        sync: false  # MUST be set in Render Dashboard
+
+      - key: AUTH0_ACTION_SECRET
+        sync: false  # MUST be set in Render Dashboard
+
+      # Auth0 Callback URL (production)
+      - key: AUTH0_CALLBACK_URL
+        value: https://app.zebra.associates/callback
+        previewValue: https://${RENDER_SERVICE_NAME}.onrender.com/callback
+
+      # ========================================================================
+      # AUTH0 CONFIGURATION (Staging/Preview Environments)
+      # ========================================================================
+      # NOTE: Backend currently uses PlatformWrapper-dev (wEgjaOnk...) for all environments
+      # Frontend uses environment-specific client IDs (see Auth0 dashboard)
+      # Auth0 Applications available:
+      #   - PlatformWrapper-dev: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6 (current backend)
+      #   - PlatformWrapper-Staging: 9FRjf82esKN4fx3iY337CT1jpvNVFbAP (frontend staging)
+      #   - PlatformWrapperAuth: mQG0IZ41NhTTN081GHbR9R9C4fBQdPNr (frontend production)
+
+      - key: AUTH0_DOMAIN_STAGING
+        value: dev-g8trhgbfdq2sk2m8.us.auth0.com
+        sync: false
+
+      - key: AUTH0_CLIENT_ID_STAGING
+        value: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6  # Currently uses dev client ID
+        sync: false
+
+      - key: AUTH0_CLIENT_SECRET_STAGING
+        sync: false  # MUST be set in Render Dashboard
+
+      - key: AUTH0_AUDIENCE_STAGING
+        value: https://dev-g8trhgbfdq2sk2m8.us.auth0.com/api/v2/
+        sync: false
+
+      # Environment-aware Auth0 selection (production uses production, preview uses staging)
+      - key: USE_STAGING_AUTH0
+        value: "false"
+        previewValue: "true"
+
+      # ========================================================================
+      # JWT CONFIGURATION
+      # ========================================================================
+
+      - key: JWT_SECRET_KEY
+        sync: false  # MUST be set in Render Dashboard (different per environment)
+
+      - key: JWT_ALGORITHM
+        value: HS256
+
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+
+      # ========================================================================
+      # DATABASE CONFIGURATION
+      # ========================================================================
+
+      - key: DATABASE_URL
+        sync: false  # MUST be set in Render Dashboard (production DB)
+        # Preview environments get DATABASE_URL from preview database automatically
+
+      - key: RUN_MIGRATIONS
+        value: "true"  # Auto-run migrations on deploy
+
+      # ========================================================================
+      # REDIS CONFIGURATION
+      # ========================================================================
+
+      - key: REDIS_URL
+        sync: false  # MUST be set in Render Dashboard
+
+      # ========================================================================
+      # CORS CONFIGURATION (CRITICAL FIX #2)
+      # ========================================================================
+
+      # Production CORS (includes Vercel domains for frontend)
+      - key: CORS_ORIGINS
+        value: "https://platform.marketedge.co.uk,https://marketedge-platform.onrender.com,https://app.zebra.associates,https://staging.zebra.associates,https://*.vercel.app"
+        previewValue: "https://*.onrender.com,https://*.vercel.app,http://localhost:3000"
+
+      # ========================================================================
+      # ENVIRONMENT CONFIGURATION
+      # ========================================================================
+
+      - key: ENVIRONMENT
+        value: production
+        previewValue: preview
+
+      - key: DEBUG
+        value: "false"
+        previewValue: "true"
+
+      - key: LOG_LEVEL
+        value: INFO
+        previewValue: DEBUG
+
+      # ========================================================================
+      # API CONFIGURATION
+      # ========================================================================
+
+      - key: API_V1_STR
+        value: /api/v1
+
+      - key: PROJECT_NAME
+        value: MarketEdge Platform
+
+      - key: PROJECT_VERSION
+        value: 1.0.0
+
+      # ========================================================================
+      # SECURITY CONFIGURATION
+      # ========================================================================
+
+      - key: CSRF_ENABLED
+        value: "false"  # Enable after smoke test (5 minutes post-deploy)
+
+      - key: CADDY_PROXY_MODE
+        value: "true"
+        previewValue: "false"
+
+      - key: COOKIE_SECURE
+        value: "true"
+        previewValue: "false"
+
+      # ========================================================================
+      # FEATURE FLAGS
+      # ========================================================================
+
+      - key: ENABLE_DEBUG_LOGGING
+        value: "false"
+        previewValue: "true"
+
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+
+      - key: RATE_LIMIT_REQUESTS_PER_MINUTE
+        value: "60"
+
+      # ========================================================================
+      # MONITORING
+      # ========================================================================
+
+      - key: SENTRY_DSN
+        sync: false  # Set in Dashboard for production
+        previewValue: ""  # Disable Sentry for previews
+
+      # ========================================================================
+      # PYTHON VERSION
+      # ========================================================================
+
+      - key: PYTHON_VERSION
+        value: "3.11.10"
+
+      # ========================================================================
+      # PORT CONFIGURATION
+      # ========================================================================
+
       - key: PORT
         fromService:
           type: web
           name: marketedge-platform
           property: port
 
-      # Database configuration - inherited from environment group
-      - key: DATABASE_URL
-        sync: false  # Set manually in environment group
+  # ============================================================================
+  # STAGING SERVICE (Long-Lived)
+  # ============================================================================
+  # Deploys from 'staging' branch for UAT testing
+  - type: web
+    name: marketedge-platform-staging
+    runtime: python
+    plan: free  # Upgrade to starter ($7/month) for better performance
+    region: oregon
+    branch: staging  # CRITICAL: Deploy only from staging branch
+    buildCommand: "python --version && pip install --upgrade pip && pip install --no-cache-dir --only-binary=:all: -r requirements.txt"
+    startCommand: ./render-startup.sh
 
-      # Auth0 Configuration (Production)
+    # Staging Environment Variables
+    envVars:
+      # From Staging Environment Group
+      - fromGroup: staging-env
+
+      # ========================================================================
+      # AUTH0 CONFIGURATION (Staging)
+      # ========================================================================
+      # Auth0 Application Options for Staging:
+      #   Option A (Current): PlatformWrapper-dev - wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
+      #   Option B (Dedicated): PlatformWrapper-Staging - 9FRjf82esKN4fx3iY337CT1jpvNVFbAP
+      # Currently using Option A (same as backend production/preview)
+
+      # Use same Auth0 tenant as production (can be changed to separate tenant)
       - key: AUTH0_DOMAIN
-        sync: false  # Set manually in Render dashboard
+        value: dev-g8trhgbfdq2sk2m8.us.auth0.com
+
       - key: AUTH0_CLIENT_ID
-        sync: false
+        value: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6  # PlatformWrapper-dev (Option A)
+
       - key: AUTH0_CLIENT_SECRET
-        sync: false
+        sync: false  # MUST be set in Render Dashboard
+
+      - key: AUTH0_ACTION_SECRET
+        sync: false  # MUST be set in Render Dashboard
+
       - key: AUTH0_AUDIENCE
-        sync: false
+        value: https://dev-g8trhgbfdq2sk2m8.us.auth0.com/api/v2/
 
-      # Auth0 Configuration (Staging/Preview Environments)
-      - key: AUTH0_DOMAIN_STAGING
-        sync: false  # Set manually in Render dashboard
-      - key: AUTH0_CLIENT_ID_STAGING
-        sync: false  # Set manually in Render dashboard
-      - key: AUTH0_CLIENT_SECRET_STAGING
-        sync: false  # Set manually in Render dashboard
-      - key: AUTH0_AUDIENCE_STAGING
-        sync: false  # Set manually in Render dashboard
+      - key: AUTH0_CALLBACK_URL
+        value: https://staging.zebra.associates/callback
 
-      # Environment-aware Auth0 selection
-      - key: USE_STAGING_AUTH0
-        value: "false"
-        previewValue: "true"
+      # ========================================================================
+      # JWT CONFIGURATION (Staging)
+      # ========================================================================
 
-      # Redis Configuration - inherited from environment group
+      - key: JWT_SECRET_KEY
+        sync: false  # MUST be set in Dashboard (DIFFERENT from production)
+
+      - key: JWT_ALGORITHM
+        value: HS256
+
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+
+      # ========================================================================
+      # DATABASE CONFIGURATION (Staging)
+      # ========================================================================
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: marketedge-staging-db
+          property: connectionString
+
+      - key: RUN_MIGRATIONS
+        value: "true"
+
+      # ========================================================================
+      # REDIS CONFIGURATION (Staging)
+      # ========================================================================
+
       - key: REDIS_URL
-        sync: false  # Set manually in environment group
+        sync: false  # MUST be set in Dashboard (can share with production or separate)
 
-      # CORS Configuration
+      # ========================================================================
+      # CORS CONFIGURATION (Staging)
+      # ========================================================================
+
       - key: CORS_ORIGINS
-        value: "https://platform.marketedge.co.uk,https://marketedge-platform.onrender.com"
-        previewValue: "https://*.onrender.com,https://localhost:3000"  # Wildcard support for preview environments
+        value: "https://staging.zebra.associates,https://*.vercel.app,http://localhost:3000"
 
-      # Feature Flags
-      - key: ENABLE_DEBUG_LOGGING
+      # ========================================================================
+      # ENVIRONMENT CONFIGURATION (Staging)
+      # ========================================================================
+
+      - key: ENVIRONMENT
+        value: staging
+
+      - key: DEBUG
+        value: "true"
+
+      - key: LOG_LEVEL
+        value: DEBUG
+
+      # ========================================================================
+      # SECURITY CONFIGURATION (Staging)
+      # ========================================================================
+
+      - key: CSRF_ENABLED
         value: "false"
-        previewValue: "true"
 
-      # Python Version Control (Force Python 3.11.10)
+      - key: CADDY_PROXY_MODE
+        value: "false"
+
+      - key: COOKIE_SECURE
+        value: "true"  # Use HTTPS cookies in staging
+
+      # ========================================================================
+      # FEATURE FLAGS (Staging)
+      # ========================================================================
+
+      - key: ENABLE_DEBUG_LOGGING
+        value: "true"
+
+      - key: RATE_LIMIT_ENABLED
+        value: "true"
+
+      - key: RATE_LIMIT_REQUESTS_PER_MINUTE
+        value: "60"
+
+      # ========================================================================
+      # MONITORING (Staging)
+      # ========================================================================
+
+      - key: SENTRY_DSN
+        value: ""  # Optional: separate staging Sentry project
+
+      # ========================================================================
+      # PYTHON VERSION (Staging)
+      # ========================================================================
+
       - key: PYTHON_VERSION
         value: "3.11.10"
 
-      # Security
-      - key: SECRET_KEY
-        generateValue: true
+      # ========================================================================
+      # PORT CONFIGURATION (Staging)
+      # ========================================================================
 
-      # Monitoring
-      - key: SENTRY_DSN
-        sync: false
-        previewValue: ""  # Disable Sentry for preview environments
+      - key: PORT
+        fromService:
+          type: web
+          name: marketedge-platform-staging
+          property: port
+
+# ============================================================================
+# IMPORTANT NOTES
+# ============================================================================
+#
+# 1. PRODUCTION SERVICE:
+#    - Production database, Redis, and secrets MUST be configured in Render Dashboard
+#    - Production service auto-deploys from 'main' branch (can be changed to tag-based)
+#    - Custom domain: platform.marketedge.co.uk (configure in Render Dashboard)
+#
+# 2. STAGING SERVICE:
+#    - Deploys ONLY from 'staging' branch
+#    - Uses dedicated staging database (marketedge-staging-db)
+#    - Custom domain: staging-api.zebra.associates (configure in Render Dashboard)
+#    - JWT_SECRET_KEY MUST be different from production
+#
+# 3. PREVIEW ENVIRONMENTS:
+#    - Auto-created for every PR
+#    - Share preview database (application-level isolation)
+#    - Auto-cleanup after 7 days
+#    - Inherit preview-specific envVars from production service
+#
+# 4. SECRETS (sync: false):
+#    These MUST be manually configured in Render Dashboard:
+#    - AUTH0_CLIENT_SECRET (production and staging)
+#    - AUTH0_ACTION_SECRET (production and staging)
+#    - JWT_SECRET_KEY (DIFFERENT for production and staging)
+#    - DATABASE_URL (production only - staging uses fromDatabase)
+#    - REDIS_URL (production and staging)
+#    - SENTRY_DSN (optional, production only)
+#
+# 4B. AUTH0 CLIENT ID STRATEGY:
+#    Backend (render.yaml): Uses PlatformWrapper-dev for ALL environments
+#      - Production: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
+#      - Staging: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
+#      - Preview: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6
+#    Frontend (Vercel): Uses environment-specific client IDs
+#      - Production: mQG0IZ41NhTTN081GHbR9R9C4fBQdPNr (PlatformWrapperAuth)
+#      - Staging: 9FRjf82esKN4fx3iY337CT1jpvNVFbAP (PlatformWrapper-Staging)
+#      - Development/Preview: wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6 (PlatformWrapper-dev)
+#    Rationale: Backend is environment-agnostic, frontend differentiates environments
+#
+# 5. CRITICAL FIXES APPLIED:
+#    - AUTH0_AUDIENCE: Now set correctly for JWT token generation
+#    - CORS_ORIGINS: Now includes Vercel wildcard domains
+#    - Separate staging service for UAT gate
+#
+# 6. MIGRATION FROM OLD RENDER.YAML:
+#    See: /docs/deployment/RENDER_YAML_MIGRATION.md
+#
+# 7. VERIFICATION:
+#    Run: ./scripts/verify-render-config.sh
+#
+# ============================================================================

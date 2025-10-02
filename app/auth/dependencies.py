@@ -178,14 +178,18 @@ async def verify_auth0_token(token: str) -> Optional[Dict[str, Any]]:
 
         # STEP 4: Verify signature and decode token
         try:
-            # Build RSA key from JWKS entry
-            rsa_key = {
-                "kty": signing_key.get("kty"),
-                "kid": signing_key.get("kid"),
-                "use": signing_key.get("use"),
-                "n": signing_key.get("n"),
-                "e": signing_key.get("e")
-            }
+            # Construct RSA public key from JWKS entry using jose.jwk
+            # CRITICAL FIX: Must use jwk.construct() to properly build the key for jose library
+            try:
+                constructed_key = jwk.construct(signing_key)
+                public_key = constructed_key.to_pem().decode('utf-8')
+            except Exception as key_error:
+                logger.error("Failed to construct RSA key from JWKS", extra={
+                    "event": "auth0_verify_key_construction_failed",
+                    "error": str(key_error),
+                    "key_id": signing_key.get("kid")
+                })
+                return None
 
             # Verify JWT signature and decode with claim validation
             # Note: Auth0 audience can be the client_id OR a custom API audience
@@ -197,7 +201,7 @@ async def verify_auth0_token(token: str) -> Optional[Dict[str, Any]]:
             try:
                 decoded = jwt.decode(
                     token,
-                    rsa_key,
+                    public_key,
                     algorithms=["RS256"],
                     audience=settings.AUTH0_CLIENT_ID,
                     issuer=f"https://{settings.AUTH0_DOMAIN}/"
@@ -208,7 +212,7 @@ async def verify_auth0_token(token: str) -> Optional[Dict[str, Any]]:
                 try:
                     decoded = jwt.decode(
                         token,
-                        rsa_key,
+                        public_key,
                         algorithms=["RS256"],
                         audience=f"https://{settings.AUTH0_DOMAIN}/userinfo",
                         issuer=f"https://{settings.AUTH0_DOMAIN}/"
@@ -221,7 +225,7 @@ async def verify_auth0_token(token: str) -> Optional[Dict[str, Any]]:
                     })
                     decoded = jwt.decode(
                         token,
-                        rsa_key,
+                        public_key,
                         algorithms=["RS256"],
                         issuer=f"https://{settings.AUTH0_DOMAIN}/",
                         options={"verify_aud": False}  # Skip audience validation
@@ -363,10 +367,11 @@ async def get_current_user(
                 "user_email": payload.get("email")
             })
     
-    user_id: str = payload.get("sub")
+    user_id: str = payload.get("sub")  # Auth0 sub (e.g., 'google-oauth2|104641801735395463267')
+    user_email: str = payload.get("email")  # Email from token
     tenant_id: str = payload.get("tenant_id")
     user_role: str = payload.get("role")
-    
+
     if user_id is None:
         logger.warning("Missing user ID in token", extra={
             "event": "auth_missing_user_id",
@@ -374,18 +379,31 @@ async def get_current_user(
             "path": request.url.path
         })
         raise credentials_exception
-    
-    # Get user with organization loaded - using async query
+
+    # CRITICAL FIX: Query by email, not by user_id
+    # user_id contains Auth0's 'sub' (e.g., 'google-oauth2|104641801735395463267')
+    # which is NOT a UUID and NOT stored in users.id
+    # The users table has no auth0_id column, so we use email for lookup
+    if not user_email:
+        logger.warning("Missing email in token", extra={
+            "event": "auth_missing_email",
+            "user_sub": user_id,
+            "path": request.url.path
+        })
+        raise credentials_exception
+
+    # Get user with organization loaded - using async query BY EMAIL
     result = await db.execute(
         select(User)
         .options(selectinload(User.organisation))
-        .filter(User.id == user_id)
+        .filter(User.email == user_email)
     )
     user = result.scalar_one_or_none()
     if user is None:
-        logger.warning("User not found", extra={
+        logger.warning("User not found by email", extra={
             "event": "auth_user_not_found",
-            "user_id": user_id,
+            "user_email": user_email,
+            "user_sub": user_id,
             "path": request.url.path
         })
         raise credentials_exception
@@ -393,14 +411,16 @@ async def get_current_user(
     if not user.is_active:
         logger.warning("Inactive user attempted access", extra={
             "event": "auth_user_inactive",
-            "user_id": user_id,
+            "user_id": str(user.id),
+            "user_email": user_email,
+            "auth0_sub": user_id,
             "path": request.url.path
         })
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is inactive"
         )
-    
+
         # Validate tenant context with Auth0 organization mapping
     if tenant_id and str(user.organisation_id) != tenant_id:
         # Auth0 organization ID mapping for Zebra Associates opportunity
@@ -416,7 +436,8 @@ async def get_current_user(
         if str(user.organisation_id) != mapped_tenant_id:
             logger.error("Tenant context mismatch after Auth0 mapping", extra={
                 "event": "auth_tenant_mismatch",
-                "user_id": user_id,
+                "user_id": str(user.id),
+                "auth0_sub": user_id,
                 "token_tenant_id": tenant_id,
                 "mapped_tenant_id": mapped_tenant_id,
                 "user_tenant_id": str(user.organisation_id),
@@ -434,23 +455,25 @@ async def get_current_user(
                 "user_org_id": str(user.organisation_id),
                 "path": request.url.path
             })
-    
+
     # Validate role consistency
     if user_role and user.role.value != user_role:
         logger.warning("Role mismatch detected", extra={
             "event": "auth_role_mismatch",
-            "user_id": user_id,
+            "user_id": str(user.id),
+            "auth0_sub": user_id,
             "token_role": user_role,
             "user_role": user.role.value,
             "path": request.url.path
         })
         # Update user role if it changed (but log it for security audit)
-        
+
     # Check if token needs refresh
     if should_refresh_token(payload, threshold_minutes=5):
         logger.info("Token approaching expiration", extra={
             "event": "auth_token_expiring",
-            "user_id": user_id,
+            "user_id": str(user.id),
+            "auth0_sub": user_id,
             "token_jti": payload.get("jti")
         })
         # Could set a header to indicate refresh needed
@@ -458,15 +481,17 @@ async def get_current_user(
     
     # Store tenant context in request state for use by endpoints
     request.state.tenant_context = extract_tenant_context_from_token(payload)
-    
+
     logger.debug("User authentication successful", extra={
         "event": "auth_success",
-        "user_id": user_id,
+        "user_id": str(user.id),  # Database UUID
+        "user_email": user_email,
+        "auth0_sub": user_id,  # Auth0 sub for reference
         "tenant_id": tenant_id,
         "role": user_role,
         "path": request.url.path
     })
-    
+
     return user
 
 

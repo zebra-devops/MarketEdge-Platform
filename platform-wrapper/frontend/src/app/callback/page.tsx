@@ -111,28 +111,53 @@ export default function CallbackPage() {
         // EMERGENCY FIX: Clear URL immediately to prevent any reprocessing
         window.history.replaceState({}, document.title, '/callback')
 
-        console.log('Processing auth code in callback:', code.substring(0, 10) + '...')
-        
+        console.log('🔐 CALLBACK FLOW STEP 1: Processing auth code:', code.substring(0, 10) + '...')
+
         try {
           const redirectUri = `${window.location.origin}/callback`
 
+          console.log('🔐 CALLBACK FLOW STEP 2: Exchanging code for tokens via backend...')
           // Attempt login with rate limiting check
           const loginResult = await login({ code, redirect_uri: redirectUri })
 
-          console.log('Login successful:', loginResult)
+          console.log('🔐 CALLBACK FLOW STEP 3: Backend exchange successful', {
+            hasAccessToken: !!loginResult.access_token,
+            hasRefreshToken: !!loginResult.refresh_token,
+            hasUser: !!loginResult.user,
+            userEmail: loginResult.user?.email,
+            userRole: loginResult.user?.role
+          })
+
+          // ENHANCED: Verify tokens are now accessible
+          console.log('🔐 CALLBACK FLOW STEP 4: Verifying token storage...')
+
+          // Check multiple storage locations
+          const cookieToken = document.cookie.split('; ').find(row => row.startsWith('access_token='))
+          const localToken = localStorage.getItem('access_token')
+          const sessionBackup = sessionStorage.getItem('auth_session_backup')
+
+          console.log('🔐 CALLBACK FLOW STEP 5: Token storage verification results:', {
+            cookieExists: !!cookieToken,
+            cookiePreview: cookieToken ? cookieToken.substring(0, 50) + '...' : 'NONE',
+            localStorageExists: !!localToken,
+            sessionBackupExists: !!sessionBackup,
+            loginResultTokenExists: !!loginResult.access_token
+          })
+
+          // CRITICAL: Wait for cookies to be set by browser (they come from backend Set-Cookie headers)
+          console.log('🔐 CALLBACK FLOW STEP 6: Waiting for cookie propagation (500ms)...')
+          await new Promise(resolve => setTimeout(resolve, 500))
+
+          // Re-verify after delay
+          const cookieTokenAfterDelay = document.cookie.split('; ').find(row => row.startsWith('access_token='))
+          console.log('🔐 CALLBACK FLOW STEP 7: Post-delay token verification:', {
+            cookieNowExists: !!cookieTokenAfterDelay,
+            cookieWasSet: !cookieToken && !!cookieTokenAfterDelay,
+            readyForRedirect: !!cookieTokenAfterDelay || !!sessionBackup || !!localToken
+          })
+
+          // Show success message
           toast.success('Login successful!')
-
-          // CRITICAL FIX: Small delay to ensure tokens are persisted before navigation
-          // Session storage write is synchronous but we need to ensure React state updates
-          await new Promise(resolve => setTimeout(resolve, 100))
-
-          // Verify token is accessible before redirecting
-          const tokenCheck = sessionStorage.getItem('auth_session_backup')
-          if (tokenCheck) {
-            console.log('✅ Token backup confirmed in session storage before redirect')
-          } else {
-            console.warn('⚠️ Token backup not found in session storage - may cause auth issues')
-          }
 
           // Determine where to redirect based on user's application access
           const intendedDestination = localStorage.getItem('intendedDestination') || undefined
@@ -143,7 +168,7 @@ export default function CallbackPage() {
             intendedDestination
           )
 
-          console.log('Redirecting to:', redirectTo)
+          console.log('🔐 CALLBACK FLOW STEP 8: Redirecting to:', redirectTo)
           router.push(redirectTo)
           
         } catch (loginError: any) {

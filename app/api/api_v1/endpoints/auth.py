@@ -376,7 +376,19 @@ async def login_oauth2(
         # The Auth0 tokens from exchange already contain authentication information
         # Custom claims (tenant_id, role, permissions) will be added in US-2
         access_token = tokens["access_token"]
-        refresh_token = tokens.get("refresh_token", "")
+        refresh_token = tokens.get("refresh_token")
+
+        # CRITICAL FIX: Validate refresh token is present and non-empty
+        if not refresh_token or not refresh_token.strip():
+            logger.error("Auth0 did not return refresh token", extra={
+                "event": "oauth2_missing_refresh_token",
+                "has_refresh_token": "refresh_token" in tokens,
+                "refresh_token_empty": not refresh_token if refresh_token else True
+            })
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to obtain refresh token from Auth0. Please check Auth0 application settings."
+            )
         
         # CRITICAL FIX: Set cookies for OAuth2 authentication (same as /login endpoint)
         # US-AUTH-1: Differentiated cookie settings for access and refresh tokens
@@ -897,7 +909,20 @@ async def login(
     # The Auth0 tokens from token_data already contain authentication information
     # Custom claims (tenant_id, role, permissions) will be added in US-2
     access_token = token_data["access_token"]
-    refresh_token = token_data.get("refresh_token", "")  # Auth0 provides refresh token
+    refresh_token = token_data.get("refresh_token")
+
+    # CRITICAL FIX: Validate refresh token is present and non-empty
+    if not refresh_token or not refresh_token.strip():
+        logger.error("Auth0 did not return refresh token", extra={
+            "event": "login_missing_refresh_token",
+            "has_refresh_token": "refresh_token" in token_data,
+            "refresh_token_empty": not refresh_token if refresh_token else True,
+            "user_email": user.email if user else "unknown"
+        })
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to obtain refresh token from Auth0. Please check Auth0 application settings."
+        )
 
     # Get user permissions for response body (not in token yet - that's US-2)
     tenant_context = {
@@ -1473,7 +1498,7 @@ async def get_auth0_url(request: Request, redirect_uri: str, additional_scopes: 
         return {
             "auth_url": auth_url,
             "redirect_uri": redirect_uri,
-            "scopes": ["openid", "profile", "email", "read:organization", "read:roles"] + (scopes_list or []),
+            "scopes": ["openid", "profile", "email", "offline_access", "read:organization", "read:roles"] + (scopes_list or []),
             "organization_hint": organization_hint
         }
         
