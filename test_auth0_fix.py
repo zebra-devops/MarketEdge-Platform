@@ -1,107 +1,89 @@
 #!/usr/bin/env python3
 """
-Test the Auth0 token support fix for Feature Flags endpoint
-
-This script tests if Matt.Lindop's Auth0 token can now access the 
-feature flags endpoint that was previously returning 500 errors.
+Test script to verify Auth0 refresh token fix
+This script tests the authorization URL generation to ensure:
+1. offline_access scope is included
+2. audience parameter is NOT included
+3. All required scopes are present
 """
 
 import asyncio
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app.auth.auth0 import auth0_client
+from urllib.parse import urlparse, parse_qs
 
-from app.auth.dependencies import verify_auth0_token
-from app.core.logging import logger
-
-async def test_auth0_verification():
-    """Test Auth0 token verification function"""
-    print("🧪 Testing Auth0 token verification function")
+def test_authorization_url():
+    """Test that authorization URL is correctly configured"""
+    print("Testing Auth0 Authorization URL Configuration...")
+    print("=" * 80)
     
-    # Test with the Auth0 token Matt.Lindop was using
-    test_token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjdsTVNObk9GSVdMUUtfMEhlN3VJVCJ9.eyJpc3MiOiJodHRwczovL21hcmtldGVkZ2UtZGV2LnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2NjdmNTYyN2I3MjYwMmIyMjMyYWFjOWQiLCJhdWQiOlsiaHR0cHM6Ly9tYXJrZXRlZGdlLWFwaS5sb2NhbCIsImh0dHBzOi8vbWFya2V0ZWRnZS1kZXYudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTczNzAyNjk3MiwiZXhwIjoxNzM3MDI4NzcyLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIiwiYXpwIjoiNjhIMXdEbVBRUzhEQ3dUNm45Sk1Cb3ppcjVNSGlVSDAiLCJwZXJtaXNzaW9ucyI6WyJyZWFkOmZlYXR1cmVzIl0sInVzZXJfaWQiOiJhdXRoMHw2NjdmNTYyN2I3MjYwMmIyMjMyYWFjOWQiLCJ1c2VyX3JvbGUiOiJzdXBlcl9hZG1pbiIsIm9yZ2FuaXNhdGlvbl9pZCI6IjY2N2Y1ZjVmLWIwN2MtNGMwNC1hMzAzLWEzNWIzMmI4MWNmNSIsImVtYWlsIjoibWF0dC5saW5kb3BAemVicmEuYXNzb2NpYXRlcyIsIm5hbWUiOiJNYXR0aGV3IExpbmRvcCJ9"
+    # Generate auth URL
+    auth_url = auth0_client.get_authorization_url(
+        redirect_uri='http://localhost:3000/auth/callback'
+    )
     
-    print("🔍 Testing Auth0 token verification...")
+    print(f"\nGenerated URL:\n{auth_url}\n")
     
-    try:
-        # This would normally call Auth0, but the token is expired
-        # So we'll test the function structure instead
-        payload = await verify_auth0_token(test_token)
-        
-        if payload:
-            print("✅ Auth0 token verification would work with valid token")
-            print(f"   Expected user: {payload.get('email', 'unknown')}")
-            print(f"   Expected role: {payload.get('user_role', 'unknown')}")
-        else:
-            print("⚠️  Auth0 token verification returned None (expected for expired token)")
-            print("   Function is working correctly - would succeed with fresh token")
-            
-    except Exception as e:
-        print(f"❌ Auth0 token verification failed: {e}")
-        return False
-        
-    return True
-
-def test_import_structure():
-    """Test that all imports are working correctly"""
-    print("\n🧪 Testing import structure")
+    # Parse URL
+    parsed = urlparse(auth_url)
+    params = parse_qs(parsed.query)
     
-    try:
-        from app.auth.dependencies import get_current_user, verify_auth0_token
-        from app.auth.auth0 import auth0_client
-        from app.core.config import settings
-        print("✅ All imports successful")
-        
-        # Check that auth0_client has required methods
-        if hasattr(auth0_client, 'get_user_info'):
-            print("✅ auth0_client.get_user_info method available")
-        else:
-            print("❌ auth0_client.get_user_info method missing")
-            return False
-            
-        return True
-        
-    except ImportError as e:
-        print(f"❌ Import error: {e}")
-        return False
-    except Exception as e:
-        print(f"❌ Unexpected error: {e}")
-        return False
-
-async def main():
-    """Run all tests"""
-    print("🚀 Testing Auth0 Fix for Feature Flags 500 Errors")
-    print("=" * 60)
+    # Extract parameters
+    scopes = params.get('scope', [''])[0].split()
+    audience = params.get('audience', [None])[0]
     
-    # Test 1: Import structure
-    import_success = test_import_structure()
+    print("URL Parameters:")
+    print("-" * 80)
+    print(f"Domain: {parsed.netloc}")
+    print(f"Path: {parsed.path}")
+    print(f"Scopes: {scopes}")
+    print(f"Audience: {audience}")
+    print(f"State: {params.get('state', [''])[0][:20]}...")
+    print(f"Response Type: {params.get('response_type', [''])[0]}")
+    print(f"Client ID: {params.get('client_id', [''])[0]}")
     
-    # Test 2: Auth0 verification function
-    if import_success:
-        auth0_success = await test_auth0_verification()
+    # Validation checks
+    print("\n" + "=" * 80)
+    print("VALIDATION CHECKS:")
+    print("-" * 80)
+    
+    checks = {
+        "✅ openid scope present": 'openid' in scopes,
+        "✅ profile scope present": 'profile' in scopes,
+        "✅ email scope present": 'email' in scopes,
+        "✅ offline_access scope present (CRITICAL FIX)": 'offline_access' in scopes,
+        "✅ read:organization scope present": 'read:organization' in scopes,
+        "✅ read:roles scope present": 'read:roles' in scopes,
+        "✅ audience parameter NOT present (CRITICAL FIX)": audience is None,
+        "✅ response_type is 'code'": params.get('response_type', [''])[0] == 'code',
+        "✅ state parameter present": bool(params.get('state', [''])[0]),
+    }
+    
+    all_passed = True
+    for check, passed in checks.items():
+        status = "PASS" if passed else "FAIL ❌"
+        print(f"{status:12} {check}")
+        if not passed:
+            all_passed = False
+    
+    print("\n" + "=" * 80)
+    if all_passed:
+        print("🎉 ALL CHECKS PASSED - Auth0 configuration is correct!")
+        print("\nExpected behavior:")
+        print("  1. Login will redirect to Auth0 successfully")
+        print("  2. After Auth0 authentication, code exchange will succeed")
+        print("  3. Access token will work with /userinfo endpoint")
+        print("  4. Refresh token will be returned (due to offline_access)")
+        print("  5. Login will complete successfully")
     else:
-        auth0_success = False
-        
-    print("\n" + "=" * 60)
-    print("📊 TEST RESULTS")
-    print("=" * 60)
+        print("❌ SOME CHECKS FAILED - Review the configuration")
+        print("\nPlease verify:")
+        print("  1. offline_access scope is added in auth0.py")
+        print("  2. audience parameter is removed from authorization URL")
     
-    if import_success and auth0_success:
-        print("✅ PASS: Auth0 fix is properly implemented")
-        print("🎯 Matt.Lindop's Auth0 tokens should now work")
-        print("💰 £925K Zebra Associates opportunity unblocked")
-        print("\n🔧 How it works:")
-        print("  1. Feature flags endpoint receives Auth0 token")
-        print("  2. Internal JWT verification fails (expected)")
-        print("  3. System falls back to Auth0 token verification")
-        print("  4. Auth0 userinfo endpoint validates token")
-        print("  5. User data extracted and endpoint proceeds")
-        return True
-    else:
-        print("❌ FAIL: Auth0 fix has issues")
-        print("🚨 Manual intervention required")
-        return False
+    print("=" * 80)
+    
+    return all_passed
 
 if __name__ == "__main__":
-    success = asyncio.run(main())
-    sys.exit(0 if success else 1)
+    success = test_authorization_url()
+    exit(0 if success else 1)

@@ -178,14 +178,18 @@ async def verify_auth0_token(token: str) -> Optional[Dict[str, Any]]:
 
         # STEP 4: Verify signature and decode token
         try:
-            # Build RSA key from JWKS entry
-            rsa_key = {
-                "kty": signing_key.get("kty"),
-                "kid": signing_key.get("kid"),
-                "use": signing_key.get("use"),
-                "n": signing_key.get("n"),
-                "e": signing_key.get("e")
-            }
+            # Construct RSA public key from JWKS entry using jose.jwk
+            # CRITICAL FIX: Must use jwk.construct() to properly build the key for jose library
+            try:
+                constructed_key = jwk.construct(signing_key)
+                public_key = constructed_key.to_pem().decode('utf-8')
+            except Exception as key_error:
+                logger.error("Failed to construct RSA key from JWKS", extra={
+                    "event": "auth0_verify_key_construction_failed",
+                    "error": str(key_error),
+                    "key_id": signing_key.get("kid")
+                })
+                return None
 
             # Verify JWT signature and decode with claim validation
             # Note: Auth0 audience can be the client_id OR a custom API audience
@@ -197,7 +201,7 @@ async def verify_auth0_token(token: str) -> Optional[Dict[str, Any]]:
             try:
                 decoded = jwt.decode(
                     token,
-                    rsa_key,
+                    public_key,
                     algorithms=["RS256"],
                     audience=settings.AUTH0_CLIENT_ID,
                     issuer=f"https://{settings.AUTH0_DOMAIN}/"
@@ -208,7 +212,7 @@ async def verify_auth0_token(token: str) -> Optional[Dict[str, Any]]:
                 try:
                     decoded = jwt.decode(
                         token,
-                        rsa_key,
+                        public_key,
                         algorithms=["RS256"],
                         audience=f"https://{settings.AUTH0_DOMAIN}/userinfo",
                         issuer=f"https://{settings.AUTH0_DOMAIN}/"
@@ -221,7 +225,7 @@ async def verify_auth0_token(token: str) -> Optional[Dict[str, Any]]:
                     })
                     decoded = jwt.decode(
                         token,
-                        rsa_key,
+                        public_key,
                         algorithms=["RS256"],
                         issuer=f"https://{settings.AUTH0_DOMAIN}/",
                         options={"verify_aud": False}  # Skip audience validation

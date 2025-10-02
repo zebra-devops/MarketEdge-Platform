@@ -1,0 +1,175 @@
+AUTH0 REFRESH TOKEN FIX - TECHNICAL DIAGRAM
+============================================
+
+BROKEN FLOW (Before Fix):
+--------------------------
+
+1. Frontend Request:
+   └─> GET /api/v1/auth/auth0-url?redirect_uri=http://localhost:3000/auth/callback
+       
+2. Backend Generates Auth URL:
+   ┌─────────────────────────────────────────────────────────────────┐
+   │ https://dev-g8trhgbfdq2sk2m8.us.auth0.com/authorize            │
+   │   ?scope=openid profile email read:organization read:roles     │
+   │   &audience=https://dev-g8trhgbfdq2sk2m8.us.auth0.com/api/v2/  │ ❌ PROBLEM
+   └─────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+3. User Authenticates at Auth0
+       │
+       ▼
+4. Auth0 Returns Code
+       │
+       ▼
+5. Backend Exchanges Code for Tokens:
+   ┌──────────────────────────────────────┐
+   │ access_token: eyJ... (for /api/v2/)  │ ❌ Scoped for Management API only
+   │ refresh_token: (missing or invalid)  │ ❌ No offline_access scope
+   └──────────────────────────────────────┘
+       │
+       ▼
+6. Backend Calls Auth0 /userinfo:
+   ┌─────────────────────────────────────────────────────┐
+   │ GET https://dev-g8trhgbfdq2sk2m8.us.auth0.com       │
+   │     /userinfo                                       │
+   │ Authorization: Bearer eyJ...                        │
+   └─────────────────────────────────────────────────────┘
+       │
+       ▼
+   ┌─────────────────────────────────────────┐
+   │ ❌ 401 Unauthorized                     │ ← Token not valid for /userinfo
+   │ Token is for /api/v2/, not /userinfo   │
+   └─────────────────────────────────────────┘
+       │
+       ▼
+7. Backend Returns Error:
+   ┌────────────────────────────────────────────────┐
+   │ 401 Unauthorized                               │
+   │ "Failed to retrieve user information"          │
+   └────────────────────────────────────────────────┘
+
+
+FIXED FLOW (After Fix):
+------------------------
+
+1. Frontend Request:
+   └─> GET /api/v1/auth/auth0-url?redirect_uri=http://localhost:3000/auth/callback
+       
+2. Backend Generates Auth URL:
+   ┌───────────────────────────────────────────────────────────────────────────┐
+   │ https://dev-g8trhgbfdq2sk2m8.us.auth0.com/authorize                      │
+   │   ?scope=openid profile email offline_access read:org read:roles         │ ✅ Added offline_access
+   │   (NO audience parameter)                                                 │ ✅ Removed audience
+   └───────────────────────────────────────────────────────────────────────────┘
+       │
+       ▼
+3. User Authenticates at Auth0
+       │
+       ▼
+4. Auth0 Returns Code
+       │
+       ▼
+5. Backend Exchanges Code for Tokens:
+   ┌────────────────────────────────────────────────┐
+   │ access_token: eyJ... (general purpose)         │ ✅ Valid for /userinfo
+   │ refresh_token: eyJ... (rotation enabled)       │ ✅ Present due to offline_access
+   └────────────────────────────────────────────────┘
+       │
+       ▼
+6. Backend Calls Auth0 /userinfo:
+   ┌─────────────────────────────────────────────────────┐
+   │ GET https://dev-g8trhgbfdq2sk2m8.us.auth0.com       │
+   │     /userinfo                                       │
+   │ Authorization: Bearer eyJ...                        │
+   └─────────────────────────────────────────────────────┘
+       │
+       ▼
+   ┌─────────────────────────────────────────┐
+   │ ✅ 200 OK                               │ ← Token valid for /userinfo
+   │ {                                       │
+   │   "sub": "auth0|...",                   │
+   │   "email": "user@example.com",          │
+   │   "name": "User Name"                   │
+   │ }                                       │
+   └─────────────────────────────────────────┘
+       │
+       ▼
+7. Backend Creates/Updates User in Database
+       │
+       ▼
+8. Backend Returns Tokens to Frontend:
+   ┌────────────────────────────────────────────────┐
+   │ ✅ 200 OK                                      │
+   │ {                                              │
+   │   "access_token": "eyJ...",                    │
+   │   "refresh_token": "eyJ...",                   │
+   │   "user": { ... }                              │
+   │ }                                              │
+   └────────────────────────────────────────────────┘
+       │
+       ▼
+9. Frontend Stores Tokens and Redirects to Dashboard
+   ✅ LOGIN SUCCEEDS
+
+
+KEY CHANGES:
+------------
+
+┌──────────────────────┬────────────────────────┬─────────────────────────────┐
+│ Parameter            │ Before (Broken)        │ After (Fixed)               │
+├──────────────────────┼────────────────────────┼─────────────────────────────┤
+│ offline_access scope │ ❌ Missing             │ ✅ Present                  │
+│ audience parameter   │ ❌ /api/v2/ (wrong)    │ ✅ Not set (correct)        │
+│ access_token scope   │ ❌ Management API only │ ✅ General purpose          │
+│ /userinfo call       │ ❌ 401 Unauthorized    │ ✅ 200 OK                   │
+│ refresh_token        │ ❌ Missing/invalid     │ ✅ Present and valid        │
+│ Login result         │ ❌ FAILS               │ ✅ SUCCEEDS                 │
+└──────────────────────┴────────────────────────┴─────────────────────────────┘
+
+
+WHY THE AUDIENCE PARAMETER BREAKS LOGIN:
+-----------------------------------------
+
+When you set: audience=https://dev-g8trhgbfdq2sk2m8.us.auth0.com/api/v2/
+
+Auth0 issues an access_token with these characteristics:
+  - "aud": "https://dev-g8trhgbfdq2sk2m8.us.auth0.com/api/v2/"
+  - Permissions: Only for Management API endpoints
+  - Valid for: /api/v2/* endpoints only
+  - Invalid for: /userinfo endpoint
+
+When NO audience is set:
+
+Auth0 issues an access_token with these characteristics:
+  - "aud": Default audience (Auth0 domain or client ID)
+  - Permissions: OIDC standard claims (openid, profile, email)
+  - Valid for: /userinfo endpoint ✅
+  - Valid for: Standard Auth0 authentication flow ✅
+
+
+WHEN TO USE AUDIENCE PARAMETER:
+--------------------------------
+
+✅ CORRECT USE: Separate Management API token request
+   
+   POST /oauth/token
+   {
+     "grant_type": "client_credentials",
+     "client_id": "...",
+     "client_secret": "...",
+     "audience": "https://dev-g8trhgbfdq2sk2m8.us.auth0.com/api/v2/"
+   }
+   
+   This is already implemented in _get_management_api_token() method
+
+❌ INCORRECT USE: Login authorization URL
+   
+   This restricts the user's access_token and breaks /userinfo calls
+
+
+VERIFICATION COMMAND:
+---------------------
+
+python3 test_auth0_fix.py
+
+Expected output: All checks PASS ✅

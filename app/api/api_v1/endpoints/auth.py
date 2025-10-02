@@ -1498,7 +1498,7 @@ async def get_auth0_url(request: Request, redirect_uri: str, additional_scopes: 
         return {
             "auth_url": auth_url,
             "redirect_uri": redirect_uri,
-            "scopes": ["openid", "profile", "email", "read:organization", "read:roles"] + (scopes_list or []),
+            "scopes": ["openid", "profile", "email", "offline_access", "read:organization", "read:roles"] + (scopes_list or []),
             "organization_hint": organization_hint
         }
         

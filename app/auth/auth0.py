@@ -66,13 +66,16 @@ class Auth0Client:
                     
                 except httpx.HTTPError as e:
                     status_code = getattr(e.response, 'status_code', None) if hasattr(e, 'response') else None
+                    response_body = getattr(e.response, 'text', None) if hasattr(e, 'response') else None
                     logger.error(
                         "HTTP error getting user info from Auth0",
                         extra={
                             "event": "userinfo_http_error",
                             "status_code": status_code,
                             "error": str(e),
-                            "attempt": attempt + 1
+                            "response_body": response_body[:500] if response_body else None,
+                            "attempt": attempt + 1,
+                            "hint": "If 401/403: check access_token audience and scopes. Token may be for Management API instead of userinfo."
                         }
                     )
                     # Don't retry on 4xx errors (client errors)
@@ -258,18 +261,22 @@ class Auth0Client:
             
         # Base scopes for multi-tenant authentication
         base_scopes = ["openid", "profile", "email"]
-        
+
+        # CRITICAL FIX: Add offline_access scope to enable refresh token rotation
+        # This is required when Auth0 Refresh Token Rotation is enabled
+        base_scopes.append("offline_access")
+
         # Add multi-tenant specific scopes
         tenant_scopes = ["read:organization", "read:roles"]
         base_scopes.extend(tenant_scopes)
-        
+
         # Add additional scopes if provided
         if additional_scopes:
             base_scopes.extend(additional_scopes)
-            
+
         # Remove duplicates while preserving order
         scopes = list(dict.fromkeys(base_scopes))
-        
+
         params = {
             "response_type": "code",
             "client_id": self.client_id,
@@ -278,7 +285,11 @@ class Auth0Client:
             "state": state,
             "prompt": "select_account",  # Force user to select account for security
             "max_age": "3600",  # Force re-authentication after 1 hour
-            "audience": f"https://{self.domain}/api/v2/"  # Auth0 Management API audience for org context
+            # CRITICAL FIX: Remove Management API audience for regular login flow
+            # The Management API audience causes access_token to be scoped for /api/v2/ only,
+            # preventing it from being used with /userinfo endpoint (causing 401 errors).
+            # Management API access should be obtained separately when needed.
+            # "audience": f"https://{self.domain}/api/v2/"
         }
         
         # Add organization hint if provided for multi-tenant routing

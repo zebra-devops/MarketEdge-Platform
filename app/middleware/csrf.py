@@ -30,6 +30,8 @@ CSRF_EXEMPT_PATHS: Set[str] = {
     "/api/v1/auth/login-oauth2",  # OAuth2 login sets CSRF token
     "/api/v1/auth/callback",  # Auth0 callback
     "/api/v1/auth/user-context",  # Auth0 Action callback
+    "/api/v1/auth/refresh",  # Token refresh (uses refresh token from cookie)
+    "/api/v1/auth/auth0-url",  # Auth0 URL endpoint (GET, but listed for clarity)
     "/health",  # Health check
     "/",  # Root endpoint
     "/docs",  # API documentation
