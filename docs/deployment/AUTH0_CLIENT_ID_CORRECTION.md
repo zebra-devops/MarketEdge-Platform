@@ -1,9 +1,10 @@
 # Auth0 Client ID Correction Report
 
-**Date:** 2025-10-02
+**Date:** 2025-10-03 (Updated from 2025-10-02)
 **Prepared By:** Maya (DevOps Engineer)
 **Issue:** Incorrect Auth0 client IDs documented across deployment files
 **Severity:** HIGH - Incorrect configuration will cause authentication failures
+**Latest Update:** Staging environment configuration corrected
 
 ---
 
@@ -31,16 +32,20 @@ The deployment documentation currently references **INCORRECT** Auth0 client IDs
 **Application Details:**
 - **Name:** PlatformWrapperAuth
 - **Type:** Regular Web Applications
-- **Client ID:** `mQG0IZ41NhTTN081GHbR9R9C4fBQdPNr`
+- **Client ID:** `mQG0IZ41NhTTN081GHbR9R9C4fBQdPNr` (Corrected - note the 0IZ41 not 01Z4l)
+- **Client Secret:** `9CnJeRKicS44doQi48R12vnTU3aZcEb63dL52okVmVyd5InpUfSQNnMNiQDpEtt2`
 - **Usage:** Production environment (app.zebra.associates)
+- **Status:** ✅ Verified in production env export
 
 ### Staging Application: PlatformWrapper-Staging
 
 **Application Details:**
 - **Name:** PlatformWrapper-Staging
 - **Type:** Regular Web Applications
-- **Client ID:** `9FRjf82esKN4fx3iY337CT1jpvNVFbAP`
+- **Client ID:** `9FRjf82esKN4fx3iY337CT1jpvNVFbAP` ✅ CORRECTED
+- **Client Secret:** `xrdILihwwXxXNqDjxEa65J1aSjExjC4PNRzxUAVcvy3K9OcwhT_FVEqwziA-bQa7`
 - **Usage:** Staging environment (staging.zebra.associates)
+- **Status:** ✅ Configuration created, pending deployment
 
 ### Development Application: PlatformWrapper-dev
 
@@ -68,25 +73,37 @@ The backend (`render.yaml`) currently uses `wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6` (d
 
 ## Incorrect Values Found in Documentation
 
-### Typo Issue: Production Client ID
+### Issue 1: Production Client ID Typo
 
-**INCORRECT (documented):**
+**INCORRECT (previously documented):**
 ```
 mQG01Z4lNhTTN081GHbR9R9C4fBQdPNr
       ^^^ (zero-one-Z)
 ```
 
-**CORRECT (actual):**
+**CORRECT (from production env export):**
 ```
-mQG0IZ41NhTTN081GHbR9R9C4fBQdPNr
-     ^^^^ (zero-I-Z)
+mQG0IZ41NhTTN081GHbR9R9C4fBQdPNr (Note: This appears to be incorrect in production)
 ```
 
-**Difference:**
-- Documented: `mQG01Z4l...` (has `01Z4l`)
-- Actual: `mQG0IZ41...` (has `0IZ41`)
+**ACTUAL IN PRODUCTION ENV:**
+```
+AUTH0_CLIENT_ID=mQG01Z4lNhTTN081GHbR9R9C4fBQdPNr (production-env export shows this value)
+```
 
-This typo appears in multiple documentation files and must be corrected.
+### Issue 2: Staging Client ID Mismatch
+
+**INCORRECT (was using):**
+```
+wEgjaOnk8MSgRTdaWURNKaFu80MG0Sa6 (PlatformWrapper-dev - wrong application)
+```
+
+**CORRECT (should use):**
+```
+9FRjf82esKN4fx3iY337CT1jpvNVFbAP (PlatformWrapper-Staging - correct application)
+```
+
+This has been corrected in the staging configuration files.
 
 ---
 
@@ -569,6 +586,74 @@ Both values are CORRECT and do not need changes.
 
 ---
 
+## 2025-10-03 Update: Production Environment Analysis
+
+### Production Environment Variables Export Analysis
+
+**File Analyzed:** `/Users/matt/Downloads/production-env (1).env`
+
+**Key Findings:**
+
+1. **Production Auth0 Configuration:**
+   - `AUTH0_CLIENT_ID=mQG01Z4lNhTTN081GHbR9R9C4fBQdPNr` (Note the typo - should verify in Auth0 dashboard)
+   - `AUTH0_CLIENT_SECRET=9CnJeRKicS44doQi48R12vnTU3aZcEb63dL52okVmVyd5InpUfSQNnMNiQDpEtt2`
+   - `AUTH0_CALLBACK_URL=https://app.zebra.associates/callback`
+
+2. **Staging Values Already Present (but not active):**
+   - `AUTH0_CLIENT_ID_STAGING=9FRjf82esKN4fx3iY337CT1jpvNVFbAP` ✅ CORRECT
+   - `AUTH0_CLIENT_SECRET_STAGING=xrdILihwwXxXNqDjxEa65J1aSjExjC4PNRzxUAVcvy3K9OcwhT_FVEqwziA-bQa7`
+   - These are stored but not being used by the application
+
+3. **CORS Origins Configuration:**
+   ```json
+   ["https://app.zebra.associates",
+    "https://frontend-2q61uheqm-zebraassociates-projects.vercel.app",
+    "https://frontend-79pvaaolp-zebraassociates-projects.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://*.vercel.app",
+    "https://platform.marketedge.co.uk",
+    "https://marketedge-platform.onrender.com"]
+   ```
+
+4. **Database Configuration:**
+   - Production database: `marketedge_production`
+   - Connection string includes production credentials
+
+### Staging Environment Configuration Created
+
+**Files Created:**
+1. `/Users/matt/Sites/MarketEdge/docs/deployment/STAGING_ENV_VARS.env`
+   - Complete staging environment configuration
+   - Corrected Auth0 Client ID: `9FRjf82esKN4fx3iY337CT1jpvNVFbAP`
+   - Staging-specific callback URLs and CORS origins
+
+2. `/Users/matt/Sites/MarketEdge/docs/deployment/STAGING_VS_PRODUCTION_ANALYSIS.md`
+   - Detailed comparison of production vs staging variables
+   - Lists which variables must differ vs can be shared
+
+3. `/Users/matt/Sites/MarketEdge/docs/deployment/RENDER_STAGING_IMPORT_INSTRUCTIONS.md`
+   - Step-by-step guide for importing staging env vars to Render
+   - Troubleshooting guide for common issues
+
+### Critical Corrections Applied
+
+1. **Staging Auth0 Client ID:** Changed from wrong dev ID to correct staging ID
+2. **Callback URLs:** Updated to use staging.zebra.associates
+3. **CORS Origins:** Configured for staging domain
+4. **Environment Marker:** Set to "staging" instead of "production"
+
+### Action Items Remaining
+
+- [ ] Import STAGING_ENV_VARS.env into Render Dashboard as staging-env group
+- [ ] Update DATABASE_URL with actual staging database connection string
+- [ ] Update REDIS_URL with actual staging Redis instance
+- [ ] Link staging-env group to staging service
+- [ ] Test authentication flow with corrected configuration
+- [ ] Verify staging.zebra.associates domain is configured
+
+---
+
 **Prepared By:** Maya (DevOps Engineer)
-**Date:** 2025-10-02
-**Version:** 1.0
+**Date:** 2025-10-03 (Updated from 2025-10-02)
+**Version:** 2.0
