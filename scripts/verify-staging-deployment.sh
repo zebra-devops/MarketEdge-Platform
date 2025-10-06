@@ -115,7 +115,28 @@ else
     echo ""
 fi
 
-echo "3. CORS CONFIGURATION"
+echo "3. DATABASE STATUS"
+echo "-----------------"
+if curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/health" | grep -q "200"; then
+    # Check if database is ready from health endpoint
+    health_data=$(curl -s "$STAGING_URL/health")
+    if command -v jq &> /dev/null; then
+        db_ready=$(echo "$health_data" | jq -r '.database_ready')
+        if [ "$db_ready" = "true" ]; then
+            echo -e "${GREEN}✅ Database connection successful${NC}"
+        else
+            echo -e "${RED}❌ Database connection failed${NC}"
+            echo "  Check DATABASE_URL and postgres:// scheme handling"
+        fi
+    else
+        echo "Database check: Install jq for detailed status"
+    fi
+else
+    echo -e "${YELLOW}⚠️  Skipping database check - staging service not available${NC}"
+fi
+echo ""
+
+echo "4. CORS CONFIGURATION"
 echo "--------------------"
 if curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/health" | grep -q "200"; then
     check_cors "$STAGING_URL" "https://staging.zebra.associates" "Staging"
@@ -124,7 +145,7 @@ else
     echo ""
 fi
 
-echo "4. GITHUB WORKFLOW STATUS"
+echo "5. GITHUB WORKFLOW STATUS"
 echo "------------------------"
 if command -v gh &> /dev/null; then
     echo "Recent staging deployment workflows:"
