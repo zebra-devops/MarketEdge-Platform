@@ -75,7 +75,7 @@ def _initialize_database_engine():
 
             # DIAGNOSTIC: Log the transformation to prove the fix is applied
             async_scheme = async_database_url.split('://')[0] if '://' in async_database_url else 'unknown'
-            logger.info(f"[SCHEME-FIX] original={original_scheme} async={async_scheme}")
+            logger.info(f"[SCHEME-FIX-3396375] original={original_scheme} async={async_scheme}")
             logger.info(f"[SCHEME-FIX-DETAILS] Transformation applied: {original_scheme} -> {async_scheme}")
 
             logger.info(f"Async database URL scheme: {async_scheme}")
