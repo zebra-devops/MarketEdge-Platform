@@ -47,12 +47,27 @@ class FrontendErrorBatch(BaseModel):
 async def log_frontend_errors(
     error_batch: FrontendErrorBatch,
     request: Request,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    db: AsyncSession = Depends(get_async_db)
 ):
     """
-    Log frontend errors sent from the client application
+    Log frontend errors sent from the client application.
+
+    PUBLIC ENDPOINT - No authentication required.
+    Errors can occur before authentication or when authentication fails,
+    so this endpoint must be accessible without valid credentials.
     """
+    # Optional: Extract user info from Authorization header if present (but don't require it)
+    current_user = None
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            from app.auth.dependencies import get_current_user_optional
+            # Try to get user if token is valid, but don't fail if it's not
+            credentials = type('obj', (object,), {'credentials': auth_header.split(" ")[1]})()
+            current_user = await get_current_user_optional(request, credentials, db)
+        except Exception:
+            # Ignore auth errors - this is a public endpoint
+            pass
     try:
         # Get client IP
         client_ip = request.client.host if request.client else "unknown"
