@@ -1,8 +1,8 @@
 import { ApplicationAccess } from '@/types/auth'
-import { 
-  getPrimaryApplication, 
-  getApplicationRoute, 
-  hasAnyApplicationAccess 
+import {
+  getPrimaryApplication,
+  getApplicationRoute,
+  hasAnyApplicationAccess
 } from '@/utils/application-access'
 
 /**
@@ -17,13 +17,13 @@ export function getPostLoginRedirect(
     // Check if the intended destination is an application route
     const appRoutes = ['/market-edge', '/causal-edge', '/value-edge']
     const isAppRoute = appRoutes.some(route => intendedDestination.startsWith(route))
-    
+
     if (isAppRoute) {
       // Extract application name from route
       const appName = intendedDestination.includes('/market-edge') ? 'MARKET_EDGE' :
                      intendedDestination.includes('/causal-edge') ? 'CAUSAL_EDGE' :
                      intendedDestination.includes('/value-edge') ? 'VALUE_EDGE' : null
-      
+
       if (appName) {
         const hasAccess = applicationAccess?.find(app => app.application === appName)?.has_access
         if (hasAccess) {
@@ -36,18 +36,10 @@ export function getPostLoginRedirect(
     }
   }
 
-  // If user has no application access, send to dashboard
-  if (!hasAnyApplicationAccess(applicationAccess)) {
-    return '/dashboard'
-  }
-
-  // Get user's primary application
-  const primaryApp = getPrimaryApplication(applicationAccess)
-  if (primaryApp) {
-    return getApplicationRoute(primaryApp)
-  }
-
-  // Fallback to dashboard
+  // CRITICAL FIX: Default to dashboard for all users
+  // Dashboard is the central hub for the platform and provides access to all applications
+  // Users can navigate to specific applications from the dashboard
+  // This is especially important for admin/super_admin users who need to access admin panel
   return '/dashboard'
 }
 

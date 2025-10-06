@@ -37,6 +37,21 @@ interface EnhancedUserResponse {
   }
 }
 
+/**
+ * US-AUTH-3: Atomic Auth State v2.0 Schema
+ * Single transaction storage to eliminate race conditions
+ */
+interface AuthStateV2 {
+  version: '2.0'
+  access_token: string
+  refresh_token: string
+  user: User
+  tenant: any
+  permissions: string[]
+  expires_at: string
+  persisted_at: number
+}
+
 interface LogoutRequest {
   refresh_token?: string
   all_devices?: boolean
@@ -49,6 +64,7 @@ export class AuthService {
   private processedAuthCodes: Set<string> = new Set()
   private temporaryAccessToken: string | null = null // Temporary storage for immediate access
   private sessionStorageKey = 'auth_session_backup' // Session storage backup for navigation persistence
+  private readonly atomicAuthStorageKey = 'za:auth:v2' // US-AUTH-3: Atomic auth state v2
 
   /**
    * Initiate OAuth2 authentication flow with Auth0
@@ -56,17 +72,198 @@ export class AuthService {
    */
   async initiateOAuth2Login(redirectUri?: string): Promise<void> {
     const callbackUri = redirectUri || window.location.origin + '/auth/callback'
-    
+
     try {
       const authUrlResponse = await this.getAuth0Url(callbackUri)
-      
+
       // Redirect to Auth0 for authentication
       window.location.href = authUrlResponse.auth_url
-      
+
     } catch (error: any) {
       console.error('Failed to initiate OAuth2 login:', error)
       throw new Error(`Login initiation failed: ${error.message}`)
     }
+  }
+
+  /**
+   * US-AUTH-3: Runtime feature flag for atomic auth state
+   * Allows gradual rollout with URL parameter override
+   */
+  private useAtomicAuth(): boolean {
+    // Check URL parameter for manual override
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search)
+      if (urlParams.has('atomicAuth')) {
+        return urlParams.get('atomicAuth') === '1'
+      }
+    }
+
+    // Check localStorage setting (for QA/UAT testing)
+    try {
+      const setting = localStorage.getItem('za:feature:atomic_auth')
+      if (setting !== null) {
+        return setting === 'true'
+      }
+    } catch {}
+
+    // Default: disabled (will enable after QA confirms it works)
+    // To enable globally: change this to return true
+    return false
+  }
+
+  /**
+   * US-AUTH-3: Atomic auth state transaction with rollback
+   * Stores all auth data in single transaction to prevent race conditions
+   */
+  private setAtomicAuthState(response: EnhancedTokenResponse): void {
+    // 1. Validate input completeness
+    if (!response.access_token?.trim()) {
+      throw new Error('Invalid access token - cannot be empty')
+    }
+    if (!response.refresh_token?.trim()) {
+      throw new Error('Invalid refresh token - cannot be empty')
+    }
+    if (!response.user?.email) {
+      throw new Error('Invalid user data - email required')
+    }
+
+    // 2. Prepare complete auth state
+    const authState: AuthStateV2 = {
+      version: '2.0',
+      access_token: response.access_token,
+      refresh_token: response.refresh_token,
+      user: response.user,
+      tenant: response.tenant,
+      permissions: response.permissions,
+      expires_at: new Date(Date.now() + (response.expires_in || 3600) * 1000).toISOString(),
+      persisted_at: Date.now()
+    }
+
+    const stateJson = JSON.stringify(authState)
+
+    // 3. Atomic write to both storage mechanisms
+    try {
+      // Write to session storage (survives navigation)
+      sessionStorage.setItem(this.atomicAuthStorageKey, stateJson)
+
+      // Write to localStorage (development convenience)
+      if (!this.detectProductionEnvironment()) {
+        localStorage.setItem(this.atomicAuthStorageKey, stateJson)
+      }
+
+      // 4. CRITICAL: Verify write succeeded by reading back
+      const verifySession = sessionStorage.getItem(this.atomicAuthStorageKey)
+      if (!verifySession || verifySession !== stateJson) {
+        throw new Error('Session storage verification failed')
+      }
+
+      // 5. Set temporary token for immediate availability
+      this.temporaryAccessToken = response.access_token
+
+      console.log('✅ Atomic auth state persisted successfully', {
+        storageKey: this.atomicAuthStorageKey,
+        size: stateJson.length,
+        expiresAt: authState.expires_at,
+        userEmail: authState.user.email,
+        userRole: authState.user.role
+      })
+
+    } catch (error: any) {
+      // 6. ROLLBACK: Delete partially written state
+      console.error('❌ Auth state persistence failed, rolling back:', error)
+      this.rollbackAtomicAuthState()
+
+      if (error.name === 'QuotaExceededError') {
+        throw new Error('Browser storage quota exceeded - please clear browser data')
+      }
+      throw new Error(`Auth state persistence failed: ${error.message}`)
+    }
+  }
+
+  /**
+   * US-AUTH-3: Retrieve atomic auth state with validation
+   */
+  private getAtomicAuthState(): AuthStateV2 | null {
+    try {
+      // Try session storage first (primary)
+      let stateJson = sessionStorage.getItem(this.atomicAuthStorageKey)
+
+      // Fallback to localStorage (development)
+      if (!stateJson && !this.detectProductionEnvironment()) {
+        stateJson = localStorage.getItem(this.atomicAuthStorageKey)
+      }
+
+      if (!stateJson) return null
+
+      const authState = JSON.parse(stateJson) as AuthStateV2
+
+      // Validate schema version
+      if (authState.version !== '2.0') {
+        console.warn('Auth state schema mismatch, clearing')
+        this.rollbackAtomicAuthState()
+        return null
+      }
+
+      // Check freshness (token expiry)
+      if (new Date(authState.expires_at) < new Date()) {
+        console.warn('Auth state expired, clearing')
+        this.rollbackAtomicAuthState()
+        return null
+      }
+
+      return authState
+
+    } catch (error) {
+      console.error('Failed to retrieve auth state:', error)
+      this.rollbackAtomicAuthState()
+      return null
+    }
+  }
+
+  /**
+   * US-AUTH-3: Rollback atomic auth state on error
+   */
+  private rollbackAtomicAuthState(): void {
+    try {
+      sessionStorage.removeItem(this.atomicAuthStorageKey)
+      localStorage.removeItem(this.atomicAuthStorageKey)
+      this.temporaryAccessToken = null
+      console.log('🔄 Auth state rolled back')
+    } catch (error) {
+      console.error('Rollback failed:', error)
+    }
+  }
+
+  /**
+   * US-AUTH-3: Migrate from legacy auth storage to atomic v2
+   */
+  private migrateFromLegacyAuth(): void {
+    // Only run if atomic auth is enabled
+    if (!this.useAtomicAuth()) return
+
+    // Only run once
+    if (localStorage.getItem('za:auth:migrated') === 'true') return
+
+    console.log('🔄 Migrating from legacy auth storage...')
+
+    // Clear old storage keys (but preserve user data temporarily for verification)
+    const oldKeys = [
+      'access_token',
+      'refresh_token',
+      'token_expires_at',
+      'auth_session_backup' // old session storage key
+    ]
+
+    oldKeys.forEach(key => {
+      localStorage.removeItem(key)
+      try {
+        sessionStorage.removeItem(key)
+      } catch {}
+    })
+
+    // Mark migration complete
+    localStorage.setItem('za:auth:migrated', 'true')
+    console.log('✅ Legacy auth storage cleaned up')
   }
 
   /**
@@ -154,26 +351,33 @@ export class AuthService {
         const response = await this.exchangeAuthorizationCode(loginData)
         
         console.log('Login response received from backend')
-        
-        // ENHANCED FIX: Store token metadata with verification
-        console.log('About to call setTokens with response:', {
-          hasAccessToken: !!response.access_token,
-          hasRefreshToken: !!response.refresh_token,
-          tokenType: response.token_type
-        })
-        
-        // Store tokens and verify immediately
-        this.setTokens(response)
-        
-        // CRITICAL: Verify token was stored before proceeding
-        const verifyToken = this.getToken()
-        if (!verifyToken) {
-          console.error('❌ CRITICAL: Token storage failed during login!')
-          throw new Error('Token storage failed - please try logging in again')
+
+        // US-AUTH-3: Use atomic auth state transaction or legacy path
+        if (this.useAtomicAuth()) {
+          console.log('🔐 US-AUTH-3: Using atomic auth state transaction')
+          this.setAtomicAuthState(response)
+          this.migrateFromLegacyAuth()
+        } else {
+          // Legacy path for fallback compatibility
+          console.log('About to call setTokens with response:', {
+            hasAccessToken: !!response.access_token,
+            hasRefreshToken: !!response.refresh_token,
+            tokenType: response.token_type
+          })
+
+          // Store tokens and verify immediately
+          this.setTokens(response)
+
+          // CRITICAL: Verify token was stored before proceeding
+          const verifyToken = this.getToken()
+          if (!verifyToken) {
+            console.error('❌ CRITICAL: Token storage failed during login!')
+            throw new Error('Token storage failed - please try logging in again')
+          }
+
+          console.log('✅ Token storage verified successfully')
+          this.setUserData(response.user, response.tenant, response.permissions)
         }
-        
-        console.log('✅ Token storage verified successfully')
-        this.setUserData(response.user, response.tenant, response.permissions)
         
         // Clean up processed auth codes (keep only recent ones to prevent memory leak)
         if (this.processedAuthCodes.size > 10) {
@@ -477,6 +681,20 @@ export class AuthService {
       environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
       windowExists: typeof window !== 'undefined'
     })
+
+    // Strategy 0: US-AUTH-3: Atomic auth state (v2)
+    if (this.useAtomicAuth()) {
+      const authState = this.getAtomicAuthState()
+      if (authState?.access_token) {
+        console.debug('✅ Token retrieved from atomic auth state', {
+          source: 'atomic_v2',
+          environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT',
+          length: authState.access_token.length,
+          preview: `${authState.access_token.substring(0, 20)}...`
+        })
+        return authState.access_token
+      }
+    }
 
     // Strategy 1: Try cookies first (both production and development)
     // Access tokens are now accessible via JavaScript in both environments
@@ -1081,6 +1299,19 @@ export class AuthService {
       environment: isProduction ? 'PRODUCTION' : 'DEVELOPMENT'
     })
 
+    // Strategy 0: US-AUTH-3: Atomic auth state (v2)
+    if (this.useAtomicAuth()) {
+      const authState = this.getAtomicAuthState()
+      if (authState?.user) {
+        console.debug('✅ User data retrieved from atomic auth state', {
+          source: 'atomic_v2',
+          email: authState.user.email,
+          role: authState.user.role
+        })
+        return authState.user
+      }
+    }
+
     // Strategy 1: Try localStorage first (primary storage)
     try {
       const userData = localStorage.getItem('current_user')
@@ -1144,6 +1375,9 @@ export class AuthService {
 
   private clearTokens(): void {
     console.debug('🧹 Clearing tokens...')
+
+    // US-AUTH-3: Clear atomic auth state
+    this.rollbackAtomicAuthState()
 
     // CRITICAL FIX: DELETE cookies with proper path/domain settings
     // Must match the settings used when cookies were SET
