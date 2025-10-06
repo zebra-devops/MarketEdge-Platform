@@ -40,15 +40,19 @@ def get_database_url() -> str:
 def _initialize_database_engine():
     """Lazy initialization of database engine"""
     global _engine, _async_engine, _session_local, _async_session_local
-    
+
     with _initialization_lock:
         if _engine is not None:
             return  # Already initialized
-            
+
         try:
             logger.info("Initializing database engine with lazy loading...")
             database_url = get_database_url()
-            logger.info(f"Database URL scheme: {database_url.split('://')[0] if '://' in database_url else 'unknown'}")
+
+            # DIAGNOSTIC: Log the original DATABASE_URL scheme
+            original_scheme = database_url.split('://')[0] if '://' in database_url else 'unknown'
+            logger.info(f"[DATABASE-INIT] Starting database initialization, DATABASE_URL scheme: {original_scheme}")
+            logger.info(f"Database URL scheme: {original_scheme}")
 
             _engine = create_engine(
                 database_url,
@@ -69,7 +73,12 @@ def _initialize_database_engine():
             if async_database_url == database_url:  # No replacement happened
                 async_database_url = database_url.replace("postgres://", "postgresql+asyncpg://")
 
-            logger.info(f"Async database URL scheme: {async_database_url.split('://')[0] if '://' in async_database_url else 'unknown'}")
+            # DIAGNOSTIC: Log the transformation to prove the fix is applied
+            async_scheme = async_database_url.split('://')[0] if '://' in async_database_url else 'unknown'
+            logger.info(f"[SCHEME-FIX] original={original_scheme} async={async_scheme}")
+            logger.info(f"[SCHEME-FIX-DETAILS] Transformation applied: {original_scheme} -> {async_scheme}")
+
+            logger.info(f"Async database URL scheme: {async_scheme}")
 
             _async_engine = create_async_engine(
                 async_database_url,
