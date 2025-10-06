@@ -462,7 +462,14 @@ async def login_oauth2(
                 "role": user.role.value if hasattr(user.role, 'value') else user.role,
                 "is_active": user.is_active,
                 "created_at": user.created_at.isoformat() if user.created_at else None,
-                "updated_at": user.updated_at.isoformat() if user.updated_at else None
+                "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+                "application_access": [
+                    {
+                        "application": access.application.value if hasattr(access.application, 'value') else access.application,
+                        "has_access": access.has_access
+                    }
+                    for access in (user.application_access or [])
+                ]
             },
             tenant={
                 "id": str(user.organisation.id),
@@ -999,7 +1006,14 @@ async def login(
             "role": user.role.value if hasattr(user.role, 'value') else user.role,
             "is_active": user.is_active,
             "created_at": user.created_at.isoformat() if user.created_at else None,
-            "updated_at": user.updated_at.isoformat() if user.updated_at else None
+            "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+            "application_access": [
+                {
+                    "application": access.application.value if hasattr(access.application, 'value') else access.application,
+                    "has_access": access.has_access
+                }
+                for access in (user.application_access or [])
+            ]
         },
         tenant={
             "id": str(user.organisation.id),
@@ -1195,7 +1209,14 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
                     "role": user.role.value if hasattr(user.role, 'value') else user.role,
                     "is_active": user.is_active,
                     "created_at": user.created_at.isoformat() if user.created_at else None,
-                    "updated_at": user.updated_at.isoformat() if user.updated_at else None
+                    "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+                    "application_access": [
+                        {
+                            "application": access.application.value if hasattr(access.application, 'value') else access.application,
+                            "has_access": access.has_access
+                        }
+                        for access in (user.application_access or [])
+                    ]
                 },
                 tenant={
                     "id": str(user.organisation.id),
@@ -1338,7 +1359,14 @@ async def refresh_token(refresh_data: RefreshTokenRequest, response: Response, d
                 "role": user.role.value if hasattr(user.role, 'value') else user.role,
                 "is_active": user.is_active,
                 "created_at": user.created_at.isoformat() if user.created_at else None,
-                "updated_at": user.updated_at.isoformat() if user.updated_at else None
+                "updated_at": user.updated_at.isoformat() if user.updated_at else None,
+                "application_access": [
+                    {
+                        "application": access.application.value if hasattr(access.application, 'value') else access.application,
+                        "has_access": access.has_access
+                    }
+                    for access in (user.application_access or [])
+                ]
             },
             tenant={
                 "id": str(user.organisation.id),
