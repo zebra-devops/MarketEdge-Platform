@@ -43,6 +43,15 @@ class ApiService {
   private setupInterceptors() {
     this.axiosClient.interceptors.request.use(
       (config) => {
+        // CRITICAL FIX: Skip auth for error logging endpoint (public endpoint)
+        // Error logging must work even when authentication fails or before login
+        const isErrorLoggingEndpoint = config.url?.includes('/logging/frontend-errors')
+
+        if (isErrorLoggingEndpoint) {
+          console.debug('🔓 Skipping auth for public error logging endpoint')
+          return config
+        }
+
         // CRITICAL FIX: Unified token retrieval strategy matching auth service exactly
         let token = null
         const isProduction = this.detectProductionEnvironment()
@@ -192,8 +201,12 @@ class ApiService {
         }
         
         // CRITICAL FIX #4: Add CSRF token for state-changing requests (POST/PUT/PATCH/DELETE)
+        // Skip CSRF for public error logging endpoint
         const stateChangingMethods = ['POST', 'PUT', 'PATCH', 'DELETE']
-        if (config.method && stateChangingMethods.includes(config.method.toUpperCase())) {
+        const skipCsrfEndpoints = ['/logging/frontend-errors']
+        const shouldSkipCsrf = skipCsrfEndpoints.some(endpoint => config.url?.includes(endpoint))
+
+        if (config.method && stateChangingMethods.includes(config.method.toUpperCase()) && !shouldSkipCsrf) {
           try {
             const csrfToken = Cookies.get('csrf_token')
             if (csrfToken) {
