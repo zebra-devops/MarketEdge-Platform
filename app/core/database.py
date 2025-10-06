@@ -48,7 +48,8 @@ def _initialize_database_engine():
         try:
             logger.info("Initializing database engine with lazy loading...")
             database_url = get_database_url()
-            
+            logger.info(f"Database URL scheme: {database_url.split('://')[0] if '://' in database_url else 'unknown'}")
+
             _engine = create_engine(
                 database_url,
                 pool_pre_ping=True,
@@ -62,9 +63,14 @@ def _initialize_database_engine():
                     "application_name": "platform_wrapper"
                 }
             )
-            
+
+            # Transform to async driver (handles both postgresql:// and postgres:// schemes)
             async_database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
-            
+            if async_database_url == database_url:  # No replacement happened
+                async_database_url = database_url.replace("postgres://", "postgresql+asyncpg://")
+
+            logger.info(f"Async database URL scheme: {async_database_url.split('://')[0] if '://' in async_database_url else 'unknown'}")
+
             _async_engine = create_async_engine(
                 async_database_url,
                 pool_pre_ping=True,
