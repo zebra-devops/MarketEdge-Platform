@@ -239,9 +239,22 @@ ON CONFLICT (version) DO NOTHING;
 
 async def apply_baseline_schema(database_url: str):
     """Apply baseline schema directly to database"""
+    import logging
+    logger = logging.getLogger(__name__)
+
     schema_sql = generate_baseline_schema()
 
-    engine = create_async_engine(database_url, echo=False)
+    # CRITICAL: Transform postgres:// to postgresql+asyncpg:// for async engine
+    # This handles Render's DATABASE_URL which uses postgres:// scheme
+    async_database_url = database_url.replace("postgresql://", "postgresql+asyncpg://")
+    if async_database_url == database_url:  # No replacement happened
+        async_database_url = database_url.replace("postgres://", "postgresql+asyncpg://")
+
+    original_scheme = database_url.split('://')[0] if '://' in database_url else 'unknown'
+    async_scheme = async_database_url.split('://')[0] if '://' in async_database_url else 'unknown'
+    logger.info(f"[BASELINE-SCHEME-TRANSFORM] original={original_scheme} async={async_scheme}")
+
+    engine = create_async_engine(async_database_url, echo=False)
 
     try:
         async with engine.begin() as conn:
