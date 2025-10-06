@@ -160,6 +160,20 @@ echo "   USE_STAGING_AUTH0: ${USE_STAGING_AUTH0:-false}"
 echo "   AUTH0_DOMAIN: ${AUTH0_DOMAIN:-not-set}"
 echo "   CORS_ORIGINS: ${CORS_ORIGINS:-not-set}"
 
+# Check Redis configuration
+echo ""
+echo "🔗 Redis Configuration:"
+if [ -z "${REDIS_URL}" ]; then
+    echo "   ⚠️  REDIS_URL not set - will use in-memory fallback"
+    echo "   📌 For production/staging: Set REDIS_URL in Render Dashboard"
+elif [[ "${REDIS_URL}" == *"localhost:6379"* ]]; then
+    echo "   ⚠️  REDIS_URL set to localhost:6379 - will use in-memory fallback"
+    echo "   📌 Update REDIS_URL to managed Redis service in Render Dashboard"
+else
+    echo "   ✅ REDIS_URL configured: ${REDIS_URL:0:30}..."
+    echo "   ✅ Rate limiting will use Redis backend"
+fi
+
 # Normal startup
 echo "🟢 Starting FastAPI application..."
 exec uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1

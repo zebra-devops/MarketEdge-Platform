@@ -272,6 +272,24 @@ async def startup_event():
         except Exception as init_error:
             logger.error(f"⚠️  Lazy initialization error: {init_error} - continuing with core services")
         
+        # Initialize Redis connection manager
+        try:
+            from app.core.redis_manager import redis_manager
+            logger.info("🔗 Initializing Redis connection manager...")
+            await redis_manager.initialize()
+
+            # Log Redis status
+            redis_status = await redis_manager.get_connection_status()
+            if redis_manager.is_fallback_mode():
+                logger.warning("⚠️  Redis in FALLBACK MODE - using in-memory storage")
+                logger.info(f"📊 Rate limiting: Memory-based (non-persistent)")
+            else:
+                logger.info(f"✅ Redis connected successfully")
+                logger.info(f"📊 Rate limiting: Redis-backed (persistent)")
+        except Exception as redis_error:
+            logger.error(f"⚠️  Redis initialization error: {redis_error}")
+            logger.warning("⚠️  Using in-memory fallback for rate limiting")
+
         # CRITICAL: Initialize module registry for £925K Zebra Associates
         try:
             from app.core.module_registry import initialize_module_registry
@@ -290,7 +308,7 @@ async def startup_event():
                 )
                 logger.info("✅ Module registry initialized - feature flags ready")
                 break
-                
+
         except Exception as module_error:
             logger.error(f"⚠️  Module registry initialization failed: {module_error}")
             logger.error("⚠️  Feature flags may not work - using fallback mode")

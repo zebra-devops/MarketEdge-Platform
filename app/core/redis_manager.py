@@ -33,13 +33,21 @@ class RedisConnectionManager:
         try:
             # Try to initialize main Redis connection
             await self._initialize_main_redis()
-            
+
             # Try to initialize rate limiting Redis connection
             await self._initialize_rate_limit_redis()
-            
+
             self._initialized = True
-            logger.info("Redis connection manager initialized successfully")
-            
+
+            # Log connection status clearly
+            if self._fallback_mode:
+                logger.warning(f"⚠️  Redis FALLBACK MODE active in {settings.ENVIRONMENT} environment")
+                logger.warning("⚠️  Using in-memory storage - data will not persist across restarts")
+                logger.info("💡 For production/staging: Set REDIS_URL in Render Dashboard")
+            else:
+                logger.info(f"✅ Redis connection manager initialized successfully in {settings.ENVIRONMENT}")
+                logger.info(f"🔗 Redis URL configured: {settings.REDIS_URL[:20]}..." if settings.REDIS_URL else "No Redis URL")
+
         except Exception as e:
             logger.error(f"Failed to initialize Redis connections: {e}")
             if settings.ENVIRONMENT == "development":
