@@ -12,12 +12,12 @@ from datetime import timedelta
 
 class Industry(Enum):
     """Supported industry types with specific rate limiting requirements."""
-    CINEMA = "CINEMA"
-    HOTEL = "HOTEL"  
-    GYM = "GYM"
-    B2B = "B2B"
-    RETAIL = "RETAIL"
-    DEFAULT = "DEFAULT"
+    CINEMA = "cinema"
+    HOTEL = "hotel"
+    GYM = "gym"
+    B2B = "b2b"
+    RETAIL = "retail"
+    DEFAULT = "default"
 
 
 class RateLimitType(Enum):
