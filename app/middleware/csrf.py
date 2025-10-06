@@ -32,6 +32,7 @@ CSRF_EXEMPT_PATHS: Set[str] = {
     "/api/v1/auth/user-context",  # Auth0 Action callback
     "/api/v1/auth/refresh",  # Token refresh (uses refresh token from cookie)
     "/api/v1/auth/auth0-url",  # Auth0 URL endpoint (GET, but listed for clarity)
+    "/api/v1/logging/frontend-errors",  # Frontend error logging (non-state-changing)
     "/health",  # Health check
     "/",  # Root endpoint
     "/docs",  # API documentation
