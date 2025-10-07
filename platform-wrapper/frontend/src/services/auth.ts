@@ -807,7 +807,31 @@ export class AuthService {
    * Includes Vercel production domain detection for frontend deployments
    */
   private detectProductionEnvironment(): boolean {
-    // Method 1: Standard NODE_ENV check
+    // CRITICAL: Check for specific environments FIRST before NODE_ENV
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname
+
+      // Staging should use development token storage (localStorage)
+      // to avoid cross-domain cookie complexities
+      if (hostname.includes('staging.zebra.associates')) {
+        console.debug('🔧 Staging environment detected - using development token storage:', hostname)
+        return false // Treat staging as development for token storage
+      }
+
+      // Development environments should always use development storage
+      const isDevelopmentHost =
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname.includes('local') ||
+        hostname.includes('.local')
+
+      if (isDevelopmentHost) {
+        console.debug('🛠️ Development host detected - using development token storage:', hostname)
+        return false // Local development
+      }
+    }
+
+    // Method 1: Standard NODE_ENV check (but domain checks override this above)
     if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') {
       return true
     }

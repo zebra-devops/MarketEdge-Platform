@@ -109,6 +109,7 @@ elif isinstance(settings.CORS_ORIGINS, str):
 # Ensure critical production origins are always included
 critical_origins = [
     "https://app.zebra.associates",
+    "https://staging.zebra.associates",  # CRITICAL: Add staging domain for Zebra Associates
     "https://marketedge-frontend.onrender.com",
     "http://localhost:3000",
     "http://localhost:3001",
