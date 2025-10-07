@@ -361,6 +361,17 @@ services:
         value: "true"  # Use HTTPS cookies in staging
 
       # ========================================================================
+      # AUTH0 RATE LIMITING FIX (US-AUTH-4 - Phase 1 Immediate Fix)
+      # ========================================================================
+      # GitHub Issue: https://github.com/zebra-associates/marketedge-platform/issues/93
+      # Skip Auth0 /userinfo verification to avoid rate limiting (429 Too Many Requests)
+      # JWT signature verification ALWAYS performed - cryptographic security maintained
+      # STAGING ONLY - Production should keep this false (default)
+
+      - key: SKIP_AUTH0_USERINFO_CHECK
+        value: "true"
+
+      # ========================================================================
       # FEATURE FLAGS (Staging)
       # ========================================================================
 

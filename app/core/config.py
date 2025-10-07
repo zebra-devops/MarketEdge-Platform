@@ -73,6 +73,14 @@ class Settings(BaseSettings):
         default=64,
         description="Length of generated CSRF tokens (in characters)"
     )
+
+    # US-AUTH-4: Skip Auth0 userinfo verification (staging only)
+    # Phase 1 Immediate Fix for Auth0 rate limiting (429 Too Many Requests)
+    # https://github.com/zebra-associates/marketedge-platform/issues/93
+    SKIP_AUTH0_USERINFO_CHECK: bool = Field(
+        default=False,
+        description="Skip Auth0 /userinfo verification to avoid rate limiting. JWT signature still verified. Use for staging/testing only."
+    )
     
     CORS_ORIGINS: Union[str, List[str]] = Field(default=["http://localhost:3000", "http://localhost:3001"])
     

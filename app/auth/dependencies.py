@@ -125,8 +125,14 @@ async def verify_auth0_token(token: str) -> Optional[Dict[str, Any]]:
     Security improvements:
     1. Verify JWT signature using Auth0's public keys from JWKS endpoint
     2. Validate standard JWT claims (exp, iss, aud)
-    3. Secondary validation with userinfo endpoint for freshness
+    3. Secondary validation with userinfo endpoint for freshness (CONDITIONAL - US-AUTH-4)
     4. Handle key rotation gracefully with caching
+
+    US-AUTH-4 (Phase 1 Immediate Fix):
+    - Can skip userinfo check via SKIP_AUTH0_USERINFO_CHECK environment variable
+    - This avoids Auth0 rate limiting (429 Too Many Requests) on staging
+    - JWT signature verification ALWAYS performed (cryptographic security maintained)
+    - Use for staging/testing only - production should keep userinfo check enabled
 
     This fixes CRITICAL ISSUE #2 from code review - previous implementation only
     validated via userinfo endpoint which could accept invalid tokens if Auth0's
@@ -259,8 +265,38 @@ async def verify_auth0_token(token: str) -> Optional[Dict[str, Any]]:
             return None
 
         # STEP 5: Secondary validation with userinfo endpoint for freshness
+        # US-AUTH-4: CONDITIONAL based on SKIP_AUTH0_USERINFO_CHECK environment variable
         # This provides defense-in-depth: even if JWT signature is valid,
-        # we verify the token is still active with Auth0
+        # we verify the token is still active with Auth0 (unless skipped for staging)
+
+        if settings.SKIP_AUTH0_USERINFO_CHECK:
+            # Staging/testing mode: Skip userinfo to avoid rate limiting
+            # JWT signature already verified - cryptographic security maintained
+            logger.info("Skipping Auth0 userinfo check (SKIP_AUTH0_USERINFO_CHECK=true)", extra={
+                "event": "auth0_userinfo_skipped",
+                "user_sub": decoded.get("sub"),
+                "environment": settings.ENVIRONMENT,
+                "security_note": "JWT signature verified - cryptographic security maintained"
+            })
+
+            # Return payload directly (JWT signature already verified)
+            # Extract relevant claims for application use
+            return {
+                "sub": decoded.get("sub"),
+                "email": decoded.get("email"),
+                "user_role": decoded.get("user_role", "viewer"),
+                "role": decoded.get("user_role", "viewer"),  # For compatibility
+                "organisation_id": decoded.get("organisation_id"),
+                "tenant_id": decoded.get("organisation_id"),  # For compatibility
+                "type": "auth0_access",  # Distinguish from internal tokens
+                "iss": decoded.get("iss"),
+                "aud": decoded.get("aud"),
+                "exp": decoded.get("exp"),
+                "iat": decoded.get("iat"),
+                "permissions": decoded.get("permissions", [])
+            }
+
+        # Production mode: Verify with userinfo endpoint
         try:
             user_info = await auth0_client.get_user_info(token)
             if not user_info:
